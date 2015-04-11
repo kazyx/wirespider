@@ -10,21 +10,18 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class WebSocket {
-
     private final AsyncSource mAsync;
     private final URI mURI;
     private final WebSocketConnection mHandler;
     private final List<HttpHeader> mRequestHeaders;
 
-    private Socket mSocket;
-
     private boolean mIsConnected = false;
 
-    private Rfc6455Parser mParser = null;
+    private Socket mSocket;
+    private WebSocketParser mParser = null;
 
-    private Rfc6455Reader mReader = null;
-
-    private final Object mSendLock = new Object();
+    private final Object mPingPongLock = new Object();
+    private TimerTask mPingPongTask;
 
     WebSocket(AsyncSource async, URI uri, WebSocketConnection handler, List<HttpHeader> extraHeaders) {
         mURI = uri;
@@ -99,9 +96,7 @@ public class WebSocket {
 
         mIsConnected = true;
         mParser = new Rfc6455Parser(true);
-        mReader = new Rfc6455Reader(is, this);
-
-        mAsync.mConnectionThreadPool.submit(mReader);
+        mAsync.mConnectionThreadPool.submit(new Rfc6455Reader(is, this));
     }
 
     /**
@@ -118,7 +113,7 @@ public class WebSocket {
      * @throws IOException Connection is already closed.
      */
     public void sendTextMessageAsync(String message) throws IOException {
-        sendFrameAsync(mParser.asFrame(message));
+        sendFrameAsync(mParser.createTextFrame(message));
     }
 
     /**
@@ -128,7 +123,7 @@ public class WebSocket {
      * @throws IOException Connection is already closed.
      */
     public void sendBinaryMessageAsync(byte[] message) throws IOException {
-        sendFrameAsync(mParser.asFrame(message));
+        sendFrameAsync(mParser.createBinaryFrame(message));
     }
 
     /**
@@ -136,7 +131,7 @@ public class WebSocket {
      * If PONG frame does not come within timeout, WebSocket connection will be closed.
      *
      * @param timeout Timeout value.
-     * @param unit TImeUnit of timeout value.
+     * @param unit    TImeUnit of timeout value.
      * @throws IOException Connection is already closed.
      */
     public void checkConnectionAsync(long timeout, TimeUnit unit) throws IOException {
@@ -159,11 +154,8 @@ public class WebSocket {
                 throw new RejectedExecutionException(e);
             }
         }
-        sendFrameAsync(mParser.asPingFrame());
+        sendFrameAsync(mParser.createPingFrame());
     }
-
-    private final Object mPingPongLock = new Object();
-    private TimerTask mPingPongTask;
 
     /**
      * Close WebSocket connection gracefully.<br>
@@ -182,7 +174,7 @@ public class WebSocket {
      */
     public void closeAsync(CloseStatusCode code, String reason) {
         try {
-            sendFrameAsync(mParser.asCloseFrame(code, reason));
+            sendFrameAsync(mParser.createCloseFrame(code, reason));
         } catch (IOException e) {
             // Ignore close IOException
         }
@@ -196,6 +188,7 @@ public class WebSocket {
             mHandler.onClosed();
             mIsConnected = false;
         }
+
         IOUtil.close(mSocket);
     }
 
@@ -214,15 +207,12 @@ public class WebSocket {
 
     private void sendFrame(byte[] frame) {
         try {
-            synchronized (mSendLock) {
-                if (!mIsConnected) {
-                    // TODO
-                    return;
-                }
-                OutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
-                outputStream.write(frame);
-                outputStream.flush();
+            if (!mIsConnected) {
+                return;
             }
+            OutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
+            outputStream.write(frame);
+            outputStream.flush();
         } catch (IOException e) {
             closeInternal();
         }
@@ -230,16 +220,14 @@ public class WebSocket {
 
     void onPingFrame(String message) {
         try {
-            sendFrameAsync(mParser.asPongFrame());
+            sendFrameAsync(mParser.createPongFrame());
         } catch (IOException e) {
             // This will never happen.
-        } catch (RejectedExecutionException e) {
-            // AsyncResource is already destroyed.
         }
     }
 
     void onPongFrame(String message) {
-        synchronized (mPingPongTask) {
+        synchronized (mPingPongLock) {
             if (mPingPongTask != null) {
                 mPingPongTask.cancel();
                 mPingPongTask = null;

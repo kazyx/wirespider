@@ -29,19 +29,27 @@ class Rfc6455Reader implements Runnable {
 
     private void readSingleFrame() throws IOException, ProtocolViolationException {
         byte first = readBytes(1)[0];
-        boolean isFinal = Rfc6455Parser.asIsFinal(first);
-        int opcode = Rfc6455Parser.asOpcode(first);
+        boolean isFinal = BitMask.isMatch(first, Rfc6455.BIT_MASK_FIN);
 
-        byte secondByte = readBytes(1)[0];
-        boolean isMasked = Rfc6455Parser.asIsMasked(secondByte);
+        if ((first & Rfc6455.BIT_MASK_RSV) > 0) {
+            throw new ProtocolViolationException("RSV non-zero");
+        }
+        int opcode = first & Rfc6455.BIT_MASK_OPCODE;
 
-        int payloadLength = Rfc6455Parser.asPayloadLength(secondByte);
+        byte second = readBytes(1)[0];
+        boolean isMasked = BitMask.isMatch(second, Rfc6455.BIT_MASK_MASK);
+
+        int payloadLength = second & Rfc6455.BIT_MASK_PAYLOAD_LENGTH;
+        if (payloadLength == 0) {
+            throw new ProtocolViolationException("Payload length zero");
+        }
+
         switch (payloadLength) {
             case 126:
-                payloadLength = Rfc6455Parser.asExtendedPayloadLength(readBytes(2));
+                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(2));
                 break;
             case 127:
-                payloadLength = Rfc6455Parser.asExtendedPayloadLength(readBytes(8));
+                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(8));
                 break;
         }
 
@@ -52,7 +60,7 @@ class Rfc6455Reader implements Runnable {
 
         byte[] payload = readBytes(payloadLength);
         if (isMasked) {
-            payload = Rfc6455Parser.mask(payload, mask, 0);
+            payload = BitMask.mask(payload, mask, 0);
         }
 
         handleFrame(opcode, payload, isFinal);
@@ -65,17 +73,18 @@ class Rfc6455Reader implements Runnable {
     }
 
     private ContinuationMode mContinuation = ContinuationMode.UNSET;
+    private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(int opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
         switch (opcode) {
-            case Rfc6455Parser.OP_CONTINUATION:
+            case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
                     throw new ProtocolViolationException("Sudden continuation opcode");
                 }
-                mPayloadBuffer.write(payload);
+                mContinuationBuffer.write(payload);
                 if (isFinal) {
-                    byte[] binary = mPayloadBuffer.toByteArray();
-                    mPayloadBuffer.reset();
+                    byte[] binary = mContinuationBuffer.toByteArray();
+                    mContinuationBuffer.reset();
                     if (mContinuation == ContinuationMode.BINARY) {
                         mWebSocket.onBinaryMessage(binary);
                     } else {
@@ -83,24 +92,24 @@ class Rfc6455Reader implements Runnable {
                     }
                 }
                 break;
-            case Rfc6455Parser.OP_TEXT:
+            case OpCode.TEXT:
                 if (isFinal) {
                     String text = ByteArrayUtil.toText(payload);
                     mWebSocket.onTextMessage(text);
                 } else {
-                    mPayloadBuffer.write(payload);
+                    mContinuationBuffer.write(payload);
                     mContinuation = ContinuationMode.TEXT;
                 }
                 break;
-            case Rfc6455Parser.OP_BINARY:
+            case OpCode.BINARY:
                 if (isFinal) {
                     mWebSocket.onBinaryMessage(payload);
                 } else {
-                    mPayloadBuffer.write(payload);
+                    mContinuationBuffer.write(payload);
                     mContinuation = ContinuationMode.BINARY;
                 }
                 break;
-            case Rfc6455Parser.OP_PING:
+            case OpCode.PING:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for ping opcode");
                 }
@@ -109,17 +118,17 @@ class Rfc6455Reader implements Runnable {
                 }
                 mWebSocket.onPingFrame(ByteArrayUtil.toText(payload));
                 break;
-            case Rfc6455Parser.OP_PONG:
+            case OpCode.PONG:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for pong opcode");
                 }
                 mWebSocket.onPongFrame(ByteArrayUtil.toText(payload));
                 break;
-            case Rfc6455Parser.OP_CLOSE:
+            case OpCode.CONNECTION_CLOSE:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for closeAsync opcode");
                 }
-                int code = (payload.length >= 2) ? 256 * payload[0] + payload[1] : CloseStatusCode.GENERAL.statusCode;
+                int code = (payload.length >= 2) ? 256 * payload[0] + payload[1] : CloseStatusCode.POLICY_VIOLATION.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
                 mWebSocket.onCloseFrame(code, reason);
                 break;
@@ -128,14 +137,21 @@ class Rfc6455Reader implements Runnable {
         }
     }
 
-    private final ByteArrayOutputStream mPayloadBuffer = new ByteArrayOutputStream();
-
+    private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
     private final byte[] mReadBuffer = new byte[1024];
 
     private byte[] readBytes(int length) throws IOException {
-        mStream.read(mReadBuffer, 0, length);
-        byte[] ret = new byte[length];
-        System.arraycopy(mReadBuffer, 0, ret, 0, length);
+        int read = 0;
+        while (read < length) {
+            int tmp = mStream.read(mReadBuffer, 0, Math.min(mReadBuffer.length, length - read));
+            if (tmp == -1) {
+                throw new IOException("EOF");
+            }
+            mBuffer.write(mReadBuffer, 0, tmp);
+            read += tmp;
+        }
+        byte[] ret = mBuffer.toByteArray();
+        mBuffer.reset();
         return ret;
     }
 }
