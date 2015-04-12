@@ -1,6 +1,7 @@
 package net.kazyx.apti;
 
 import javax.net.SocketFactory;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -24,9 +25,17 @@ public class WebSocketClientFactory {
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
-                WebSocket ws = new WebSocket(mAsync, uri, handler, headers);
-                ws.connect();
-                return ws;
+                WebSocket ws = null;
+                try {
+                    ws = new WebSocket(mAsync, uri, handler, headers);
+                    ws.connect();
+                    return ws;
+                } catch (IOException e) {
+                    if (ws != null) {
+                        ws.closeInternal();
+                    }
+                    throw e;
+                }
             }
         });
     }

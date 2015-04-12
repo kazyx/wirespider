@@ -3,6 +3,7 @@ package net.kazyx.apti;
 import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 
 public class AsyncSource {
@@ -32,6 +33,14 @@ public class AsyncSource {
     });
 
     final ExecutorService mActionThreadPool;
+
+    void safeAsyncAction(Runnable task) {
+        try {
+            mActionThreadPool.submit(task);
+        } catch (RejectedExecutionException e) {
+            // Nothing to do.
+        }
+    }
 
     final Timer mTimer = new Timer("apti-timer");
 }

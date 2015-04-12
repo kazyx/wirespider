@@ -15,12 +15,14 @@ public class WebSocket {
     private final WebSocketConnection mHandler;
     private final List<HttpHeader> mRequestHeaders;
 
+
+    private final Object mCallbackLock = new Object();
     private boolean mIsConnected = false;
 
     private Socket mSocket;
-    private FrameGenerator mFrameGenerator;
+    private FrameTx mFrameTx;
 
-    private final Object mPingPongLock = new Object();
+    private final Object mPingPongTaskLock = new Object();
     private TimerTask mPingPongTask;
 
     WebSocket(AsyncSource async, URI uri, WebSocketConnection handler, List<HttpHeader> extraHeaders) {
@@ -95,8 +97,8 @@ public class WebSocket {
         }
 
         mIsConnected = true;
-        mFrameGenerator = new Rfc6455FrameGenerator(true);
-        mAsync.mConnectionThreadPool.submit(new Rfc6455Reader(is, this));
+        mFrameTx = new Rfc6455Tx(this, true, mSocket);
+        mAsync.mConnectionThreadPool.submit(new Rfc6455Rx(this, is));
     }
 
     /**
@@ -111,8 +113,13 @@ public class WebSocket {
      *
      * @param message Text message to send.
      */
-    public void sendTextMessageAsync(String message) {
-        sendFrameAsync(mFrameGenerator.createTextFrame(message));
+    public void sendTextMessageAsync(final String message) {
+        mAsync.mActionThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                mFrameTx.sendTextFrame(message);
+            }
+        });
     }
 
     /**
@@ -120,8 +127,13 @@ public class WebSocket {
      *
      * @param message Binary message to send.
      */
-    public void sendBinaryMessageAsync(byte[] message) {
-        sendFrameAsync(mFrameGenerator.createBinaryFrame(message));
+    public void sendBinaryMessageAsync(final byte[] message) {
+        mAsync.mActionThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                mFrameTx.sendBinaryFrame(message);
+            }
+        });
     }
 
     /**
@@ -135,13 +147,13 @@ public class WebSocket {
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                synchronized (mPingPongLock) {
+                synchronized (mPingPongTaskLock) {
                     closeInternal();
                 }
             }
         };
 
-        synchronized (mPingPongLock) {
+        synchronized (mPingPongTaskLock) {
             if (mPingPongTask != null) {
                 mPingPongTask.cancel();
             }
@@ -153,7 +165,13 @@ public class WebSocket {
                 throw new RejectedExecutionException(e);
             }
         }
-        sendFrameAsync(mFrameGenerator.createPingFrame());
+
+        mAsync.mActionThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                mFrameTx.sendPingFrame();
+            }
+        });
     }
 
     /**
@@ -186,13 +204,8 @@ public class WebSocket {
         });
     }
 
-    private boolean mIsCloseSent = false;
-
     private void sendCloseFrame(CloseStatusCode code, String reason) {
-        synchronized (mSendLock) {
-            sendFrame(mFrameGenerator.createCloseFrame(code, reason));
-            mIsCloseSent = true;
-        }
+        mFrameTx.sendCloseFrame(code, reason);
 
         // Forcefully close connection 2 sec after sending close frame.
         new Thread(new Runnable() {
@@ -211,40 +224,14 @@ public class WebSocket {
     /**
      * Close TCP connection without WebSocket closing handshake.
      */
-    private void closeInternal() {
-        synchronized (mSendLock) {
-            if (mIsConnected) {
+    void closeInternal() {
+        synchronized (mCallbackLock) {
+            if (isConnected()) {
                 mIsConnected = false;
-                IOUtil.close(mSocket);
                 mHandler.onClosed();
             }
         }
-    }
-
-    private void sendFrameAsync(final byte[] frame) {
-        mAsync.mActionThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                sendFrame(frame);
-            }
-        });
-    }
-
-    private final Object mSendLock = new Object();
-
-    private void sendFrame(byte[] frame) {
-        synchronized (mSendLock) {
-            try {
-                if (!mIsConnected || mIsCloseSent) {
-                    return;
-                }
-                OutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
-                outputStream.write(frame);
-                outputStream.flush();
-            } catch (IOException e) {
-                closeInternal();
-            }
-        }
+        IOUtil.close(mSocket);
     }
 
     /**
@@ -252,8 +239,16 @@ public class WebSocket {
      *
      * @param message Ping message.
      */
-    void onPingFrame(String message) {
-        sendFrameAsync(mFrameGenerator.createPongFrame(message));
+    void onPingFrame(final String message) {
+        if (!isConnected()) {
+            return;
+        }
+        mAsync.safeAsyncAction(new Runnable() {
+            @Override
+            public void run() {
+                mFrameTx.sendPongFrame(message);
+            }
+        });
     }
 
     /**
@@ -262,8 +257,11 @@ public class WebSocket {
      * @param message Pong message.
      */
     void onPongFrame(String message) {
+        if (isConnected()) {
+            return;
+        }
         // TODO should check pong message is same as ping message we've sent.
-        synchronized (mPingPongLock) {
+        synchronized (mPingPongTaskLock) {
             if (mPingPongTask != null) {
                 mPingPongTask.cancel();
                 mPingPongTask = null;
@@ -278,7 +276,10 @@ public class WebSocket {
      * @param message Close reason phrase.
      */
     void onCloseFrame(int code, String message) {
-        if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode || !mIsCloseSent) {
+        if (isConnected()) {
+            return;
+        }
+        if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
             sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
         }
         closeInternal();
@@ -289,8 +290,18 @@ public class WebSocket {
      *
      * @param message Received binary message.
      */
-    void onBinaryMessage(byte[] message) {
-        mHandler.onBinaryMessage(message);
+    void onBinaryMessage(final byte[] message) {
+        if (!isConnected()) {
+            return;
+        }
+        mAsync.safeAsyncAction(new Runnable() {
+            @Override
+            public void run() {
+                if (isConnected()) {
+                    mHandler.onBinaryMessage(message);
+                }
+            }
+        });
     }
 
     /**
@@ -298,14 +309,27 @@ public class WebSocket {
      *
      * @param message Received text message.
      */
-    void onTextMessage(String message) {
-        mHandler.onTextMessage(message);
+    void onTextMessage(final String message) {
+        if (!isConnected()) {
+            return;
+        }
+        mAsync.safeAsyncAction(new Runnable() {
+            @Override
+            public void run() {
+                if (isConnected()) {
+                    mHandler.onTextMessage(message);
+                }
+            }
+        });
     }
 
     /**
      * Called when received message violated WebSocket protocol.
      */
     void onProtocolViolation() {
-        sendFrame(mFrameGenerator.createCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation"));
+        if (isConnected()) {
+            return;
+        }
+        sendCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation");
     }
 }

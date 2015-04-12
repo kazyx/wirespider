@@ -4,10 +4,11 @@ final class Rfc6455 {
     private Rfc6455() {
     }
 
-    static final int BIT_MASK_BYTE = 255;
-    static final int BIT_MASK_FIN = 128;
-    static final int BIT_MASK_MASK = 128;
-    static final int BIT_MASK_RSV = 64 + 32 + 16;
-    static final int BIT_MASK_OPCODE = 15;
-    static final int BIT_MASK_PAYLOAD_LENGTH = 127;
+    static final byte BYTE_SYM_0x0F = 0x0F;
+    static final byte BYTE_SYM_0x70 = 0x70;
+    static final byte BYTE_SYM_0x7E = 0x7E;
+    static final byte BYTE_SYM_0x7F = 0x7F;
+    static final byte BYTE_SYM_0xFF = -1;
+    static final byte BYTE_SYM_0xFE = -2;
+    static final byte BYTE_SYM_0x80 = -128;
 }

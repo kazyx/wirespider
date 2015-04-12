@@ -4,12 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-class Rfc6455Reader implements Runnable {
+class Rfc6455Rx implements Runnable {
 
     private final InputStream mStream;
     private final WebSocket mWebSocket;
 
-    Rfc6455Reader(InputStream stream, WebSocket websocket) {
+    Rfc6455Rx(WebSocket websocket, InputStream stream) {
         mStream = stream;
         mWebSocket = websocket;
     }
@@ -31,17 +31,18 @@ class Rfc6455Reader implements Runnable {
 
     private void readSingleFrame() throws IOException, ProtocolViolationException {
         byte first = readBytes(1)[0];
-        boolean isFinal = BitMask.isMatched(first, Rfc6455.BIT_MASK_FIN);
+        boolean isFinal = BitMask.isMatched(first, Rfc6455.BYTE_SYM_0x80);
 
-        if ((first & Rfc6455.BIT_MASK_RSV) > 0) {
+        if ((first & Rfc6455.BYTE_SYM_0x70) != 0) {
             throw new ProtocolViolationException("RSV non-zero");
         }
-        int opcode = first & Rfc6455.BIT_MASK_OPCODE;
+        byte opcode = (byte) (first & Rfc6455.BYTE_SYM_0x0F);
 
         byte second = readBytes(1)[0];
-        boolean isMasked = BitMask.isMatched(second, Rfc6455.BIT_MASK_MASK);
+        boolean isMasked = BitMask.isMatched(second, Rfc6455.BYTE_SYM_0x80);
 
-        int payloadLength = second & Rfc6455.BIT_MASK_PAYLOAD_LENGTH;
+        // TODO support large payload over 2GB
+        int payloadLength = second & Rfc6455.BYTE_SYM_0x7F;
         if (payloadLength == 0) {
             throw new ProtocolViolationException("Payload length zero");
         }
@@ -62,7 +63,7 @@ class Rfc6455Reader implements Runnable {
 
         byte[] payload = readBytes(payloadLength);
         if (isMasked) {
-            payload = BitMask.mask(payload, mask, 0);
+            payload = BitMask.maskAll(payload, mask);
         }
 
         handleFrame(opcode, payload, isFinal);
@@ -77,7 +78,7 @@ class Rfc6455Reader implements Runnable {
     private ContinuationMode mContinuation = ContinuationMode.UNSET;
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
-    private void handleFrame(int opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
+    private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -130,7 +131,7 @@ class Rfc6455Reader implements Runnable {
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for closeAsync opcode");
                 }
-                int code = (payload.length >= 2) ? 256 * payload[0] + payload[1] : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
+                int code = (payload.length >= 2) ? (payload[0] << 8) + payload[1] : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
                 mWebSocket.onCloseFrame(code, reason);
                 break;

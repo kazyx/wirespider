@@ -4,13 +4,13 @@ final class BitMask {
     private BitMask() {
     }
 
-    static boolean isMatched(byte data, int mask) {
+    static boolean isMatched(byte data, byte mask) {
         return (data & mask) == mask;
     }
 
-    static byte[] mask(byte[] payload, byte[] mask, int offset) {
-        for (int i = 0; i < payload.length - offset; i++) {
-            payload[offset + i] = (byte) (payload[offset + i] ^ mask[i % 4]);
+    static byte[] maskAll(byte[] payload, byte[] maskingKey) {
+        for (int i = 0; i < payload.length; i++) {
+            payload[i] = (byte) (payload[i] ^ maskingKey[i & 3]); // MOD 4
         }
         return payload;
     }
