@@ -1,10 +1,10 @@
 package net.kazyx.apti;
 
-class Rfc6455Parser implements WebSocketParser {
+class Rfc6455FrameGenerator implements FrameGenerator {
 
     private final boolean mIsClient;
 
-    Rfc6455Parser(boolean isClient) {
+    Rfc6455FrameGenerator(boolean isClient) {
         mIsClient = isClient;
     }
 
@@ -24,8 +24,8 @@ class Rfc6455Parser implements WebSocketParser {
     }
 
     @Override
-    public byte[] createPongFrame() {
-        return createFrame("pong", OpCode.PONG, -1);
+    public byte[] createPongFrame(String pingMessage) {
+        return createFrame(pingMessage, OpCode.PONG, -1);
     }
 
     @Override

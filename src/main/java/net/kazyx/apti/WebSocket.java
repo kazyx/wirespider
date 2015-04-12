@@ -18,7 +18,7 @@ public class WebSocket {
     private boolean mIsConnected = false;
 
     private Socket mSocket;
-    private WebSocketParser mParser = null;
+    private FrameGenerator mFrameGenerator;
 
     private final Object mPingPongLock = new Object();
     private TimerTask mPingPongTask;
@@ -95,7 +95,7 @@ public class WebSocket {
         }
 
         mIsConnected = true;
-        mParser = new Rfc6455Parser(true);
+        mFrameGenerator = new Rfc6455FrameGenerator(true);
         mAsync.mConnectionThreadPool.submit(new Rfc6455Reader(is, this));
     }
 
@@ -110,20 +110,18 @@ public class WebSocket {
      * Send text message asynchronously.
      *
      * @param message Text message to send.
-     * @throws IOException Connection is already closed.
      */
-    public void sendTextMessageAsync(String message) throws IOException {
-        sendFrameAsync(mParser.createTextFrame(message));
+    public void sendTextMessageAsync(String message) {
+        sendFrameAsync(mFrameGenerator.createTextFrame(message));
     }
 
     /**
      * Send binary message asynchronously.
      *
      * @param message Binary message to send.
-     * @throws IOException Connection is already closed.
      */
-    public void sendBinaryMessageAsync(byte[] message) throws IOException {
-        sendFrameAsync(mParser.createBinaryFrame(message));
+    public void sendBinaryMessageAsync(byte[] message) {
+        sendFrameAsync(mFrameGenerator.createBinaryFrame(message));
     }
 
     /**
@@ -132,13 +130,14 @@ public class WebSocket {
      *
      * @param timeout Timeout value.
      * @param unit    TImeUnit of timeout value.
-     * @throws IOException Connection is already closed.
      */
-    public void checkConnectionAsync(long timeout, TimeUnit unit) throws IOException {
+    public void checkConnectionAsync(long timeout, TimeUnit unit) {
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                closeInternal();
+                synchronized (mPingPongLock) {
+                    closeInternal();
+                }
             }
         };
 
@@ -154,12 +153,14 @@ public class WebSocket {
                 throw new RejectedExecutionException(e);
             }
         }
-        sendFrameAsync(mParser.createPingFrame());
+        sendFrameAsync(mFrameGenerator.createPingFrame());
     }
 
     /**
      * Close WebSocket connection gracefully.<br>
-     * If it is already closed, nothing happens.
+     * If it is already closed, nothing happens.<br>
+     * <br>
+     * Same as {@link #closeAsync(CloseStatusCode, String)} with {@link CloseStatusCode#NORMAL_CLOSURE}.
      */
     public void closeAsync() {
         closeAsync(CloseStatusCode.NORMAL_CLOSURE, "normal closure");
@@ -169,34 +170,58 @@ public class WebSocket {
      * Close WebSocket connection gracefully.<br>
      * If it is already closed, nothing happens.
      *
-     * @param code
-     * @param reason
+     * @param code   Close status code to send.
+     * @param reason Close reason phrase to send.
      */
-    public void closeAsync(CloseStatusCode code, String reason) {
-        try {
-            sendFrameAsync(mParser.createCloseFrame(code, reason));
-        } catch (IOException e) {
-            // Ignore close IOException
+    public void closeAsync(final CloseStatusCode code, final String reason) {
+        if (!mIsConnected) {
+            return;
         }
+
+        mAsync.mActionThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                sendCloseFrame(code, reason);
+            }
+        });
+    }
+
+    private boolean mIsCloseSent = false;
+
+    private void sendCloseFrame(CloseStatusCode code, String reason) {
+        synchronized (mSendLock) {
+            sendFrame(mFrameGenerator.createCloseFrame(code, reason));
+            mIsCloseSent = true;
+        }
+
+        // Forcefully close connection 2 sec after sending close frame.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    // This will never happen.
+                }
+                closeInternal();
+            }
+        }).start();
     }
 
     /**
      * Close TCP connection without WebSocket closing handshake.
      */
     private void closeInternal() {
-        if (mIsConnected) {
-            mHandler.onClosed();
-            mIsConnected = false;
+        synchronized (mSendLock) {
+            if (mIsConnected) {
+                mIsConnected = false;
+                IOUtil.close(mSocket);
+                mHandler.onClosed();
+            }
         }
-
-        IOUtil.close(mSocket);
     }
 
-    private void sendFrameAsync(final byte[] frame) throws IOException {
-        if (!mIsConnected) {
-            throw new IOException("WebSocket not opened");
-        }
-
+    private void sendFrameAsync(final byte[] frame) {
         mAsync.mActionThreadPool.submit(new Runnable() {
             @Override
             public void run() {
@@ -205,28 +230,39 @@ public class WebSocket {
         });
     }
 
+    private final Object mSendLock = new Object();
+
     private void sendFrame(byte[] frame) {
-        try {
-            if (!mIsConnected) {
-                return;
+        synchronized (mSendLock) {
+            try {
+                if (!mIsConnected || mIsCloseSent) {
+                    return;
+                }
+                OutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
+                outputStream.write(frame);
+                outputStream.flush();
+            } catch (IOException e) {
+                closeInternal();
             }
-            OutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
-            outputStream.write(frame);
-            outputStream.flush();
-        } catch (IOException e) {
-            closeInternal();
         }
     }
 
+    /**
+     * Called when received ping control frame.
+     *
+     * @param message Ping message.
+     */
     void onPingFrame(String message) {
-        try {
-            sendFrameAsync(mParser.createPongFrame());
-        } catch (IOException e) {
-            // This will never happen.
-        }
+        sendFrameAsync(mFrameGenerator.createPongFrame(message));
     }
 
+    /**
+     * Called when received pong control frame.
+     *
+     * @param message Pong message.
+     */
     void onPongFrame(String message) {
+        // TODO should check pong message is same as ping message we've sent.
         synchronized (mPingPongLock) {
             if (mPingPongTask != null) {
                 mPingPongTask.cancel();
@@ -235,17 +271,41 @@ public class WebSocket {
         }
     }
 
+    /**
+     * Called when received close control frame or Connection is closed abnormally..
+     *
+     * @param code    Close status code.
+     * @param message Close reason phrase.
+     */
     void onCloseFrame(int code, String message) {
-        // TODO closeAsync handshake
+        if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode || !mIsCloseSent) {
+            sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
+        }
         closeInternal();
-        mHandler.onClosed();
     }
 
+    /**
+     * Called when received binary message.
+     *
+     * @param message Received binary message.
+     */
     void onBinaryMessage(byte[] message) {
         mHandler.onBinaryMessage(message);
     }
 
+    /**
+     * Called when received text message.
+     *
+     * @param message Received text message.
+     */
     void onTextMessage(String message) {
         mHandler.onTextMessage(message);
+    }
+
+    /**
+     * Called when received message violated WebSocket protocol.
+     */
+    void onProtocolViolation() {
+        sendFrame(mFrameGenerator.createCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation"));
     }
 }

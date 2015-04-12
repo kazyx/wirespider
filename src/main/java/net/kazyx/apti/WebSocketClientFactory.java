@@ -7,7 +7,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
- * Bare simple RFC 6455 WebSocket client.
+ * Factory to create WebSocket client connection.
  */
 public class WebSocketClientFactory {
     private final AsyncSource mAsync;

@@ -23,13 +23,15 @@ class Rfc6455Reader implements Runnable {
         } catch (IOException e) {
             IOUtil.close(mStream);
         } catch (ProtocolViolationException e) {
-            e.printStackTrace();
+            mWebSocket.onProtocolViolation();
+            return;
         }
+        mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, "Finished with IOException");
     }
 
     private void readSingleFrame() throws IOException, ProtocolViolationException {
         byte first = readBytes(1)[0];
-        boolean isFinal = BitMask.isMatch(first, Rfc6455.BIT_MASK_FIN);
+        boolean isFinal = BitMask.isMatched(first, Rfc6455.BIT_MASK_FIN);
 
         if ((first & Rfc6455.BIT_MASK_RSV) > 0) {
             throw new ProtocolViolationException("RSV non-zero");
@@ -37,7 +39,7 @@ class Rfc6455Reader implements Runnable {
         int opcode = first & Rfc6455.BIT_MASK_OPCODE;
 
         byte second = readBytes(1)[0];
-        boolean isMasked = BitMask.isMatch(second, Rfc6455.BIT_MASK_MASK);
+        boolean isMasked = BitMask.isMatched(second, Rfc6455.BIT_MASK_MASK);
 
         int payloadLength = second & Rfc6455.BIT_MASK_PAYLOAD_LENGTH;
         if (payloadLength == 0) {
@@ -128,7 +130,7 @@ class Rfc6455Reader implements Runnable {
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for closeAsync opcode");
                 }
-                int code = (payload.length >= 2) ? 256 * payload[0] + payload[1] : CloseStatusCode.POLICY_VIOLATION.statusCode;
+                int code = (payload.length >= 2) ? 256 * payload[0] + payload[1] : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
                 mWebSocket.onCloseFrame(code, reason);
                 break;
@@ -145,7 +147,7 @@ class Rfc6455Reader implements Runnable {
         while (read < length) {
             int tmp = mStream.read(mReadBuffer, 0, Math.min(mReadBuffer.length, length - read));
             if (tmp == -1) {
-                throw new IOException("EOF");
+                throw new IOException("EOF detected");
             }
             mBuffer.write(mReadBuffer, 0, tmp);
             read += tmp;

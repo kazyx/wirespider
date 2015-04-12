@@ -4,7 +4,7 @@ final class BitMask {
     private BitMask() {
     }
 
-    static boolean isMatch(byte data, int mask) {
+    static boolean isMatched(byte data, int mask) {
         return (data & mask) == mask;
     }
 
