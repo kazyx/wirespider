@@ -31,18 +31,18 @@ class Rfc6455Rx implements Runnable {
 
     private void readSingleFrame() throws IOException, ProtocolViolationException {
         byte first = readBytes(1)[0];
-        boolean isFinal = BitMask.isMatched(first, Rfc6455.BYTE_SYM_0x80);
+        boolean isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
 
-        if ((first & Rfc6455.BYTE_SYM_0x70) != 0) {
+        if ((first & BitMask.BYTE_SYM_0x70) != 0) {
             throw new ProtocolViolationException("RSV non-zero");
         }
-        byte opcode = (byte) (first & Rfc6455.BYTE_SYM_0x0F);
+        byte opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
 
         byte second = readBytes(1)[0];
-        boolean isMasked = BitMask.isMatched(second, Rfc6455.BYTE_SYM_0x80);
+        boolean isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
 
         // TODO support large payload over 2GB
-        int payloadLength = second & Rfc6455.BYTE_SYM_0x7F;
+        int payloadLength = second & BitMask.BYTE_SYM_0x7F;
         if (payloadLength == 0) {
             throw new ProtocolViolationException("Payload length zero");
         }
