@@ -7,6 +7,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 
 public class AsyncSource {
+    /**
+     * Release all of thread resources.
+     */
     public void destroy() {
         mActionThreadPool.shutdown();
         mConnectionThreadPool.shutdown();

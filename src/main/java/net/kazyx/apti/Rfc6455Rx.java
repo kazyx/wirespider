@@ -25,6 +25,8 @@ class Rfc6455Rx implements Runnable {
         } catch (ProtocolViolationException e) {
             mWebSocket.onProtocolViolation();
             return;
+        } finally {
+            IOUtil.close(mStream);
         }
         mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, "Finished with IOException");
     }

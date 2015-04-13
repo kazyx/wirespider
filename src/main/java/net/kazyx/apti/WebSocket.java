@@ -15,7 +15,6 @@ public class WebSocket {
     private final WebSocketConnection mHandler;
     private final List<HttpHeader> mRequestHeaders;
 
-
     private final Object mCallbackLock = new Object();
     private boolean mIsConnected = false;
 

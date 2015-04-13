@@ -19,7 +19,7 @@ final class BitMask {
     static final byte BYTE_SYM_0x70 = 0x70;
     static final byte BYTE_SYM_0x7E = 0x7E;
     static final byte BYTE_SYM_0x7F = 0x7F;
-    static final byte BYTE_SYM_0xFF = -1;
-    static final byte BYTE_SYM_0xFE = -2;
-    static final byte BYTE_SYM_0x80 = -128;
+    static final byte BYTE_SYM_0xFF = (byte)0xFF;
+    static final byte BYTE_SYM_0xFE = (byte)0xFE;
+    static final byte BYTE_SYM_0x80 = (byte)0x80;
 }

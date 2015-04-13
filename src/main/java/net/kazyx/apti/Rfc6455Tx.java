@@ -8,9 +8,7 @@ import java.net.Socket;
 class Rfc6455Tx implements FrameTx {
 
     private final boolean mIsClient;
-
     private final OutputStream mStream;
-
     private final WebSocket mWebSocket;
 
     private boolean mIsCloseSent = false;
@@ -112,6 +110,7 @@ class Rfc6455Tx implements FrameTx {
 
             mStream.flush();
         } catch (IOException e) {
+            IOUtil.close(mStream);
             mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, e.getMessage());
         }
     }

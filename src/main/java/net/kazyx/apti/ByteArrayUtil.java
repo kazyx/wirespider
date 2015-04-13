@@ -26,8 +26,8 @@ final class ByteArrayUtil {
     static long toLong(byte[] b) {
         long value = 0;
         for (int i = 0; i < b.length; i++) {
-            int shift = (b.length - 1 - i) * 8;
-            value += (b[i] & 0x000000FF) << shift;
+            int shift = (b.length - 1 - i) << 3;
+            value += (b[i] & BitMask.BYTE_SYM_0xFF) << shift;
         }
         return value;
     }
@@ -35,6 +35,7 @@ final class ByteArrayUtil {
     static int toUnsignedInteger(byte[] bytes) throws ProtocolViolationException {
         long l = toLong(bytes);
         if (l < 0 || l > Integer.MAX_VALUE) {
+            // TODO support large payload over 2GB
             throw new ProtocolViolationException("Bad unsigned integer: " + l);
         }
         return (int) l;
