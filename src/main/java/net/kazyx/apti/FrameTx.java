@@ -1,13 +1,13 @@
 package net.kazyx.apti;
 
 interface FrameTx {
-    void sendTextFrame(String data);
+    void sendTextAsync(String data);
 
-    void sendBinaryFrame(byte[] data);
+    void sendBinaryAsync(byte[] data);
 
-    void sendPingFrame();
+    void sendPingAsync();
 
-    void sendPongFrame(String message);
+    void sendPongAsync(String message);
 
-    void sendCloseFrame(CloseStatusCode code, String reason);
+    void sendCloseAsync(CloseStatusCode code, String reason);
 }

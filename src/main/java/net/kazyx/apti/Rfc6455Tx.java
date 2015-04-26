@@ -18,37 +18,37 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void sendTextFrame(String data) {
-        sendFrame(OpCode.TEXT, ByteArrayUtil.fromText(data));
+    public void sendTextAsync(String data) {
+        sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
     }
 
     @Override
-    public void sendBinaryFrame(byte[] data) {
-        sendFrame(OpCode.BINARY, data);
+    public void sendBinaryAsync(byte[] data) {
+        sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
-    public void sendPingFrame() {
-        sendFrame(OpCode.PING, ByteArrayUtil.fromText("ping"));
+    public void sendPingAsync() {
+        sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
     }
 
     @Override
-    public void sendPongFrame(String pingMessage) {
-        sendFrame(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
+    public void sendPongAsync(String pingMessage) {
+        sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
-    public void sendCloseFrame(CloseStatusCode code, String reason) {
+    public void sendCloseAsync(CloseStatusCode code, String reason) {
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);
         payload[1] = (byte) (code.statusCode);
         System.arraycopy(messageBytes, 0, payload, 2, messageBytes.length);
 
-        sendFrame(OpCode.CONNECTION_CLOSE, payload);
+        sendFrameAsync(OpCode.CONNECTION_CLOSE, payload);
     }
 
-    private synchronized void sendFrame(byte opcode, byte[] payload) {
+    private synchronized void sendFrameAsync(byte opcode, byte[] payload) {
         if (mIsCloseSent) {
             return;
         }

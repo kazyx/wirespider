@@ -54,26 +54,30 @@ public class WebSocket {
             }
 
             @Override
-            public void onDataReceived(LinkedList<ByteBuffer> data) {
-                if (!isConnected()) {
-                    try {
-                        data = mHandshake.onDataReceived(data);
-                        mHandshake = null;
-                        mIsConnected = true;
-                        mConnectLatch.countDown();
+            public void onDataReceived(final LinkedList<ByteBuffer> data) {
+                mAsync.safeAsyncAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isConnected()) {
+                            try {
+                                LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
+                                mHandshake = null;
+                                mIsConnected = true;
+                                mConnectLatch.countDown();
 
-                        if (data.size() == 0) {
-                            return;
+                                if (data.size() != 0) {
+                                    mFrameRx.onDataReceived(remaining);
+                                }
+                            } catch (BufferUnsatisfiedException e) {
+                                // wait for the next data.
+                            } catch (HandshakeFailureException e) {
+                                closeInternal();
+                            }
+                        } else {
+                            mFrameRx.onDataReceived(data);
                         }
-                    } catch (BufferUnsatisfiedException e) {
-                        return;
-                    } catch (HandshakeFailureException e) {
-                        closeInternal();
-                        return;
                     }
-                }
-
-                mFrameRx.onDataReceived(data);
+                });
             }
         });
     }
@@ -81,9 +85,9 @@ public class WebSocket {
     CountDownLatch mConnectLatch = new CountDownLatch(1);
 
     /**
-     * Synchronously open WebSocket connection.
+     * Synchronously openAsync WebSocket connection.
      *
-     * @throws IOException          Failed to open connection.
+     * @throws IOException          Failed to openAsync connection.
      * @throws InterruptedException Awaiting thread interrupted.
      */
     void connect() throws IOException, InterruptedException {
@@ -110,13 +114,8 @@ public class WebSocket {
      *
      * @param message Text message to send.
      */
-    public void sendTextMessageAsync(final String message) {
-        mAsync.mActionThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                mFrameTx.sendTextFrame(message);
-            }
-        });
+    public void sendTextMessageAsync(String message) {
+        mFrameTx.sendTextAsync(message);
     }
 
     /**
@@ -124,13 +123,8 @@ public class WebSocket {
      *
      * @param message Binary message to send.
      */
-    public void sendBinaryMessageAsync(final byte[] message) {
-        mAsync.mActionThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                mFrameTx.sendBinaryFrame(message);
-            }
-        });
+    public void sendBinaryMessageAsync(byte[] message) {
+        mFrameTx.sendBinaryAsync(message);
     }
 
     /**
@@ -163,12 +157,7 @@ public class WebSocket {
             }
         }
 
-        mAsync.mActionThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                mFrameTx.sendPingFrame();
-            }
-        });
+        mFrameTx.sendPingAsync();
     }
 
     /**
@@ -189,20 +178,15 @@ public class WebSocket {
      * @param reason Close reason phrase to send.
      */
     public void closeAsync(final CloseStatusCode code, final String reason) {
-        if (!mIsConnected) {
+        if (!isConnected()) {
             return;
         }
 
-        mAsync.mActionThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                sendCloseFrame(code, reason);
-            }
-        });
+        sendCloseFrame(code, reason);
     }
 
     private void sendCloseFrame(CloseStatusCode code, String reason) {
-        mFrameTx.sendCloseFrame(code, reason);
+        mFrameTx.sendCloseAsync(code, reason);
 
         // Forcefully close connection 2 sec after sending close frame.
         new Thread(new Runnable() {
@@ -236,16 +220,11 @@ public class WebSocket {
      *
      * @param message Ping message.
      */
-    void onPingFrame(final String message) {
+    void onPingFrame(String message) {
         if (!isConnected()) {
             return;
         }
-        mAsync.safeAsyncAction(new Runnable() {
-            @Override
-            public void run() {
-                mFrameTx.sendPongFrame(message);
-            }
-        });
+        mFrameTx.sendPongAsync(message);
     }
 
     /**
@@ -254,7 +233,7 @@ public class WebSocket {
      * @param message Pong message.
      */
     void onPongFrame(String message) {
-        if (isConnected()) {
+        if (!isConnected()) {
             return;
         }
         // TODO should check pong message is same as ping message we've sent.
@@ -287,18 +266,11 @@ public class WebSocket {
      *
      * @param message Received binary message.
      */
-    void onBinaryMessage(final byte[] message) {
+    void onBinaryMessage(byte[] message) {
         if (!isConnected()) {
             return;
         }
-        mAsync.safeAsyncAction(new Runnable() {
-            @Override
-            public void run() {
-                if (isConnected()) {
-                    mHandler.onBinaryMessage(message);
-                }
-            }
-        });
+        mHandler.onBinaryMessage(message);
     }
 
     /**
@@ -306,18 +278,11 @@ public class WebSocket {
      *
      * @param message Received text message.
      */
-    void onTextMessage(final String message) {
+    void onTextMessage(String message) {
         if (!isConnected()) {
             return;
         }
-        mAsync.safeAsyncAction(new Runnable() {
-            @Override
-            public void run() {
-                if (isConnected()) {
-                    mHandler.onTextMessage(message);
-                }
-            }
-        });
+        mHandler.onTextMessage(message);
     }
 
     /**

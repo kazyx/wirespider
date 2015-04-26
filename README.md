@@ -27,15 +27,11 @@ Base64.setEncoder(new Base64.Encoder() {
 
 ### Open WebSocket connection
 ```java
-AsyncSource async = new AsyncSource(3);
-// Specify size of fixed thread pool
 
-WebSocketClientFactory factory = new WebSocketClientFactory(async);
-// Various operations by instances created by this factory are invoked on thread resources in AsyncSource
+WebSocketClientFactory factory = new WebSocketClientFactory();
 
 URI uri = URI.create("ws://host:port/path");
-
-Future<WebSocket> future = factory.open(uri, new WebSocketConnection() {
+Future<WebSocket> future = factory.openAsync(uri, new WebSocketConnection() {
     @Override
     public void onTextMessage(String message) {
         // Received text message.
@@ -59,6 +55,9 @@ WebSocket websocket = future.get(5, TimeUnit.SECONDS);
 ```java
 websocket.sendTextMessageAsync("Hello");
 ```
+```java
+websocket.sendBinaryMessageAsync(new byte[]{0x01, 0x02, 0x03, 0x04});
+```
 
 ### Close connection
 ```java
@@ -66,8 +65,8 @@ websocket.closeAsync();
 // WebSocketConnection.onClosed() will be called soon.
 ```
 
-### Release thread resources
+### Release resources
 ```java
-async.destroy();
+factory.destroy();
 // Any async operations will throw RejectedExecutionException since now.
 ```

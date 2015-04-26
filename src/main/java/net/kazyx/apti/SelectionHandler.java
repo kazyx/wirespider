@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -16,6 +17,8 @@ class SelectionHandler {
     private final NonBlockingSocketConnection mSocketConnection;
 
     private SelectionKey mKey;
+
+    private boolean mIsClosed = false;
 
     private final LinkedList<byte[]> mSendingQueue = new LinkedList<>();
 
@@ -36,8 +39,8 @@ class SelectionHandler {
             if (key.isWritable()) {
                 write();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException | CancelledKeyException e) {
+            mSocketConnection.onClosed();
         }
     }
 
@@ -83,6 +86,9 @@ class SelectionHandler {
     }
 
     void writeAsync(byte[] data) {
+        if (mIsClosed) {
+            return;
+        }
         synchronized (mSendingQueue) {
             mSendingQueue.addLast(data);
             mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
@@ -90,9 +96,12 @@ class SelectionHandler {
     }
 
     void close() {
-        mSendingQueue.clear();
-        mKey.cancel();
-        IOUtil.close(mKey.channel());
+        mIsClosed = true;
+        synchronized (mSendingQueue) {
+            mSendingQueue.clear();
+            mKey.cancel();
+            IOUtil.close(mKey.channel());
+        }
     }
 
     private void write() throws IOException {
