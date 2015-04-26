@@ -1,22 +1,20 @@
 package net.kazyx.apti;
 
-import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 
 class Rfc6455Tx implements FrameTx {
 
     private final boolean mIsClient;
-    private final OutputStream mStream;
+    private final SelectionHandler mHandler;
     private final WebSocket mWebSocket;
 
     private boolean mIsCloseSent = false;
 
-    Rfc6455Tx(WebSocket websocket, boolean isClient, Socket socket) throws IOException {
+    Rfc6455Tx(WebSocket websocket, boolean isClient, SelectionHandler socket) {
         mWebSocket = websocket;
         mIsClient = isClient;
-        mStream = new BufferedOutputStream(socket.getOutputStream());
+        mHandler = socket;
     }
 
     @Override
@@ -93,6 +91,7 @@ class Rfc6455Tx implements FrameTx {
             header[9] = (byte) (payloadLength);
         }
 
+        ByteArrayOutputStream mStream = new ByteArrayOutputStream();
         try {
             mStream.write(header);
 
@@ -108,7 +107,7 @@ class Rfc6455Tx implements FrameTx {
                 mStream.write(payload);
             }
 
-            mStream.flush();
+            mHandler.writeAsync(mStream.toByteArray());
         } catch (IOException e) {
             IOUtil.close(mStream);
             mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, e.getMessage());

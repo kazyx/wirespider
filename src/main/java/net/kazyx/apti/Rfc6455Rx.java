@@ -2,74 +2,141 @@ package net.kazyx.apti;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
-class Rfc6455Rx implements Runnable {
+class Rfc6455Rx implements FrameRx {
 
-    private final InputStream mStream;
     private final WebSocket mWebSocket;
 
-    Rfc6455Rx(WebSocket websocket, InputStream stream) {
-        mStream = stream;
+    Rfc6455Rx(WebSocket websocket) {
         mWebSocket = websocket;
     }
 
-    @Override
-    public void run() {
-        try {
-            while (!Thread.currentThread().isInterrupted() && mStream.available() != -1) {
-                readSingleFrame();
+    private boolean isFinal;
+    private byte opcode;
+
+    private final Runnable mReadOpCodeOperation = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                byte first = readBytes(1)[0];
+                isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
+
+                if ((first & BitMask.BYTE_SYM_0x70) != 0) {
+                    throw new ProtocolViolationException("RSV non-zero");
+                }
+                opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
+                mSecondByteOperation.run();
+            } catch (BufferUnsatisfiedException e) {
+                synchronized (mOperationSequenceLock) {
+                    mWaitingSize = 1;
+                    mSuspendedOperation = this;
+                }
+            } catch (ProtocolViolationException e) {
+                mWebSocket.onProtocolViolation();
             }
-        } catch (IOException e) {
-            IOUtil.close(mStream);
-        } catch (ProtocolViolationException e) {
-            mWebSocket.onProtocolViolation();
-            return;
-        } finally {
-            IOUtil.close(mStream);
         }
-        mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, "Finished with IOException");
-    }
+    };
 
-    private void readSingleFrame() throws IOException, ProtocolViolationException {
-        byte first = readBytes(1)[0];
-        boolean isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
+    private boolean isMasked;
+    private int payloadLength;
 
-        if ((first & BitMask.BYTE_SYM_0x70) != 0) {
-            throw new ProtocolViolationException("RSV non-zero");
+    private final Runnable mSecondByteOperation = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                byte second = readBytes(1)[0];
+                isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
+
+                // TODO support large payload over 2GB
+                payloadLength = second & BitMask.BYTE_SYM_0x7F;
+                if (payloadLength == 0) {
+                    throw new ProtocolViolationException("Payload length zero");
+                }
+
+                switch (payloadLength) {
+                    case 126:
+                    case 127:
+                        mExtendedPayloadOperation.run();
+                        break;
+                    default:
+                        if (isMasked) {
+                            mMaskKeyOperation.run();
+                        } else {
+                            mPayloadOperation.run();
+                        }
+                }
+            } catch (BufferUnsatisfiedException e) {
+                synchronized (mOperationSequenceLock) {
+                    mWaitingSize = 1;
+                    mSuspendedOperation = this;
+                }
+            } catch (ProtocolViolationException e) {
+                mWebSocket.onProtocolViolation();
+            }
         }
-        byte opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
+    };
 
-        byte second = readBytes(1)[0];
-        boolean isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
-
-        // TODO support large payload over 2GB
-        int payloadLength = second & BitMask.BYTE_SYM_0x7F;
-        if (payloadLength == 0) {
-            throw new ProtocolViolationException("Payload length zero");
+    private final Runnable mExtendedPayloadOperation = new Runnable() {
+        @Override
+        public void run() {
+            int size = payloadLength == 126 ? 2 : 8;
+            try {
+                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
+            } catch (BufferUnsatisfiedException e) {
+                synchronized (mOperationSequenceLock) {
+                    mWaitingSize = size;
+                    mSuspendedOperation = this;
+                }
+            } catch (ProtocolViolationException e) {
+                mWebSocket.onProtocolViolation();
+            }
         }
+    };
 
-        switch (payloadLength) {
-            case 126:
-                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(2));
-                break;
-            case 127:
-                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(8));
-                break;
+    byte[] mask;
+
+    private final Runnable mMaskKeyOperation = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                mask = readBytes(4);
+                mPayloadOperation.run();
+            } catch (BufferUnsatisfiedException e) {
+                synchronized (mOperationSequenceLock) {
+                    mWaitingSize = 4;
+                    mSuspendedOperation = this;
+                }
+            }
         }
+    };
 
-        byte[] mask = null;
-        if (isMasked) {
-            mask = readBytes(4);
+    private final Runnable mPayloadOperation = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                byte[] payload = readBytes(payloadLength);
+                if (isMasked) {
+                    payload = BitMask.maskAll(payload, mask);
+                }
+
+                handleFrame(opcode, payload, isFinal);
+                mReadOpCodeOperation.run();
+            } catch (BufferUnsatisfiedException e) {
+                synchronized (mOperationSequenceLock) {
+                    mWaitingSize = payloadLength;
+                    mSuspendedOperation = this;
+                }
+            } catch (ProtocolViolationException e) {
+                mWebSocket.onProtocolViolation();
+            } catch (IOException e) {
+                // TODO
+                e.printStackTrace();
+            }
         }
-
-        byte[] payload = readBytes(payloadLength);
-        if (isMasked) {
-            payload = BitMask.maskAll(payload, mask);
-        }
-
-        handleFrame(opcode, payload, isFinal);
-    }
+    };
 
     private enum ContinuationMode {
         TEXT,
@@ -142,21 +209,49 @@ class Rfc6455Rx implements Runnable {
         }
     }
 
-    private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
-    private final byte[] mReadBuffer = new byte[1024];
-
-    private byte[] readBytes(int length) throws IOException {
-        int read = 0;
-        while (read < length) {
-            int tmp = mStream.read(mReadBuffer, 0, Math.min(mReadBuffer.length, length - read));
-            if (tmp == -1) {
-                throw new IOException("EOF detected");
-            }
-            mBuffer.write(mReadBuffer, 0, tmp);
-            read += tmp;
+    public void onDataReceived(LinkedList<ByteBuffer> data) {
+        mReceivedBuffer.addAll(data);
+        for (ByteBuffer buff : data) {
+            mBufferSize += buff.limit();
         }
-        byte[] ret = mBuffer.toByteArray();
-        mBuffer.reset();
-        return ret;
+
+        synchronized (mOperationSequenceLock) {
+            if (mWaitingSize < mBufferSize) {
+                mSuspendedOperation.run();
+            }
+        }
+    }
+
+    private final Object mOperationSequenceLock = new Object();
+
+    private Runnable mSuspendedOperation;
+
+    private int mWaitingSize = 0;
+
+    private int mBufferSize = 0;
+
+    private final LinkedList<ByteBuffer> mReceivedBuffer = new LinkedList<>();
+
+    private byte[] readBytes(int length) throws BufferUnsatisfiedException {
+        if (mBufferSize < length) {
+            mWaitingSize = length;
+            throw new BufferUnsatisfiedException();
+        }
+
+        ByteBuffer dest = ByteBuffer.allocate(length);
+
+        ListIterator<ByteBuffer> itr = mReceivedBuffer.listIterator();
+        while (itr.hasNext()) {
+            ByteBuffer buff = itr.next();
+            if (buff.remaining() == 0) {
+                itr.remove();
+            }
+            if (dest.remaining() == 0) {
+                break;
+            }
+        }
+
+        mBufferSize -= length;
+        return dest.array();
     }
 }

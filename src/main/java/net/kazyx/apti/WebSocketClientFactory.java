@@ -31,9 +31,7 @@ public class WebSocketClientFactory {
                     ws.connect();
                     return ws;
                 } catch (IOException e) {
-                    if (ws != null) {
-                        ws.closeInternal();
-                    }
+                    ws.closeInternal();
                     throw e;
                 }
             }

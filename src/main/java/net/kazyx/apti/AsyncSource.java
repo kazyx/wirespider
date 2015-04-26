@@ -1,5 +1,9 @@
 package net.kazyx.apti;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.spi.SelectorProvider;
 import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,6 +19,23 @@ public class AsyncSource {
         mConnectionThreadPool.shutdown();
         mTimer.purge();
     }
+
+    final Thread mSelectorThread = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                Selector selector = SelectorProvider.provider().openSelector();
+                while (selector.select() > 0) {
+                    for (SelectionKey key : selector.selectedKeys()) {
+                        SelectionHandler handler = (SelectionHandler) key.attachment();
+                        handler.onSelected(key);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    });
 
     /**
      * @param poolSize Size of thread pool for various use.

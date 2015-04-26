@@ -1,21 +1,25 @@
 package net.kazyx.apti;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 class HttpHeaderReader {
     private HttpStatusLine mStatusLine;
     private List<HttpHeader> mHeaders;
 
     /**
-     * @param is InputStream of the response.
+     * @param data HTTP header data as byte array.
      * @throws IOException Failed to parse status line or header fields.
      */
-    HttpHeaderReader(InputStream is) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+    HttpHeaderReader(byte[] data) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data)));
         readStatusLine(reader);
         readHeader(reader);
     }

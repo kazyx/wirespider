@@ -1,11 +1,16 @@
 package net.kazyx.apti;
 
-import javax.net.SocketFactory;
-import java.io.*;
-import java.net.Socket;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -18,8 +23,11 @@ public class WebSocket {
     private final Object mCallbackLock = new Object();
     private boolean mIsConnected = false;
 
-    private Socket mSocket;
+    private final SelectionHandler mSelectionHandler;
+
     private FrameTx mFrameTx;
+    private FrameRx mFrameRx;
+    private Handshake mHandshake;
 
     private final Object mPingPongTaskLock = new Object();
     private TimerTask mPingPongTask;
@@ -29,75 +37,65 @@ public class WebSocket {
         mRequestHeaders = extraHeaders;
         mHandler = handler;
         mAsync = async;
+
+        mSelectionHandler = new SelectionHandler(mURI, new NonBlockingSocketConnection() {
+            @Override
+            public void onConnected(SelectionHandler handler) {
+                mFrameTx = new Rfc6455Tx(WebSocket.this, true, mSelectionHandler);
+                mFrameRx = new Rfc6455Rx(WebSocket.this);
+                mHandshake = new Rfc6455Handshake();
+                mHandshake.tryUpgrade(mURI, mRequestHeaders, mSelectionHandler);
+            }
+
+            @Override
+            public void onClosed() {
+                mConnectLatch.countDown();
+                closeInternal();
+            }
+
+            @Override
+            public void onDataReceived(LinkedList<ByteBuffer> data) {
+                if (!isConnected()) {
+                    try {
+                        data = mHandshake.onDataReceived(data);
+                        mHandshake = null;
+                        mIsConnected = true;
+                        mConnectLatch.countDown();
+
+                        if (data.size() == 0) {
+                            return;
+                        }
+                    } catch (BufferUnsatisfiedException e) {
+                        return;
+                    } catch (HandshakeFailureException e) {
+                        closeInternal();
+                        return;
+                    }
+                }
+
+                mFrameRx.onDataReceived(data);
+            }
+        });
     }
+
+    CountDownLatch mConnectLatch = new CountDownLatch(1);
 
     /**
      * Synchronously open WebSocket connection.
      *
-     * @throws IOException Failed to open connection.
+     * @throws IOException          Failed to open connection.
+     * @throws InterruptedException Awaiting thread interrupted.
      */
-    void connect() throws IOException {
-        String secret = HandshakeSecretUtil.createNew();
+    void connect() throws IOException, InterruptedException {
+        Selector selector = SelectorProvider.provider().openSelector();
+        SocketChannel channel = SelectorProvider.provider().openSocketChannel();
+        channel.register(selector, SelectionKey.OP_CONNECT, mSelectionHandler);
 
-        SocketFactory factory = WebSocketClientFactory.sFactory;
-        if (factory == null) {
-            factory = SocketFactory.getDefault();
+        mConnectLatch.await();
+
+        if (!isConnected()) {
+            throw new IOException("Socket connection or handshake failure");
         }
-
-        mSocket = factory.createSocket(mURI.getHost(), (mURI.getPort() != -1) ? mURI.getPort() : 80);
-
-        mSocket.setTcpNoDelay(true);
-        mSocket.setReuseAddress(true);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("GET ").append(mURI.getSchemeSpecificPart() == null ? "/" : mURI.getSchemeSpecificPart()).append(" HTTP/1.1\r\n");
-        sb.append("Host: ").append(mURI.getHost()).append("\r\n");
-        sb.append("Upgrade: websocket\r\n");
-        sb.append("Connection: Upgrade\r\n");
-        sb.append("Sec-WebSocket-Key: ").append(secret).append("\r\n");
-        sb.append("Sec-WebSocket-Version: 13\r\n");
-
-        if (mRequestHeaders != null && mRequestHeaders.size() != 0) {
-            for (HttpHeader header : mRequestHeaders) {
-                sb.append(header.toHeaderLine()).append("\r\n");
-            }
-        }
-
-        sb.append("\r\n");
-
-        OutputStream os = new BufferedOutputStream(mSocket.getOutputStream());
-        os.write(sb.toString().getBytes("UTF-8"));
-
-        InputStream is = new BufferedInputStream(mSocket.getInputStream());
-
-        HttpHeaderReader headerReader = new HttpHeaderReader(is);
-
-        HttpStatusLine statusLine = headerReader.getStatusLine();
-        if (statusLine.statusCode != 101) {
-            throw new IOException("WebSocket opening handshake failed: " + statusLine.statusCode);
-        }
-
-        List<HttpHeader> resHeaders = headerReader.getHeaderFields();
-
-        boolean validated = false;
-        for (HttpHeader header : resHeaders) {
-            if (header.key.equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_ACCEPT)) {
-                String expected = HandshakeSecretUtil.convertForValidation(secret);
-                validated = header.values.get(0).equals(expected);
-                if (!validated) {
-                    throw new IOException("WebSocket opening handshake failed: Invalid Sec-WebSocket-Accept header value");
-                }
-                break;
-            }
-        }
-
-        if (!validated) {
-            throw new IOException("WebSocket opening handshake failed: No Sec-WebSocket-Accept header");
-        }
-
-        mIsConnected = true;
-        mFrameTx = new Rfc6455Tx(this, true, mSocket);
-        mAsync.mConnectionThreadPool.submit(new Rfc6455Rx(this, is));
     }
 
     /**
@@ -224,13 +222,13 @@ public class WebSocket {
      * Close TCP connection without WebSocket closing handshake.
      */
     void closeInternal() {
+        mSelectionHandler.close();
         synchronized (mCallbackLock) {
             if (isConnected()) {
                 mIsConnected = false;
                 mHandler.onClosed();
             }
         }
-        IOUtil.close(mSocket);
     }
 
     /**
