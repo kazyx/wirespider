@@ -99,7 +99,7 @@ public class WebSocketClientFactoryTest {
 
                 }
             });
-            ws = future.get(1000000, TimeUnit.MILLISECONDS);
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
             Assert.assertTrue(ws.isConnected());
         } finally {
             if (ws != null) {
