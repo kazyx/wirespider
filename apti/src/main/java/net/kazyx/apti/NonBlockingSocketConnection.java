@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 interface NonBlockingSocketConnection {
-    void onConnected(SelectionHandler handler);
+    void onConnected();
 
     void onClosed();
 

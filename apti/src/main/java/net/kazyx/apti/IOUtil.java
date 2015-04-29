@@ -8,6 +8,9 @@ final class IOUtil {
     }
 
     static void close(Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
         try {
             closeable.close();
         } catch (IOException e) {

@@ -11,7 +11,8 @@ repositories {
 
 dependencies {
     testCompile 'junit:junit:4.11'
-    testCompile 'com.squareup.okhttp:mockwebserver:2.3.0'
+    testCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.10.v20150310'
+    testCompile 'commons-codec:commons-codec:1.10'
 }
 
 sourceSets {

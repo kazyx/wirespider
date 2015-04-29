@@ -2,7 +2,6 @@ package net.kazyx.apti;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -10,6 +9,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 class Rfc6455Handshake implements Handshake {
+    private static final String TAG = Rfc6455Handshake.class.getSimpleName();
     private String mSecret;
 
     @Override
@@ -17,12 +17,13 @@ class Rfc6455Handshake implements Handshake {
         mSecret = HandshakeSecretUtil.createNew();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("GET ").append(uri.getSchemeSpecificPart() == null ? "/" : uri.getSchemeSpecificPart()).append(" HTTP/1.1\r\n");
-        sb.append("Host: ").append(uri.getHost()).append("\r\n");
-        sb.append("Upgrade: websocket\r\n");
-        sb.append("Connection: Upgrade\r\n");
-        sb.append("Sec-WebSocket-Key: ").append(mSecret).append("\r\n");
-        sb.append("Sec-WebSocket-Version: 13\r\n");
+        sb.append("GET ").append(TextUtil.isNullOrEmpty(uri.getPath()) ? "/" : uri.getPath())
+                .append(" HTTP/1.1\r\n")
+                .append("Host: ").append(uri.getHost()).append("\r\n")
+                .append("Upgrade: websocket\r\n")
+                .append("Connection: Upgrade\r\n")
+                .append("Sec-WebSocket-Key: ").append(mSecret).append("\r\n")
+                .append("Sec-WebSocket-Version: 13\r\n");
 
         if (requestHeaders != null && requestHeaders.size() != 0) {
             for (HttpHeader header : requestHeaders) {
@@ -32,20 +33,16 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        try {
-            handler.writeAsync(sb.toString().getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            // TODO
-            e.printStackTrace();
-        }
+        String msg = sb.toString();
+        Logger.d(TAG, msg);
+
+        handler.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
     public LinkedList<ByteBuffer> onDataReceived(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException {
-        boolean isLineEnd = false;
-
         boolean isHeaderEnd = false;
 
         ListIterator<ByteBuffer> itr = data.listIterator();
@@ -54,33 +51,33 @@ class Rfc6455Handshake implements Handshake {
             byte[] ba = new byte[buff.remaining()];
             buff.get(ba);
 
-            int i;
-            for (i = 0; i < ba.length; i++) {
-                if (ba[i] == '\n') {
-                    if (isLineEnd) {
-                        isHeaderEnd = true;
-                        break;
-                    } else {
-                        isLineEnd = true;
-                    }
-                } else {
-                    isLineEnd = false;
-                }
-            }
-            mBuffer.write(ba, 0, i);
+            String str = ByteArrayUtil.toText(ba);
+            Logger.d(TAG, str);
 
-            if (isHeaderEnd) {
-                buff.position(i);
-                break;
-            } else {
+            int index = str.indexOf("\r\n\r\n");
+            if (index == -1) {
+                mBuffer.write(ba, 0, ba.length);
                 itr.remove();
+            } else {
+                isHeaderEnd = true;
+                int end = index + 4;
+                mBuffer.write(ba, 0, end);
+                if (ba.length > end) {
+                    buff.position(end + 1);
+                } else {
+                    itr.remove();
+                }
+                break;
             }
+            // TODO if header is separated to multiple ByteBuffer
         }
 
         if (isHeaderEnd) {
+            Logger.d(TAG, "Header end");
             parseHeader(mBuffer.toByteArray());
             return data;
         } else {
+            Logger.d(TAG, "Header unsatisfied");
             throw new BufferUnsatisfiedException();
         }
     }

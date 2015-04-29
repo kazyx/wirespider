@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 class Rfc6455Rx implements FrameRx {
+    private static final String TAG = Rfc6455Rx.class.getSimpleName();
 
     private final WebSocket mWebSocket;
 
@@ -210,6 +211,7 @@ class Rfc6455Rx implements FrameRx {
     }
 
     public void onDataReceived(LinkedList<ByteBuffer> data) {
+        Logger.d(TAG, "onDataReceived");
         mReceivedBuffer.addAll(data);
         for (ByteBuffer buff : data) {
             mBufferSize += buff.limit();

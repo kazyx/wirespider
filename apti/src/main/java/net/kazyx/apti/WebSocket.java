@@ -1,12 +1,12 @@
 package net.kazyx.apti;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimerTask;
@@ -15,6 +15,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class WebSocket {
+    private static final String TAG = WebSocket.class.getSimpleName();
+
     private final AsyncSource mAsync;
     private final URI mURI;
     private final WebSocketConnection mHandler;
@@ -38,23 +40,23 @@ public class WebSocket {
         mHandler = handler;
         mAsync = async;
 
-        mSelectionHandler = new SelectionHandler(mURI, new NonBlockingSocketConnection() {
+        mSelectionHandler = new SelectionHandler(new NonBlockingSocketConnection() {
             @Override
-            public void onConnected(SelectionHandler handler) {
-                mFrameTx = new Rfc6455Tx(WebSocket.this, true, mSelectionHandler);
-                mFrameRx = new Rfc6455Rx(WebSocket.this);
-                mHandshake = new Rfc6455Handshake();
-                mHandshake.tryUpgrade(mURI, mRequestHeaders, mSelectionHandler);
+            public void onConnected() {
+                Logger.d(TAG, "SelectionHandler onConnected");
+                onSocketConnected();
             }
 
             @Override
             public void onClosed() {
+                Logger.d(TAG, "SelectionHandler onClosed");
                 mConnectLatch.countDown();
                 closeInternal();
             }
 
             @Override
             public void onDataReceived(final LinkedList<ByteBuffer> data) {
+                Logger.d(TAG, "SelectionHandler onDataReceived");
                 mAsync.safeAsyncAction(new Runnable() {
                     @Override
                     public void run() {
@@ -63,6 +65,7 @@ public class WebSocket {
                                 LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
                                 mHandshake = null;
                                 mIsConnected = true;
+                                Logger.d(TAG, "WebSocket handshake succeed!!");
                                 mConnectLatch.countDown();
 
                                 if (data.size() != 0) {
@@ -82,6 +85,13 @@ public class WebSocket {
         });
     }
 
+    private void onSocketConnected() {
+        mFrameTx = new Rfc6455Tx(WebSocket.this, true, mSelectionHandler);
+        mFrameRx = new Rfc6455Rx(WebSocket.this);
+        mHandshake = new Rfc6455Handshake();
+        mHandshake.tryUpgrade(mURI, mRequestHeaders, mSelectionHandler);
+    }
+
     CountDownLatch mConnectLatch = new CountDownLatch(1);
 
     /**
@@ -90,10 +100,15 @@ public class WebSocket {
      * @throws IOException          Failed to openAsync connection.
      * @throws InterruptedException Awaiting thread interrupted.
      */
-    void connect() throws IOException, InterruptedException {
-        Selector selector = SelectorProvider.provider().openSelector();
-        SocketChannel channel = SelectorProvider.provider().openSocketChannel();
-        channel.register(selector, SelectionKey.OP_CONNECT, mSelectionHandler);
+    void connect(SocketChannel channel) throws IOException, InterruptedException {
+        Logger.d(TAG, "try connect");
+
+        final Socket socket = channel.socket();
+        socket.setTcpNoDelay(true);
+        // TODO bind local address here.
+
+        channel.connect(new InetSocketAddress(mURI.getHost(), (mURI.getPort() != -1) ? mURI.getPort() : 80));
+        mAsync.registerNewChannel(channel, SelectionKey.OP_CONNECT, mSelectionHandler);
 
         mConnectLatch.await();
 

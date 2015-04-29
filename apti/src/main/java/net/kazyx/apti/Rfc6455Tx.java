@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 class Rfc6455Tx implements FrameTx {
+    private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
     private final boolean mIsClient;
     private final SelectionHandler mHandler;
@@ -19,26 +20,31 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendTextAsync(String data) {
+        Logger.d(TAG, "sendTextAsync: " + data);
         sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
+        Logger.d(TAG, "sendBinaryAsync: " + data.length);
         sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
     public void sendPingAsync() {
+        Logger.d(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
+        Logger.d(TAG, "sendPingAsync: " + pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
+        Logger.d(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);
