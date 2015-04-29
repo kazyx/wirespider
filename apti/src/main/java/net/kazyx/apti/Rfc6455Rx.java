@@ -34,7 +34,6 @@ class Rfc6455Rx implements FrameRx {
             } catch (BufferUnsatisfiedException e) {
                 // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
-                    mWaitingSize = 1;
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
@@ -66,16 +65,16 @@ class Rfc6455Rx implements FrameRx {
                         mExtendedPayloadOperation.run();
                         break;
                     default:
-                        if (isMasked) {
-                            mMaskKeyOperation.run();
-                        } else {
-                            mPayloadOperation.run();
-                        }
+                        break;
+                }
+                if (isMasked) {
+                    mMaskKeyOperation.run();
+                } else {
+                    mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
-                // Logger.d(TAG, "BufferUnsatisfied");
+                Logger.d(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
-                    mWaitingSize = 1;
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
@@ -92,12 +91,12 @@ class Rfc6455Rx implements FrameRx {
             try {
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
             } catch (BufferUnsatisfiedException e) {
-                // Logger.d(TAG, "BufferUnsatisfied");
+                Logger.d(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
-                    mWaitingSize = size;
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
+                Logger.d(TAG, "ExtendedPayloadLength ProtocolViolation");
                 mWebSocket.onProtocolViolation();
             }
         }
@@ -113,9 +112,8 @@ class Rfc6455Rx implements FrameRx {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                // Logger.d(TAG, "BufferUnsatisfied");
+                Logger.d(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
-                    mWaitingSize = 4;
                     mSuspendedOperation = this;
                 }
             }
@@ -125,7 +123,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mPayloadOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "Payload operation");
+            // Logger.d(TAG, "Payload operation: " + payloadLength);
             try {
                 byte[] payload = readBytes(payloadLength);
                 if (isMasked) {
@@ -135,9 +133,8 @@ class Rfc6455Rx implements FrameRx {
                 handleFrame(opcode, payload, isFinal);
                 mReadOpCodeOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                // Logger.d(TAG, "BufferUnsatisfied");
+                Logger.d(TAG, "Payload BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
-                    mWaitingSize = payloadLength;
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {

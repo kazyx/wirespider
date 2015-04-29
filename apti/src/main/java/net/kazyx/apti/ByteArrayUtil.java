@@ -23,11 +23,10 @@ final class ByteArrayUtil {
         }
     }
 
-    static long toLong(byte[] b) {
+    static long toLong(byte[] bytes) {
         long value = 0;
-        for (int i = 0; i < b.length; i++) {
-            int shift = (b.length - 1 - i) << 3;
-            value += (b[i] & BitMask.BYTE_SYM_0xFF) << shift;
+        for (byte b : bytes) {
+            value = (value << 8) + (b & 0xFF);
         }
         return value;
     }

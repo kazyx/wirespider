@@ -13,6 +13,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -200,7 +202,6 @@ public class WebSocketClientTest {
 
     @Test
     public void textMessages() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        ExecutorService es = Executors.newFixedThreadPool(4);
         WebSocketClientFactory factory = new WebSocketClientFactory();
 
         final int NUM_MESSAGES = 100000;
@@ -210,6 +211,7 @@ public class WebSocketClientTest {
             WebSocket ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
                 @Override
                 public void onTextMessage(String message) {
+                    // System.out.println("onTextMessage");
                     if (message.equals(MESSAGE)) {
                         latch.countDown();
                     }
@@ -226,6 +228,7 @@ public class WebSocketClientTest {
                 }
             }).get(1000, TimeUnit.MILLISECONDS);
 
+            System.out.println("Start sending messages");
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 ws.sendTextMessageAsync(MESSAGE);
             }
@@ -233,7 +236,6 @@ public class WebSocketClientTest {
             Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } finally {
             factory.destroy();
-            es.shutdownNow();
         }
     }
 
@@ -268,5 +270,78 @@ public class WebSocketClientTest {
         } finally {
             factory.destroy();
         }
+    }
+
+    @Test
+    public void binaryMessage1() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(126);
+    }
+
+    @Test
+    public void binaryMessage126() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(126);
+    }
+
+    @Test
+    public void binaryMessage127() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(126);
+    }
+
+    @Test
+    public void binaryMessage128() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(126);
+    }
+
+    @Test
+    public void binaryMessage10000() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(10000);
+    }
+
+    @Test
+    public void binaryMessage65536() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryMessage(65536);
+    }
+
+    private void binaryMessage(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        final CountDownLatch latch = new CountDownLatch(1);
+        byte[] data = randomByteArray(size);
+
+        final byte[] copy = Arrays.copyOf(data, data.length);
+
+        try {
+            WebSocket ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
+                @Override
+                public void onTextMessage(String message) {
+
+                }
+
+                @Override
+                public void onBinaryMessage(byte[] message) {
+                    System.out.println("onBinaryMessage: " + message.length);
+                    if (Arrays.equals(message, copy)) {
+                        latch.countDown();
+                    } else {
+                        System.out.println("Binary message not matched");
+                    }
+                }
+
+                @Override
+                public void onClosed(int code, String reason) {
+                }
+            }).get(1000, TimeUnit.MILLISECONDS);
+            ws.sendBinaryMessageAsync(data);
+            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+        } finally {
+            factory.destroy();
+        }
+    }
+
+
+    byte[] randomByteArray(int size) {
+        Random rnd = new Random();
+        byte[] data = new byte[size];
+        rnd.nextBytes(data);
+        return data;
     }
 }
