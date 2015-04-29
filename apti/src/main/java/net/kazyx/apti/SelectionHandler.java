@@ -25,7 +25,6 @@ class SelectionHandler {
     }
 
     void onSelected(SelectionKey key) {
-        Logger.d(TAG, "onSelected");
         mKey = key;
         try {
             if (!key.isValid()) {
@@ -46,6 +45,11 @@ class SelectionHandler {
         }
     }
 
+    void onCancelled() {
+        Logger.d(TAG, "onCancelled");
+        onClosed();
+    }
+
     private void onClosed() {
         Logger.d(TAG, "onClosed");
         close();
@@ -53,18 +57,19 @@ class SelectionHandler {
     }
 
     private void onConnectReady() throws IOException {
-        Logger.d(TAG, "onConnectReady");
+        // Logger.d(TAG, "onConnectReady");
 
         if (((SocketChannel) mKey.channel()).finishConnect()) {
             mKey.interestOps(SelectionKey.OP_READ);
             mSocketConnection.onConnected();
         } else {
+            Logger.d(TAG, "Failed to connect");
             onClosed();
         }
     }
 
     private void onReadReady() throws IOException {
-        Logger.d(TAG, "onReadReady");
+        // Logger.d(TAG, "onReadReady");
         SocketChannel ch = (SocketChannel) mKey.channel();
         LinkedList<ByteBuffer> list = new LinkedList<>();
 
@@ -91,12 +96,16 @@ class SelectionHandler {
     }
 
     void writeAsync(byte[] data, boolean calledOnSelectorThread) {
-        Logger.d(TAG, "writeAsync");
+        // Logger.d(TAG, "writeAsync");
         if (mIsClosed) {
             Logger.d(TAG, "Quit writeAsync due to closed state");
             return;
         }
         synchronized (mSendingQueue) {
+            if(!mKey.isValid()) {
+                onClosed();
+                return;
+            }
             mSendingQueue.addLast(data);
             if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
                 mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
@@ -108,7 +117,6 @@ class SelectionHandler {
     }
 
     void close() {
-        Logger.d(TAG, "close");
         mIsClosed = true;
         synchronized (mSendingQueue) {
             mSendingQueue.clear();
@@ -120,7 +128,7 @@ class SelectionHandler {
     }
 
     private void onWriteReady() throws IOException {
-        Logger.d(TAG, "onWriteReady");
+        // Logger.d(TAG, "onWriteReady");
         byte[] data;
         synchronized (mSendingQueue) {
             data = mSendingQueue.removeFirst();
@@ -128,7 +136,7 @@ class SelectionHandler {
         ByteBuffer buff = ByteBuffer.wrap(data);
         SocketChannel ch = (SocketChannel) mKey.channel();
         int written = ch.write(buff);
-        Logger.d(TAG, "Expected: " + data.length + ", Written: " + written);
+        // Logger.d(TAG, "Expected: " + data.length + ", Written: " + written);
 
         if (written != data.length) {
             mSendingQueue.addFirst(Arrays.copyOfRange(data, written, data.length));

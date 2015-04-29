@@ -27,36 +27,22 @@ class AsyncSource {
         mSelectorThread.interrupt();
     }
 
-    AsyncSource(ExecutorService executor, SelectorProvider provider) throws IOException {
-        mReceiverThreadPool = executor;
+    AsyncSource(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
         mSelectorThread.start();
     }
 
-    /*
-    final ExecutorService mConnectionThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Logger.d(TAG, "newThread");
-            return new Thread("apti-connection-thread");
-        }
-    });
-    */
-
     final ExecutorService mConnectionThreadPool = Executors.newCachedThreadPool();
 
-    private final ExecutorService mReceiverThreadPool;
-
-    void safeAsyncAction(Runnable task) {
+    void safeAsync(Runnable task) {
         try {
-            mReceiverThreadPool.submit(task);
+            mConnectionThreadPool.submit(task);
         } catch (RejectedExecutionException e) {
-            // Nothing to do.
+            Logger.d(TAG, "RejectedExecution");
         }
     }
 
     final Timer mTimer = new Timer("apti-timer");
-
 
     static class SelectorThread extends Thread {
         private final Selector mSelector;
@@ -91,6 +77,8 @@ class AsyncSource {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
                     IOUtil.close(key.channel());
+                    SelectionHandler handler = (SelectionHandler) key.attachment();
+                    handler.onCancelled();
                 }
                 IOUtil.close(mSelector);
             }
@@ -126,7 +114,6 @@ class AsyncSource {
                     public void run() {
                         try {
                             channel.register(mSelector, ops, handler);
-                            Logger.d(TAG, "New channel registered");
                         } catch (ClosedChannelException e) {
                             e.printStackTrace();
                         }

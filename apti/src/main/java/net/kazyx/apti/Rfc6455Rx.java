@@ -21,6 +21,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mReadOpCodeOperation = new Runnable() {
         @Override
         public void run() {
+            // Logger.d(TAG, "FirstByte operation");
             try {
                 byte first = readBytes(1)[0];
                 isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
@@ -31,6 +32,7 @@ class Rfc6455Rx implements FrameRx {
                 opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
                 mSecondByteOperation.run();
             } catch (BufferUnsatisfiedException e) {
+                // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mWaitingSize = 1;
                     mSuspendedOperation = this;
@@ -47,6 +49,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mSecondByteOperation = new Runnable() {
         @Override
         public void run() {
+            // Logger.d(TAG, "SecondByte operation");
             try {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
@@ -70,6 +73,7 @@ class Rfc6455Rx implements FrameRx {
                         }
                 }
             } catch (BufferUnsatisfiedException e) {
+                // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mWaitingSize = 1;
                     mSuspendedOperation = this;
@@ -83,10 +87,12 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mExtendedPayloadOperation = new Runnable() {
         @Override
         public void run() {
+            // Logger.d(TAG, "ExtendedPayloadLength operation");
             int size = payloadLength == 126 ? 2 : 8;
             try {
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
             } catch (BufferUnsatisfiedException e) {
+                // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mWaitingSize = size;
                     mSuspendedOperation = this;
@@ -102,10 +108,12 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mMaskKeyOperation = new Runnable() {
         @Override
         public void run() {
+            // Logger.d(TAG, "MaskKey operation");
             try {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
+                // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mWaitingSize = 4;
                     mSuspendedOperation = this;
@@ -117,6 +125,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mPayloadOperation = new Runnable() {
         @Override
         public void run() {
+            // Logger.d(TAG, "Payload operation");
             try {
                 byte[] payload = readBytes(payloadLength);
                 if (isMasked) {
@@ -126,6 +135,7 @@ class Rfc6455Rx implements FrameRx {
                 handleFrame(opcode, payload, isFinal);
                 mReadOpCodeOperation.run();
             } catch (BufferUnsatisfiedException e) {
+                // Logger.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mWaitingSize = payloadLength;
                     mSuspendedOperation = this;
@@ -149,6 +159,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
+        // Logger.d(TAG, "handleFrame: " + opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -211,7 +222,7 @@ class Rfc6455Rx implements FrameRx {
     }
 
     public void onDataReceived(LinkedList<ByteBuffer> data) {
-        Logger.d(TAG, "onDataReceived");
+        // Logger.d(TAG, "onDataReceived");
         mReceivedBuffer.addAll(data);
         for (ByteBuffer buff : data) {
             mBufferSize += buff.limit();
@@ -226,7 +237,7 @@ class Rfc6455Rx implements FrameRx {
 
     private final Object mOperationSequenceLock = new Object();
 
-    private Runnable mSuspendedOperation;
+    private Runnable mSuspendedOperation = mReadOpCodeOperation;
 
     private int mWaitingSize = 0;
 
@@ -240,20 +251,26 @@ class Rfc6455Rx implements FrameRx {
             throw new BufferUnsatisfiedException();
         }
 
-        ByteBuffer dest = ByteBuffer.allocate(length);
+        byte[] ba = new byte[length];
+        int remaining = length;
 
         ListIterator<ByteBuffer> itr = mReceivedBuffer.listIterator();
         while (itr.hasNext()) {
             ByteBuffer buff = itr.next();
+            int copied = Math.min(remaining, buff.remaining());
+            buff.get(ba, length - remaining, copied);
+            remaining -= copied;
+
             if (buff.remaining() == 0) {
                 itr.remove();
             }
-            if (dest.remaining() == 0) {
+            if (remaining == 0) {
                 break;
             }
         }
 
         mBufferSize -= length;
-        return dest.array();
+
+        return ba;
     }
 }

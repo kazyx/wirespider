@@ -33,9 +33,6 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        String msg = sb.toString();
-        Logger.d(TAG, msg);
-
         handler.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
     }
 
@@ -52,7 +49,7 @@ class Rfc6455Handshake implements Handshake {
             buff.get(ba);
 
             String str = ByteArrayUtil.toText(ba);
-            Logger.d(TAG, str);
+            // Logger.d(TAG, str);
 
             int index = str.indexOf("\r\n\r\n");
             if (index == -1) {
@@ -73,7 +70,6 @@ class Rfc6455Handshake implements Handshake {
         }
 
         if (isHeaderEnd) {
-            Logger.d(TAG, "Header end");
             parseHeader(mBuffer.toByteArray());
             return data;
         } else {

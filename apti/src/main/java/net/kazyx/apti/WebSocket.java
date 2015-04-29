@@ -19,10 +19,10 @@ public class WebSocket {
 
     private final AsyncSource mAsync;
     private final URI mURI;
-    private final WebSocketConnection mHandler;
+    private final WebSocketConnection mCallbackHandler;
     private final List<HttpHeader> mRequestHeaders;
 
-    private final Object mCallbackLock = new Object();
+    private final Object mCloseCallbackLock = new Object();
     private boolean mIsConnected = false;
 
     private final SelectionHandler mSelectionHandler;
@@ -37,7 +37,7 @@ public class WebSocket {
     WebSocket(AsyncSource async, URI uri, WebSocketConnection handler, List<HttpHeader> extraHeaders) {
         mURI = uri;
         mRequestHeaders = extraHeaders;
-        mHandler = handler;
+        mCallbackHandler = handler;
         mAsync = async;
 
         mSelectionHandler = new SelectionHandler(new NonBlockingSocketConnection() {
@@ -51,36 +51,31 @@ public class WebSocket {
             public void onClosed() {
                 Logger.d(TAG, "SelectionHandler onClosed");
                 mConnectLatch.countDown();
-                closeInternal();
+                closeNow();
             }
 
             @Override
             public void onDataReceived(final LinkedList<ByteBuffer> data) {
-                Logger.d(TAG, "SelectionHandler onDataReceived");
-                mAsync.safeAsyncAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!isConnected()) {
-                            try {
-                                LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
-                                mHandshake = null;
-                                mIsConnected = true;
-                                Logger.d(TAG, "WebSocket handshake succeed!!");
-                                mConnectLatch.countDown();
+                // Logger.d(TAG, "SelectionHandler onDataReceived");
+                if (!isConnected()) {
+                    try {
+                        LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
+                        mHandshake = null;
+                        mIsConnected = true;
+                        Logger.d(TAG, "WebSocket handshake succeed!!");
+                        mConnectLatch.countDown();
 
-                                if (data.size() != 0) {
-                                    mFrameRx.onDataReceived(remaining);
-                                }
-                            } catch (BufferUnsatisfiedException e) {
-                                // wait for the next data.
-                            } catch (HandshakeFailureException e) {
-                                closeInternal();
-                            }
-                        } else {
-                            mFrameRx.onDataReceived(data);
+                        if (data.size() != 0) {
+                            mFrameRx.onDataReceived(remaining);
                         }
+                    } catch (BufferUnsatisfiedException e) {
+                        // wait for the next data.
+                    } catch (HandshakeFailureException e) {
+                        closeNow();
                     }
-                });
+                } else {
+                    mFrameRx.onDataReceived(data);
+                }
             }
         });
     }
@@ -101,8 +96,6 @@ public class WebSocket {
      * @throws InterruptedException Awaiting thread interrupted.
      */
     void connect(SocketChannel channel) throws IOException, InterruptedException {
-        Logger.d(TAG, "try connect");
-
         final Socket socket = channel.socket();
         socket.setTcpNoDelay(true);
         // TODO bind local address here.
@@ -154,7 +147,7 @@ public class WebSocket {
             @Override
             public void run() {
                 synchronized (mPingPongTaskLock) {
-                    closeInternal();
+                    closeNow();
                 }
             }
         };
@@ -203,29 +196,28 @@ public class WebSocket {
     private void sendCloseFrame(CloseStatusCode code, String reason) {
         mFrameTx.sendCloseAsync(code, reason);
 
-        // Forcefully close connection 2 sec after sending close frame.
-        new Thread(new Runnable() {
+        mAsync.safeAsync(new Runnable() {
             @Override
             public void run() {
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    // This will never happen.
-                }
-                closeInternal();
+                mSelectionHandler.close();
+                invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
             }
-        }).start();
+        });
     }
 
     /**
      * Close TCP connection without WebSocket closing handshake.
      */
-    void closeInternal() {
+    public void closeNow() {
         mSelectionHandler.close();
-        synchronized (mCallbackLock) {
+        invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
+    }
+
+    private void invokeOnClosed(int code, String reason) {
+        synchronized (mCloseCallbackLock) {
             if (isConnected()) {
                 mIsConnected = false;
-                mHandler.onClosed();
+                mCallbackHandler.onClosed(code, reason);
             }
         }
     }
@@ -263,17 +255,18 @@ public class WebSocket {
     /**
      * Called when received close control frame or Connection is closed abnormally..
      *
-     * @param code    Close status code.
-     * @param message Close reason phrase.
+     * @param code   Close status code.
+     * @param reason Close reason phrase.
      */
-    void onCloseFrame(int code, String message) {
-        if (isConnected()) {
+    void onCloseFrame(int code, String reason) {
+        if (!isConnected()) {
             return;
         }
         if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
             sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
         }
-        closeInternal();
+        mSelectionHandler.close();
+        invokeOnClosed(code, reason);
     }
 
     /**
@@ -285,7 +278,7 @@ public class WebSocket {
         if (!isConnected()) {
             return;
         }
-        mHandler.onBinaryMessage(message);
+        mCallbackHandler.onBinaryMessage(message);
     }
 
     /**
@@ -297,16 +290,19 @@ public class WebSocket {
         if (!isConnected()) {
             return;
         }
-        mHandler.onTextMessage(message);
+        mCallbackHandler.onTextMessage(message);
     }
 
     /**
      * Called when received message violated WebSocket protocol.
      */
     void onProtocolViolation() {
-        if (isConnected()) {
+        Logger.d(TAG, "onProtocolViolation");
+        if (!isConnected()) {
             return;
         }
         sendCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation");
+        mSelectionHandler.close();
+        invokeOnClosed(CloseStatusCode.POLICY_VIOLATION.statusCode, "WebSocket protocol violation");
     }
 }

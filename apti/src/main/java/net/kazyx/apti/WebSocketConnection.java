@@ -18,5 +18,5 @@ public interface WebSocketConnection {
     /**
      * WebSocket closed.
      */
-    void onClosed();
+    void onClosed(int code, String message);
 }

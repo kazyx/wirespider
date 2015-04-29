@@ -6,8 +6,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -20,12 +18,8 @@ public class WebSocketClientFactory {
     private final SelectorProvider mProvider;
 
     public WebSocketClientFactory() throws IOException {
-        this(Executors.newSingleThreadExecutor());
-    }
-
-    public WebSocketClientFactory(ExecutorService executor) throws IOException {
         mProvider = SelectorProvider.provider();
-        mAsync = new AsyncSource(executor, mProvider);
+        mAsync = new AsyncSource(mProvider);
     }
 
     public void destroy() {
@@ -40,7 +34,6 @@ public class WebSocketClientFactory {
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
-                Logger.d(TAG, "call");
                 WebSocket ws = null;
                 SocketChannel ch = null;
                 try {
@@ -50,7 +43,7 @@ public class WebSocketClientFactory {
                     ws.connect(ch);
                     return ws;
                 } catch (IOException e) {
-                    ws.closeInternal();
+                    ws.closeNow();
                     IOUtil.close(ch);
                     throw e;
                 }
