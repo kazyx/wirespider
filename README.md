@@ -1,14 +1,14 @@
 Apti WebSocket client
 =====
 
-Apti is a completely simple WebSocket client based on [RFC6455](http://tools.ietf.org/html/rfc6455).
+Apti is a simple and compact WebSocket([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
-Apti is written in Java 7 syntax.  
-Also compatible with Android applications compiled with compilation target 19 or later.
+- NIO based implementation.
+- Android applications compatible. (Compilation target 19 or later)
 
 ## How to build
 ```bash
-cd <apti-root>
+cd <apti-root>/master
 ./gradlew build
 ```
 
@@ -24,11 +24,13 @@ Base64.setEncoder(new Base64.Encoder() {
     }
 });
 ```
+Now you can find `apti-x.y.z.jar` at `<apti-root>/apti/build/libs`
 
 ### Open WebSocket connection
 ```java
 
 WebSocketClientFactory factory = new WebSocketClientFactory();
+// Use this WebSocketClientFactory forever while your process alive.
 
 URI uri = URI.create("ws://host:port/path");
 Future<WebSocket> future = factory.openAsync(uri, new WebSocketConnection() {
@@ -68,5 +70,5 @@ websocket.closeAsync();
 ### Release resources
 ```java
 factory.destroy();
-// Any async operations will throw RejectedExecutionException since now.
+// Any async operations will do nothing since now.
 ```
