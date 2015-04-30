@@ -13,19 +13,22 @@ import java.nio.ByteBuffer;
 public class JettyWebSocketServlet {
     private Session mSession;
 
-    private static int numConnected = 0;
+    public static final int MAX_SIZE_1MB = 1000000;
 
     @OnWebSocketConnect
     public void onConnected(Session session) {
+        session.getPolicy().setMaxBinaryMessageBufferSize(MAX_SIZE_1MB);
+        session.getPolicy().setMaxBinaryMessageSize(MAX_SIZE_1MB);
+        session.getPolicy().setMaxTextMessageBufferSize(MAX_SIZE_1MB);
+        session.getPolicy().setMaxTextMessageSize(MAX_SIZE_1MB);
         mSession = session;
     }
 
+    public static final String CLOSE_REQUEST = "close";
+
     @OnWebSocketMessage
     public void onTextMessage(String message) {
-        //System.out.println("JettyWebSocketServlet: onTextMessage: " + message);
-        if (message.startsWith("echo")) {
-            mSession.getRemote().sendStringByFuture(message);
-        } else if (message.equals("close")) {
+        if (message.equals(CLOSE_REQUEST)) {
             System.out.println("JettyWebSocketServlet: close request received");
             mSession.close(1000, "Normal closure");
         } else {
@@ -35,7 +38,6 @@ public class JettyWebSocketServlet {
 
     @OnWebSocketMessage
     public void onBinaryMessage(byte buf[], int offset, int length) throws UnsupportedEncodingException {
-        System.out.println("JettyWebSocketServlet: onBinaryMessage: " + length);
         ByteBuffer buff = ByteBuffer.wrap(buf, offset, length);
         System.out.println("JettyWebSocketServlet: ByteBuffer: " + buff.toString());
 

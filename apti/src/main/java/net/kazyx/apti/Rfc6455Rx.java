@@ -209,7 +209,7 @@ class Rfc6455Rx implements FrameRx {
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for closeAsync opcode");
                 }
-                int code = (payload.length >= 2) ? (payload[0] << 8) + payload[1] : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
+                int code = (payload.length >= 2) ? payload[1] & 0xFF + (payload[0] << 8) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
                 mWebSocket.onCloseFrame(code, reason);
                 break;

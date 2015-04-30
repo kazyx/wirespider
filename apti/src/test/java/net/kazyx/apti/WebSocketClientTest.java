@@ -81,7 +81,6 @@ public class WebSocketClientTest {
         mEndLatch.await();
     }
 
-
     @Before
     public void setup() throws Exception {
     }
@@ -95,22 +94,7 @@ public class WebSocketClientTest {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new WebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             Assert.assertTrue(ws.isConnected());
         } finally {
@@ -127,17 +111,7 @@ public class WebSocketClientTest {
         WebSocket ws = null;
         final CountDownLatch latch = new CountDownLatch(1);
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-
-                }
-
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
                     System.out.println("WebSocketConnection onClosed");
@@ -150,7 +124,7 @@ public class WebSocketClientTest {
             }).get(1000, TimeUnit.MILLISECONDS);
 
             factory.destroy();
-            boolean completed = latch.await(1000, TimeUnit.MILLISECONDS);
+            boolean completed = latch.await(500, TimeUnit.MILLISECONDS);
             Assert.assertTrue(completed);
         } finally {
             if (ws != null) {
@@ -175,22 +149,8 @@ public class WebSocketClientTest {
                     @Override
                     public void run() {
                         try {
-                            WebSocket ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
-                                @Override
-                                public void onTextMessage(String message) {
-
-                                }
-
-                                @Override
-                                public void onBinaryMessage(byte[] message) {
-
-                                }
-
-                                @Override
-                                public void onClosed(int code, String reason) {
-
-                                }
-                            }).get(1000, TimeUnit.MILLISECONDS);
+                            Future<WebSocket> future = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection());
+                            WebSocket ws = future.get(1000, TimeUnit.MILLISECONDS);
                             set.add(ws);
                         } catch (InterruptedException | ExecutionException | TimeoutException e) {
                             throw new RuntimeException(e);
@@ -220,23 +180,13 @@ public class WebSocketClientTest {
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onTextMessage(String message) {
                     // System.out.println("onTextMessage");
                     if (message.equals(MESSAGE)) {
                         latch.countDown();
                     }
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-
                 }
             }).get(1000, TimeUnit.MILLISECONDS);
 
@@ -254,34 +204,24 @@ public class WebSocketClientTest {
         }
     }
 
-    public static final String CLOSE_REQUEST_MESSAGE = "close";
-
     @Test
     public void handleCloseOpcode() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-
-                }
-
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
-                    System.out.println("handleCloseOpcode: onClosed");
-                    latch.countDown();
+                    System.out.println("onClosed: " + code);
+                    if (code == CloseStatusCode.NORMAL_CLOSURE.getStatusCode()) {
+                        latch.countDown();
+                    }
                 }
             }).get(1000, TimeUnit.MILLISECONDS);
-            ws.sendTextMessageAsync(CLOSE_REQUEST_MESSAGE);
+            ws.sendTextMessageAsync(JettyWebSocketServlet.CLOSE_REQUEST);
 
-            Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            Assert.assertTrue(latch.await(500, TimeUnit.MILLISECONDS));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -321,6 +261,11 @@ public class WebSocketClientTest {
     }
 
     @Test
+    public void textEcho1MByte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        textEcho(JettyWebSocketServlet.MAX_SIZE_1MB);
+    }
+
+    @Test
     public void binaryEcho1Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         binaryEcho(1);
     }
@@ -350,7 +295,12 @@ public class WebSocketClientTest {
         binaryEcho(65536);
     }
 
-    private void binaryEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    @Test
+    public void binaryEcho1MByte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        binaryEcho(JettyWebSocketServlet.MAX_SIZE_1MB);
+    }
+
+    private static void binaryEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
         byte[] data = fixedLengthByteArray(size);
@@ -358,12 +308,7 @@ public class WebSocketClientTest {
         final byte[] copy = Arrays.copyOf(data, data.length);
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-
-                }
-
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onBinaryMessage(byte[] message) {
                     if (Arrays.equals(message, copy)) {
@@ -372,13 +317,9 @@ public class WebSocketClientTest {
                         System.out.println("Binary message not matched");
                     }
                 }
-
-                @Override
-                public void onClosed(int code, String reason) {
-                }
             }).get(1000, TimeUnit.MILLISECONDS);
             ws.sendBinaryMessageAsync(data);
-            Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -387,7 +328,7 @@ public class WebSocketClientTest {
         }
     }
 
-    byte[] fixedLengthByteArray(int length) {
+    private static byte[] fixedLengthByteArray(int length) {
         byte[] ba = new byte[length];
         for (int i = 0; i < length; i++) {
             ba[i] = 10;
@@ -395,14 +336,14 @@ public class WebSocketClientTest {
         return ba;
     }
 
-    private void textEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private static void textEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
         final String data = fixedLengthString(size);
 
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new WebSocketConnection() {
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onTextMessage(String message) {
                     if (data.equals(message)) {
@@ -411,17 +352,9 @@ public class WebSocketClientTest {
                         System.out.println("Text message not matched");
                     }
                 }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-                }
             }).get(1000, TimeUnit.MILLISECONDS);
             ws.sendTextMessageAsync(data);
-            Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -430,7 +363,7 @@ public class WebSocketClientTest {
         }
     }
 
-    private String fixedLengthString(int length) {
+    private static String fixedLengthString(int length) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++) {
             sb.append("a");
