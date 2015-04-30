@@ -43,13 +43,13 @@ public class WebSocket {
         mSelectionHandler = new SelectionHandler(new NonBlockingSocketConnection() {
             @Override
             public void onConnected() {
-                Logger.d(TAG, "SelectionHandler onConnected");
+                // Logger.d(TAG, "SelectionHandler onConnected");
                 onSocketConnected();
             }
 
             @Override
             public void onClosed() {
-                Logger.d(TAG, "SelectionHandler onClosed");
+                // Logger.d(TAG, "SelectionHandler onClosed");
                 mConnectLatch.countDown();
                 closeNow();
             }
@@ -62,7 +62,7 @@ public class WebSocket {
                         LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
                         mHandshake = null;
                         mIsConnected = true;
-                        Logger.d(TAG, "WebSocket handshake succeed!!");
+                        // Logger.d(TAG, "WebSocket handshake succeed!!");
                         mConnectLatch.countDown();
 
                         if (data.size() != 0) {

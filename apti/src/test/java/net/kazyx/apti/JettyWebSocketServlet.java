@@ -28,6 +28,8 @@ public class JettyWebSocketServlet {
         } else if (message.equals("close")) {
             System.out.println("JettyWebSocketServlet: close request received");
             mSession.close(1000, "Normal closure");
+        } else {
+            mSession.getRemote().sendStringByFuture(message);
         }
     }
 

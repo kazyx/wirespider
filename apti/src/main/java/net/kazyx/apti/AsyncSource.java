@@ -54,7 +54,7 @@ class AsyncSource {
 
         @Override
         public void run() {
-            Logger.d(TAG, "SelectorThread started");
+            // Logger.d(TAG, "SelectorThread started");
             try {
                 while (true) {
                     if (!select()) {

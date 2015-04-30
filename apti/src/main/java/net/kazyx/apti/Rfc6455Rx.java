@@ -226,7 +226,7 @@ class Rfc6455Rx implements FrameRx {
         }
 
         synchronized (mOperationSequenceLock) {
-            if (mWaitingSize < mBufferSize) {
+            if (mWaitingSize <= mBufferSize) {
                 mSuspendedOperation.run();
             }
         }
