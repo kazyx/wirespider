@@ -101,13 +101,12 @@ class Rfc6455Tx implements FrameTx {
         try {
             mStream.write(header);
 
-            byte[] maskingKey = {
-                    (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256),
-                    (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256)
-            };
-            mStream.write(maskingKey);
-
             if (mIsClient) {
+                byte[] maskingKey = {
+                        (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256),
+                        (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256)
+                };
+                mStream.write(maskingKey);
                 mStream.write(BitMask.maskAll(payload, maskingKey));
             } else {
                 mStream.write(payload);
@@ -115,8 +114,9 @@ class Rfc6455Tx implements FrameTx {
 
             mHandler.writeAsync(mStream.toByteArray());
         } catch (IOException e) {
-            IOUtil.close(mStream);
             mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, e.getMessage());
+        } finally {
+            IOUtil.close(mStream);
         }
     }
 }
