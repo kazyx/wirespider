@@ -2,6 +2,7 @@ package net.kazyx.apti;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
@@ -9,13 +10,17 @@ class Rfc6455Tx implements FrameTx {
     private final boolean mIsClient;
     private final SelectionHandler mHandler;
     private final WebSocket mWebSocket;
+    private final Random mRandom;
 
+    private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
     Rfc6455Tx(WebSocket websocket, boolean isClient, SelectionHandler socket) {
         mWebSocket = websocket;
         mIsClient = isClient;
         mHandler = socket;
+        long seed = new Random().nextLong();
+        mRandom = new Random(seed);
     }
 
     @Override
@@ -54,13 +59,16 @@ class Rfc6455Tx implements FrameTx {
         sendFrameAsync(OpCode.CONNECTION_CLOSE, payload);
     }
 
-    private synchronized void sendFrameAsync(byte opcode, byte[] payload) {
-        if (mIsCloseSent) {
-            return;
+    private void sendFrameAsync(byte opcode, byte[] payload) {
+        synchronized (mCloseFlagLock) {
+            if (mIsCloseSent) {
+                return;
+            }
+            if (opcode == OpCode.CONNECTION_CLOSE) {
+                mIsCloseSent = true;
+            }
         }
-        if (opcode == OpCode.CONNECTION_CLOSE) {
-            mIsCloseSent = true;
-        }
+
         long payloadLength = payload.length; // Length of array is Integer.MAX_VALUE
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
@@ -102,9 +110,12 @@ class Rfc6455Tx implements FrameTx {
             mStream.write(header);
 
             if (mIsClient) {
+                int mask = mRandom.nextInt();
                 byte[] maskingKey = {
-                        (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256),
-                        (byte) Math.floor(Math.random() * 256), (byte) Math.floor(Math.random() * 256)
+                        (byte) mask,
+                        (byte) (mask >>> 8),
+                        (byte) (mask >>> 16),
+                        (byte) (mask >>> 24)
                 };
                 mStream.write(maskingKey);
                 mStream.write(BitMask.maskAll(payload, maskingKey));

@@ -173,10 +173,10 @@ public class WebSocketClientTest {
     private static final String MESSAGE = "echo: qwertyuiop@[asdfghjkkl:;zxcvbnm,,.";
 
     @Test
-    public void x10000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public void x100000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
 
-        final int NUM_MESSAGES = 10000;
+        final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
         WebSocket ws = null;
         try {
