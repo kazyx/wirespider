@@ -22,15 +22,39 @@ public class WebSocketClientFactory {
         mAsync = new AsyncSource(mProvider);
     }
 
-    public void destroy() {
+    /**
+     * Destroy this {@link WebSocketClientFactory}.<br>
+     * Note that any connections created by this instance will be released.
+     */
+    public synchronized void destroy() {
         mAsync.destroy();
     }
 
-    public Future<WebSocket> openAsync(URI uri, WebSocketConnection handler) {
+    /**
+     * Open WebSocket connection to the specified remote server.<br>
+     * Equivalent to {@code open(uri, handler, null);}.
+     *
+     * @param uri     URI of the remote server.
+     * @param handler WebSocket connection event handler.
+     * @return Future of WebSocket instance.
+     */
+    public synchronized Future<WebSocket> openAsync(URI uri, WebSocketConnection handler) {
         return openAsync(uri, handler, null);
     }
 
-    public Future<WebSocket> openAsync(final URI uri, final WebSocketConnection handler, final List<HttpHeader> headers) {
+    /**
+     * Open WebSocket connection to the specified remote server.
+     *
+     * @param uri     URI of the remote server.
+     * @param handler WebSocket connection event handler.
+     * @param headers Additional HTTP header to be inserted to opening request.
+     * @return Future of WebSocket instance.
+     * @throws IllegalStateException if this instance is already destroyed.
+     */
+    public synchronized Future<WebSocket> openAsync(final URI uri, final WebSocketConnection handler, final List<HttpHeader> headers) {
+        if (!mAsync.isAlive()) {
+            throw new IllegalStateException("This WebSocketClientFactory is already destroyed.");
+        }
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {

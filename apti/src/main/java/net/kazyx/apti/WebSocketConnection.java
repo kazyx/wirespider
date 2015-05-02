@@ -1,5 +1,8 @@
 package net.kazyx.apti;
 
+/**
+ * WebSocket event handler.
+ */
 public interface WebSocketConnection {
     /**
      * Received text message.
@@ -17,6 +20,9 @@ public interface WebSocketConnection {
 
     /**
      * WebSocket closed.
+     *
+     * @param code   Close status code
+     * @param reason Reason phrase.
      */
-    void onClosed(int code, String message);
+    void onClosed(int code, String reason);
 }

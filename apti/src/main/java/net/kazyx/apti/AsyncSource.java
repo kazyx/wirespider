@@ -20,11 +20,18 @@ class AsyncSource {
     /**
      * Release all of thread resources.
      */
-    void destroy() {
+    synchronized void destroy() {
         Logger.d(TAG, "destroy");
+        mIsAlive = false;
         mConnectionThreadPool.shutdown();
         mTimer.purge();
         mSelectorThread.interrupt();
+    }
+
+    private boolean mIsAlive = true;
+
+    synchronized boolean isAlive() {
+        return mIsAlive;
     }
 
     AsyncSource(SelectorProvider provider) throws IOException {
@@ -80,6 +87,7 @@ class AsyncSource {
                     SelectionHandler handler = (SelectionHandler) key.attachment();
                     handler.onCancelled();
                 }
+                mQueue.clear();
                 IOUtil.close(mSelector);
             }
         }
@@ -102,7 +110,7 @@ class AsyncSource {
                 }
                 return true;
             } catch (IOException e) {
-                e.printStackTrace();
+                Logger.stacktrace(TAG, e);
                 return false;
             }
         }
@@ -115,7 +123,7 @@ class AsyncSource {
                         try {
                             channel.register(mSelector, ops, handler);
                         } catch (ClosedChannelException e) {
-                            e.printStackTrace();
+                            Logger.stacktrace(TAG, e);
                         }
                     }
                 });

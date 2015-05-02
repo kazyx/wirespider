@@ -1,5 +1,8 @@
 package net.kazyx.apti;
 
+/**
+ * Base64 encoder injection.
+ */
 public class Base64 {
     private Base64() {
     }
@@ -17,7 +20,7 @@ public class Base64 {
 
     static Encoder getEncoder() {
         if (sEncoder == null) {
-            throw new IllegalStateException("Base64.Encoder is not set yet.");
+            throw new IllegalStateException("Base64.Encoder is not set yet. See Base64#setEncoder(Base64.Encoder)");
         }
         return sEncoder;
     }

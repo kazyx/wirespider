@@ -115,7 +115,7 @@ public class WebSocketClientTest {
                 @Override
                 public void onClosed(int code, String reason) {
                     System.out.println("WebSocketConnection onClosed");
-                    if (code == CloseStatusCode.NORMAL_CLOSURE.getStatusCode()) {
+                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
                         latch.countDown();
                     } else {
                         throw new IllegalStateException("Invalid close status code");
@@ -214,7 +214,7 @@ public class WebSocketClientTest {
                 @Override
                 public void onClosed(int code, String reason) {
                     System.out.println("onClosed: " + code);
-                    if (code == CloseStatusCode.NORMAL_CLOSURE.getStatusCode()) {
+                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
                         latch.countDown();
                     }
                 }

@@ -18,7 +18,7 @@ class SelectionHandler {
 
     private boolean mIsClosed = false;
 
-    private final LinkedList<byte[]> mSendingQueue = new LinkedList<>();
+    private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
     SelectionHandler(NonBlockingSocketConnection sc) {
         this.mSocketConnection = sc;
@@ -58,14 +58,17 @@ class SelectionHandler {
 
     private void onConnectReady() throws IOException {
         // Logger.d(TAG, "onConnectReady");
-
-        if (((SocketChannel) mKey.channel()).finishConnect()) {
-            mKey.interestOps(SelectionKey.OP_READ);
-            mSocketConnection.onConnected();
-        } else {
-            Logger.d(TAG, "Failed to connect");
-            onClosed();
+        try {
+            if (((SocketChannel) mKey.channel()).finishConnect()) {
+                mKey.interestOps(SelectionKey.OP_READ);
+                mSocketConnection.onConnected();
+                return;
+            }
+        } catch (CancelledKeyException e) {
+            // Connected but SelectionKey is cancelled. Fall through to failure
         }
+        Logger.d(TAG, "Failed to connect");
+        onClosed();
     }
 
     private void onReadReady() throws IOException {
@@ -101,25 +104,29 @@ class SelectionHandler {
             Logger.d(TAG, "Quit writeAsync due to closed state");
             return;
         }
-        synchronized (mSendingQueue) {
-            if(!mKey.isValid()) {
+        synchronized (mWriteQueue) {
+            if (!mKey.isValid()) {
                 onClosed();
                 return;
             }
-            mSendingQueue.addLast(data);
-            if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
-                mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                if (!calledOnSelectorThread) {
-                    mKey.selector().wakeup();
+            try {
+                mWriteQueue.addLast(data);
+                if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
+                    mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                    if (!calledOnSelectorThread) {
+                        mKey.selector().wakeup();
+                    }
                 }
+            } catch (CancelledKeyException e) {
+                onClosed();
             }
         }
     }
 
     void close() {
         mIsClosed = true;
-        synchronized (mSendingQueue) {
-            mSendingQueue.clear();
+        synchronized (mWriteQueue) {
+            mWriteQueue.clear();
             if (mKey != null) {
                 mKey.cancel();
                 IOUtil.close(mKey.channel());
@@ -130,8 +137,8 @@ class SelectionHandler {
     private void onWriteReady() throws IOException {
         // Logger.d(TAG, "onWriteReady");
         byte[] data;
-        synchronized (mSendingQueue) {
-            data = mSendingQueue.removeFirst();
+        synchronized (mWriteQueue) {
+            data = mWriteQueue.removeFirst();
         }
         ByteBuffer buff = ByteBuffer.wrap(data);
         SocketChannel ch = (SocketChannel) mKey.channel();
@@ -139,12 +146,16 @@ class SelectionHandler {
         // Logger.d(TAG, "Expected: " + data.length + ", Written: " + written);
 
         if (written != data.length) {
-            mSendingQueue.addFirst(Arrays.copyOfRange(data, written, data.length));
+            mWriteQueue.addFirst(Arrays.copyOfRange(data, written, data.length));
         }
 
-        synchronized (mSendingQueue) {
-            if (mSendingQueue.size() == 0) {
-                mKey.interestOps(SelectionKey.OP_READ);
+        synchronized (mWriteQueue) {
+            try {
+                if (mWriteQueue.size() == 0) {
+                    mKey.interestOps(SelectionKey.OP_READ);
+                }
+            } catch (CancelledKeyException e) {
+                onClosed();
             }
         }
     }

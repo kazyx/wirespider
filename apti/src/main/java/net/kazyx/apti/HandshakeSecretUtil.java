@@ -3,7 +3,7 @@ package net.kazyx.apti;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public final class HandshakeSecretUtil {
+final class HandshakeSecretUtil {
     private HandshakeSecretUtil() {
     }
 

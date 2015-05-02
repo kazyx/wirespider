@@ -14,6 +14,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * WebSocket end point.
+ */
 public class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
 
@@ -123,6 +126,10 @@ public class WebSocket {
      * @param message Text message to send.
      */
     public void sendTextMessageAsync(String message) {
+        if (!isConnected()) {
+            return;
+        }
+
         mFrameTx.sendTextAsync(message);
     }
 
@@ -132,6 +139,10 @@ public class WebSocket {
      * @param message Binary message to send.
      */
     public void sendBinaryMessageAsync(byte[] message) {
+        if (!isConnected()) {
+            return;
+        }
+
         mFrameTx.sendBinaryAsync(message);
     }
 
@@ -143,6 +154,10 @@ public class WebSocket {
      * @param unit    TImeUnit of timeout value.
      */
     public void checkConnectionAsync(long timeout, TimeUnit unit) {
+        if (!isConnected()) {
+            return;
+        }
+
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -209,6 +224,10 @@ public class WebSocket {
      * Close TCP connection without WebSocket closing handshake.
      */
     public void closeNow() {
+        if (!isConnected()) {
+            return;
+        }
+
         mSelectionHandler.close();
         invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
     }
