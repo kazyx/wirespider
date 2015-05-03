@@ -7,7 +7,6 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.fail;
 
 public class WebSocketClientTest {
     private static Server server = new Server(10000);
@@ -106,7 +106,7 @@ public class WebSocketClientTest {
         try {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
             ws = future.get(10000, TimeUnit.MILLISECONDS);
-            Assert.fail();
+            fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(IOException.class)));
         } finally {
@@ -383,7 +383,7 @@ public class WebSocketClientTest {
                         assertThat(c.getValue(), is("value2"));
                         break;
                     default:
-                        Assert.fail();
+                        fail();
                         break;
                 }
             }
