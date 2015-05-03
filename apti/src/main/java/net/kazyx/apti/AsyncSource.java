@@ -134,7 +134,7 @@ class AsyncSource {
 
     private final SelectorThread mSelectorThread;
 
-    void registerNewChannel(SocketChannel ch, int ops, SelectionHandler handler) throws IOException {
-        mSelectorThread.registerNewChannel(ch, ops, handler);
+    void register(WebSocket ws, int ops) throws IOException {
+        mSelectorThread.registerNewChannel(ws.getSocketChannel(), ops, ws.getSelectionHandler());
     }
 }

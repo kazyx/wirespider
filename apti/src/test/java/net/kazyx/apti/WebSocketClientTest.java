@@ -231,76 +231,76 @@ public class WebSocketClientTest {
     }
 
     @Test
-    public void textEcho1Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(1);
+    public void echoText_0000001Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(1);
     }
 
     @Test
-    public void textEcho126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(126);
+    public void echoText_0000126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(126);
     }
 
     @Test
-    public void textEcho127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(127);
+    public void echoText_0000127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(127);
     }
 
     @Test
-    public void textEcho128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(128);
+    public void echoText_0000128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(128);
     }
 
     @Test
-    public void textEcho10000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(10000);
+    public void echoText_0010000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(10000);
     }
 
     @Test
-    public void textEcho65536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(65536);
+    public void echoText_0065536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(65536);
     }
 
     @Test
-    public void textEcho1MByte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        textEcho(JettyWebSocketServlet.MAX_SIZE_1MB);
+    public void echoText_1000000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoText(JettyWebSocketServlet.MAX_SIZE_1MB);
     }
 
     @Test
-    public void binaryEcho1Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(1);
+    public void echoBinary_0000001Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(1);
     }
 
     @Test
-    public void binaryEcho126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(126);
+    public void echoBinary_0000126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(126);
     }
 
     @Test
-    public void binaryEcho127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(127);
+    public void echoBinary_0000127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(127);
     }
 
     @Test
-    public void binaryEcho128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(128);
+    public void echoBinary_0000128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(128);
     }
 
     @Test
-    public void binaryEcho10000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(10000);
+    public void echoBinary_0010000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(10000);
     }
 
     @Test
-    public void binaryEcho65536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(65536);
+    public void echoBinary_0065536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(65536);
     }
 
     @Test
-    public void binaryEcho1MByte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        binaryEcho(JettyWebSocketServlet.MAX_SIZE_1MB);
+    public void echoBinary_1000000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        echoBinary(JettyWebSocketServlet.MAX_SIZE_1MB);
     }
 
-    private static void binaryEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
         byte[] data = fixedLengthByteArray(size);
@@ -336,7 +336,7 @@ public class WebSocketClientTest {
         return ba;
     }
 
-    private static void textEcho(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
         final String data = fixedLengthString(size);

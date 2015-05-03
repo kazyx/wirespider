@@ -1,60 +1,89 @@
 package net.kazyx.apti;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * WebSocket end point.
  */
-public class WebSocket {
+public abstract class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
 
     private final AsyncSource mAsync;
+
+    final AsyncSource getAsync() {
+        return mAsync;
+    }
+
     private final URI mURI;
+
+    final URI getRemoteURI() {
+        return mURI;
+    }
+
+    private final SocketChannel mSocketChannel;
+
+    final SocketChannel getSocketChannel() {
+        return mSocketChannel;
+    }
+
     private final WebSocketConnection mCallbackHandler;
-    private final List<HttpHeader> mRequestHeaders;
 
     private final Object mCloseCallbackLock = new Object();
+
+    private boolean mIsHandshakeCompleted = false;
+
     private boolean mIsConnected = false;
+
+    /**
+     * @return WebSocket connection is established or not.
+     */
+    public boolean isConnected() {
+        return mIsConnected;
+    }
 
     private final SelectionHandler mSelectionHandler;
 
-    private FrameTx mFrameTx;
-    private FrameRx mFrameRx;
-    private Handshake mHandshake;
+    final SelectionHandler getSelectionHandler() {
+        return mSelectionHandler;
+    }
+
+    private final FrameTx mFrameTx;
+    private final FrameRx mFrameRx;
+    private final Handshake mHandshake;
+
+    final Handshake getHandshake() {
+        return mHandshake;
+    }
 
     private final Object mPingPongTaskLock = new Object();
     private TimerTask mPingPongTask;
 
-    WebSocket(AsyncSource async, URI uri, WebSocketConnection handler, List<HttpHeader> extraHeaders) {
+    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, boolean isClient) {
         mURI = uri;
-        mRequestHeaders = extraHeaders;
         mCallbackHandler = handler;
         mAsync = async;
+        mSocketChannel = ch;
 
         mSelectionHandler = new SelectionHandler(new NonBlockingSocketConnection() {
             @Override
             public void onConnected() {
-                // Logger.d(TAG, "SelectionHandler onConnected");
                 onSocketConnected();
             }
 
             @Override
             public void onClosed() {
                 // Logger.d(TAG, "SelectionHandler onClosed");
-                mConnectLatch.countDown();
-                closeNow();
+                if (mIsHandshakeCompleted) {
+                    closeNow();
+                } else {
+                    onHandshakeFailed();
+                }
             }
 
             @Override
@@ -63,12 +92,11 @@ public class WebSocket {
                 if (!isConnected()) {
                     try {
                         LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
-                        mHandshake = null;
+                        mIsHandshakeCompleted = true;
                         mIsConnected = true;
-                        // Logger.d(TAG, "WebSocket handshake succeed!!");
-                        mConnectLatch.countDown();
+                        onHandshakeCompleted();
 
-                        if (data.size() != 0) {
+                        if (remaining.size() != 0) {
                             mFrameRx.onDataReceived(remaining);
                         }
                     } catch (BufferUnsatisfiedException e) {
@@ -81,44 +109,17 @@ public class WebSocket {
                 }
             }
         });
-    }
 
-    private void onSocketConnected() {
-        mFrameTx = new Rfc6455Tx(WebSocket.this, true, mSelectionHandler);
+        mFrameTx = new Rfc6455Tx(WebSocket.this, mSelectionHandler, isClient);
         mFrameRx = new Rfc6455Rx(WebSocket.this);
-        mHandshake = new Rfc6455Handshake();
-        mHandshake.tryUpgrade(mURI, mRequestHeaders, mSelectionHandler);
+        mHandshake = new Rfc6455Handshake(mSelectionHandler, isClient);
     }
 
-    CountDownLatch mConnectLatch = new CountDownLatch(1);
+    abstract void onSocketConnected();
 
-    /**
-     * Synchronously openAsync WebSocket connection.
-     *
-     * @throws IOException          Failed to openAsync connection.
-     * @throws InterruptedException Awaiting thread interrupted.
-     */
-    void connect(SocketChannel channel) throws IOException, InterruptedException {
-        final Socket socket = channel.socket();
-        socket.setTcpNoDelay(true);
-        // TODO bind local address here.
+    abstract void onHandshakeFailed();
 
-        channel.connect(new InetSocketAddress(mURI.getHost(), (mURI.getPort() != -1) ? mURI.getPort() : 80));
-        mAsync.registerNewChannel(channel, SelectionKey.OP_CONNECT, mSelectionHandler);
-
-        mConnectLatch.await();
-
-        if (!isConnected()) {
-            throw new IOException("Socket connection or handshake failure");
-        }
-    }
-
-    /**
-     * @return WebSocket connection is established or not.
-     */
-    public boolean isConnected() {
-        return mIsConnected;
-    }
+    abstract void onHandshakeCompleted();
 
     /**
      * Send text message asynchronously.
@@ -229,6 +230,7 @@ public class WebSocket {
         }
 
         mSelectionHandler.close();
+        IOUtil.close(mSocketChannel);
         invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
     }
 

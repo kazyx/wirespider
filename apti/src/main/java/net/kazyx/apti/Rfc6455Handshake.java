@@ -12,8 +12,20 @@ class Rfc6455Handshake implements Handshake {
     private static final String TAG = Rfc6455Handshake.class.getSimpleName();
     private String mSecret;
 
+    private final SelectionHandler mSelectionHandler;
+
+    private final boolean mIsClient;
+
+    Rfc6455Handshake(SelectionHandler handler, boolean isClient) {
+        mIsClient = isClient;
+        mSelectionHandler = handler;
+    }
+
     @Override
-    public void tryUpgrade(URI uri, List<HttpHeader> requestHeaders, SelectionHandler handler) {
+    public void tryUpgrade(URI uri, List<HttpHeader> requestHeaders) {
+        if (!mIsClient) {
+            throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
+        }
         mSecret = HandshakeSecretUtil.createNew();
 
         StringBuilder sb = new StringBuilder();
@@ -33,7 +45,7 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        handler.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
+        mSelectionHandler.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();

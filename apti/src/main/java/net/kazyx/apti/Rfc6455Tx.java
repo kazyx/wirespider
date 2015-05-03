@@ -15,7 +15,7 @@ class Rfc6455Tx implements FrameTx {
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
-    Rfc6455Tx(WebSocket websocket, boolean isClient, SelectionHandler socket) {
+    Rfc6455Tx(WebSocket websocket, SelectionHandler socket, boolean isClient) {
         mWebSocket = websocket;
         mIsClient = isClient;
         mHandler = socket;
