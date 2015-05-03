@@ -21,7 +21,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mReadOpCodeOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "FirstByte operation");
+            // AptiLog.d(TAG, "FirstByte operation");
             try {
                 byte first = readBytes(1)[0];
                 isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
@@ -32,7 +32,7 @@ class Rfc6455Rx implements FrameRx {
                 opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
                 mSecondByteOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                // Logger.d(TAG, "BufferUnsatisfied");
+                // AptiLog.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -48,7 +48,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mSecondByteOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "SecondByte operation");
+            // AptiLog.d(TAG, "SecondByte operation");
             try {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
@@ -73,7 +73,7 @@ class Rfc6455Rx implements FrameRx {
                     mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
-                Logger.d(TAG, "SecondByte BufferUnsatisfied");
+                AptiLog.d(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -86,33 +86,33 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mExtendedPayloadOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "ExtendedPayloadLength operation");
+            // AptiLog.d(TAG, "ExtendedPayloadLength operation");
             int size = payloadLength == 126 ? 2 : 8;
             try {
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
             } catch (BufferUnsatisfiedException e) {
-                Logger.d(TAG, "ExtendedPayloadLength BufferUnsatisfied");
+                AptiLog.d(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                Logger.d(TAG, "ExtendedPayloadLength ProtocolViolation");
+                AptiLog.d(TAG, "ExtendedPayloadLength ProtocolViolation");
                 mWebSocket.onProtocolViolation();
             }
         }
     };
 
-    byte[] mask;
+    private byte[] mask;
 
     private final Runnable mMaskKeyOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "MaskKey operation");
+            // AptiLog.d(TAG, "MaskKey operation");
             try {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                Logger.d(TAG, "MaskKey BufferUnsatisfied");
+                AptiLog.d(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -123,7 +123,7 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mPayloadOperation = new Runnable() {
         @Override
         public void run() {
-            // Logger.d(TAG, "Payload operation: " + payloadLength);
+            // AptiLog.d(TAG, "Payload operation: " + payloadLength);
             try {
                 byte[] payload = readBytes(payloadLength);
                 if (isMasked) {
@@ -133,7 +133,7 @@ class Rfc6455Rx implements FrameRx {
                 handleFrame(opcode, payload, isFinal);
                 mReadOpCodeOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                Logger.d(TAG, "Payload BufferUnsatisfied");
+                AptiLog.d(TAG, "Payload BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -156,7 +156,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
-        // Logger.d(TAG, "handleFrame: " + opcode);
+        // AptiLog.d(TAG, "handleFrame: " + opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -220,7 +220,7 @@ class Rfc6455Rx implements FrameRx {
 
     @Override
     public void onDataReceived(LinkedList<ByteBuffer> data) {
-        // Logger.d(TAG, "onDataReceived");
+        // AptiLog.d(TAG, "onDataReceived");
         mReceivedBuffer.addAll(data);
         for (ByteBuffer buff : data) {
             mBufferSize += buff.limit();

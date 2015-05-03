@@ -16,19 +16,19 @@ public abstract class WebSocket {
 
     private final AsyncSource mAsync;
 
-    final AsyncSource getAsync() {
+    final AsyncSource asyncSource() {
         return mAsync;
     }
 
     private final URI mURI;
 
-    final URI getRemoteURI() {
+    final URI remoteUri() {
         return mURI;
     }
 
     private final SocketChannel mSocketChannel;
 
-    final SocketChannel getSocketChannel() {
+    final SocketChannel socketChannel() {
         return mSocketChannel;
     }
 
@@ -47,17 +47,17 @@ public abstract class WebSocket {
         return mIsConnected;
     }
 
-    private final SelectionHandler mSelectionHandler;
+    private final SocketChannelProxy mSocketChannelProxy;
 
-    final SelectionHandler getSelectionHandler() {
-        return mSelectionHandler;
+    final SocketChannelProxy socketChannelProxy() {
+        return mSocketChannelProxy;
     }
 
     private final FrameTx mFrameTx;
     private final FrameRx mFrameRx;
     private final Handshake mHandshake;
 
-    final Handshake getHandshake() {
+    final Handshake handshake() {
         return mHandshake;
     }
 
@@ -70,7 +70,7 @@ public abstract class WebSocket {
         mAsync = async;
         mSocketChannel = ch;
 
-        mSelectionHandler = new SelectionHandler(new NonBlockingSocketConnection() {
+        mSocketChannelProxy = new SocketChannelProxy(new NonBlockingSocketConnection() {
             @Override
             public void onConnected() {
                 onSocketConnected();
@@ -78,7 +78,7 @@ public abstract class WebSocket {
 
             @Override
             public void onClosed() {
-                // Logger.d(TAG, "SelectionHandler onClosed");
+                // AptiLog.d(TAG, "SocketChannelProxy onClosed");
                 if (mIsHandshakeCompleted) {
                     closeNow();
                 } else {
@@ -88,10 +88,10 @@ public abstract class WebSocket {
 
             @Override
             public void onDataReceived(final LinkedList<ByteBuffer> data) {
-                // Logger.d(TAG, "SelectionHandler onDataReceived");
+                // AptiLog.d(TAG, "SocketChannelProxy onDataReceived");
                 if (!isConnected()) {
                     try {
-                        LinkedList<ByteBuffer> remaining = mHandshake.onDataReceived(data);
+                        LinkedList<ByteBuffer> remaining = mHandshake.onHandshakeResponse(data);
                         mIsHandshakeCompleted = true;
                         mIsConnected = true;
                         onHandshakeCompleted();
@@ -102,6 +102,7 @@ public abstract class WebSocket {
                     } catch (BufferUnsatisfiedException e) {
                         // wait for the next data.
                     } catch (HandshakeFailureException e) {
+                        AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
                         closeNow();
                     }
                 } else {
@@ -110,9 +111,9 @@ public abstract class WebSocket {
             }
         });
 
-        mFrameTx = new Rfc6455Tx(WebSocket.this, mSelectionHandler, isClient);
+        mFrameTx = new Rfc6455Tx(WebSocket.this, mSocketChannelProxy, isClient);
         mFrameRx = new Rfc6455Rx(WebSocket.this);
-        mHandshake = new Rfc6455Handshake(mSelectionHandler, isClient);
+        mHandshake = new Rfc6455Handshake(mSocketChannelProxy, isClient);
     }
 
     abstract void onSocketConnected();
@@ -127,6 +128,7 @@ public abstract class WebSocket {
      * @param message Text message to send.
      */
     public void sendTextMessageAsync(String message) {
+        ArgumentCheck.rejectNull(message);
         if (!isConnected()) {
             return;
         }
@@ -140,6 +142,7 @@ public abstract class WebSocket {
      * @param message Binary message to send.
      */
     public void sendBinaryMessageAsync(byte[] message) {
+        ArgumentCheck.rejectNull(message);
         if (!isConnected()) {
             return;
         }
@@ -155,6 +158,10 @@ public abstract class WebSocket {
      * @param unit    TImeUnit of timeout value.
      */
     public void checkConnectionAsync(long timeout, TimeUnit unit) {
+        ArgumentCheck.rejectNull(unit);
+        if (timeout <= 0) {
+            throw new IllegalArgumentException("timeout value minus");
+        }
         if (!isConnected()) {
             return;
         }
@@ -202,6 +209,7 @@ public abstract class WebSocket {
      * @param reason Close reason phrase to send.
      */
     public void closeAsync(final CloseStatusCode code, final String reason) {
+        ArgumentCheck.rejectNullArgs(code, reason);
         if (!isConnected()) {
             return;
         }
@@ -215,7 +223,7 @@ public abstract class WebSocket {
         mAsync.safeAsync(new Runnable() {
             @Override
             public void run() {
-                mSelectionHandler.close();
+                mSocketChannelProxy.close();
                 invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
             }
         });
@@ -229,7 +237,7 @@ public abstract class WebSocket {
             return;
         }
 
-        mSelectionHandler.close();
+        mSocketChannelProxy.close();
         IOUtil.close(mSocketChannel);
         invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
     }
@@ -286,7 +294,7 @@ public abstract class WebSocket {
         if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
             sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
         }
-        mSelectionHandler.close();
+        mSocketChannelProxy.close();
         invokeOnClosed(code, reason);
     }
 
@@ -318,12 +326,12 @@ public abstract class WebSocket {
      * Called when received message violated WebSocket protocol.
      */
     void onProtocolViolation() {
-        Logger.d(TAG, "onProtocolViolation");
+        AptiLog.d(TAG, "onProtocolViolation");
         if (!isConnected()) {
             return;
         }
         sendCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation");
-        mSelectionHandler.close();
+        mSocketChannelProxy.close();
         invokeOnClosed(CloseStatusCode.POLICY_VIOLATION.statusCode, "WebSocket protocol violation");
     }
 }

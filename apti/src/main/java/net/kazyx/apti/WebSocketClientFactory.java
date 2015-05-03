@@ -52,9 +52,12 @@ public class WebSocketClientFactory {
      * @throws IllegalStateException if this instance is already destroyed.
      */
     public synchronized Future<WebSocket> openAsync(final URI uri, final WebSocketConnection handler, final List<HttpHeader> headers) {
+        ArgumentCheck.rejectNullArgs(uri, handler);
+
         if (!mAsync.isAlive()) {
             throw new IllegalStateException("This WebSocketClientFactory is already destroyed.");
         }
+
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {

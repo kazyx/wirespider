@@ -27,14 +27,14 @@ class HttpHeaderReader {
     /**
      * @return Status line of HTTP response.
      */
-    HttpStatusLine getStatusLine() {
+    HttpStatusLine statusLine() {
         return mStatusLine;
     }
 
     /**
      * @return Key and values dictionary of HTTP header fields. Keys of header are un-capitalized.
      */
-    List<HttpHeader> getHeaderFields() {
+    List<HttpHeader> headerFields() {
         return mHeaders;
     }
 
@@ -127,7 +127,11 @@ class HttpHeaderReader {
 
         List<HttpHeader> parsed = new ArrayList<>(headers.size());
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-            parsed.add(new HttpHeader(entry.getKey(), entry.getValue()));
+            HttpHeader.Builder builder = new HttpHeader.Builder(entry.getKey());
+            for (String value : entry.getValue()) {
+                builder.appendValue(value);
+            }
+            parsed.add(builder.build());
         }
         mHeaders = parsed;
     }

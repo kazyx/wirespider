@@ -12,13 +12,13 @@ class Rfc6455Handshake implements Handshake {
     private static final String TAG = Rfc6455Handshake.class.getSimpleName();
     private String mSecret;
 
-    private final SelectionHandler mSelectionHandler;
+    private final SocketChannelProxy mSocketChannelProxy;
 
     private final boolean mIsClient;
 
-    Rfc6455Handshake(SelectionHandler handler, boolean isClient) {
+    Rfc6455Handshake(SocketChannelProxy proxy, boolean isClient) {
         mIsClient = isClient;
-        mSelectionHandler = handler;
+        mSocketChannelProxy = proxy;
     }
 
     @Override
@@ -26,7 +26,7 @@ class Rfc6455Handshake implements Handshake {
         if (!mIsClient) {
             throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
         }
-        mSecret = HandshakeSecretUtil.createNew();
+        mSecret = HandshakeSecretUtil.newSecretKey();
 
         StringBuilder sb = new StringBuilder();
         sb.append("GET ").append(TextUtil.isNullOrEmpty(uri.getPath()) ? "/" : uri.getPath())
@@ -45,13 +45,13 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        mSelectionHandler.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
+        mSocketChannelProxy.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
-    public LinkedList<ByteBuffer> onDataReceived(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException {
+    public LinkedList<ByteBuffer> onHandshakeResponse(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException {
         boolean isHeaderEnd = false;
 
         ListIterator<ByteBuffer> itr = data.listIterator();
@@ -61,7 +61,7 @@ class Rfc6455Handshake implements Handshake {
             buff.get(ba);
 
             String str = ByteArrayUtil.toText(ba);
-            // Logger.d(TAG, str);
+            // AptiLog.d(TAG, str);
 
             int index = str.indexOf("\r\n\r\n");
             if (index == -1) {
@@ -85,7 +85,7 @@ class Rfc6455Handshake implements Handshake {
             parseHeader(mBuffer.toByteArray());
             return data;
         } else {
-            Logger.d(TAG, "Header unsatisfied");
+            AptiLog.d(TAG, "Header unsatisfied");
             throw new BufferUnsatisfiedException();
         }
     }
@@ -94,27 +94,27 @@ class Rfc6455Handshake implements Handshake {
         try {
             HttpHeaderReader headerReader = new HttpHeaderReader(data);
 
-            HttpStatusLine statusLine = headerReader.getStatusLine();
-            if (statusLine.statusCode != 101) {
-                throw new HandshakeFailureException("WebSocket opening handshake failed: " + statusLine.statusCode);
+            HttpStatusLine statusLine = headerReader.statusLine();
+            if (statusLine.statusCode() != 101) {
+                throw new HandshakeFailureException("HTTP Status code not 101: " + statusLine.statusCode());
             }
 
-            List<HttpHeader> resHeaders = headerReader.getHeaderFields();
+            List<HttpHeader> resHeaders = headerReader.headerFields();
 
             boolean validated = false;
             for (HttpHeader header : resHeaders) {
                 if (header.key.equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_ACCEPT)) {
-                    String expected = HandshakeSecretUtil.convertForValidation(mSecret);
+                    String expected = HandshakeSecretUtil.scrambleSecret(mSecret);
                     validated = header.values.get(0).equals(expected);
                     if (!validated) {
-                        throw new HandshakeFailureException("WebSocket opening handshake failed: Invalid Sec-WebSocket-Accept header value");
+                        throw new HandshakeFailureException("Invalid Sec-WebSocket-Accept header value");
                     }
                     break;
                 }
             }
 
             if (!validated) {
-                throw new HandshakeFailureException("WebSocket opening handshake failed: No Sec-WebSocket-Accept header");
+                throw new HandshakeFailureException("No Sec-WebSocket-Accept header");
             }
         } catch (IOException e) {
             throw new HandshakeFailureException(e);

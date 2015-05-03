@@ -8,8 +8,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-class SelectionHandler {
-    private static final String TAG = SelectionHandler.class.getSimpleName();
+class SocketChannelProxy {
+    private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
     private static final int BUFFER_SIZE = 4096;
     private final NonBlockingSocketConnection mSocketConnection;
@@ -20,7 +20,7 @@ class SelectionHandler {
 
     private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
-    SelectionHandler(NonBlockingSocketConnection sc) {
+    SocketChannelProxy(NonBlockingSocketConnection sc) {
         this.mSocketConnection = sc;
     }
 
@@ -28,7 +28,7 @@ class SelectionHandler {
         mKey = key;
         try {
             if (!key.isValid()) {
-                Logger.d(TAG, "Skip invalid key");
+                AptiLog.d(TAG, "Skip invalid key");
                 return;
             }
             if (key.isConnectable()) {
@@ -46,18 +46,18 @@ class SelectionHandler {
     }
 
     void onCancelled() {
-        Logger.d(TAG, "onCancelled");
+        AptiLog.d(TAG, "onCancelled");
         onClosed();
     }
 
     private void onClosed() {
-        Logger.d(TAG, "onClosed");
+        AptiLog.d(TAG, "onClosed");
         close();
         mSocketConnection.onClosed();
     }
 
     private void onConnectReady() throws IOException {
-        // Logger.d(TAG, "onConnectReady");
+        // AptiLog.d(TAG, "onConnectReady");
         try {
             if (((SocketChannel) mKey.channel()).finishConnect()) {
                 mKey.interestOps(SelectionKey.OP_READ);
@@ -67,12 +67,12 @@ class SelectionHandler {
         } catch (CancelledKeyException e) {
             // Connected but SelectionKey is cancelled. Fall through to failure
         }
-        Logger.d(TAG, "Failed to connect");
+        AptiLog.d(TAG, "Failed to connect");
         onClosed();
     }
 
     private void onReadReady() throws IOException {
-        // Logger.d(TAG, "onReadReady");
+        // AptiLog.d(TAG, "onReadReady");
         SocketChannel ch = (SocketChannel) mKey.channel();
         LinkedList<ByteBuffer> list = new LinkedList<>();
 
@@ -99,9 +99,9 @@ class SelectionHandler {
     }
 
     void writeAsync(byte[] data, boolean calledOnSelectorThread) {
-        // Logger.d(TAG, "writeAsync");
+        // AptiLog.d(TAG, "writeAsync");
         if (mIsClosed) {
-            Logger.d(TAG, "Quit writeAsync due to closed state");
+            AptiLog.d(TAG, "Quit writeAsync due to closed state");
             return;
         }
         synchronized (mWriteQueue) {
@@ -135,7 +135,7 @@ class SelectionHandler {
     }
 
     private void onWriteReady() throws IOException {
-        // Logger.d(TAG, "onWriteReady");
+        // AptiLog.d(TAG, "onWriteReady");
         byte[] data;
         synchronized (mWriteQueue) {
             data = mWriteQueue.removeFirst();
@@ -143,7 +143,7 @@ class SelectionHandler {
         ByteBuffer buff = ByteBuffer.wrap(data);
         SocketChannel ch = (SocketChannel) mKey.channel();
         int written = ch.write(buff);
-        // Logger.d(TAG, "Expected: " + data.length + ", Written: " + written);
+        // AptiLog.d(TAG, "Expected: " + data.length + ", Written: " + written);
 
         if (written != data.length) {
             mWriteQueue.addFirst(Arrays.copyOfRange(data, written, data.length));

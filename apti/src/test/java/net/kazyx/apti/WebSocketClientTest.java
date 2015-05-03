@@ -13,9 +13,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -24,6 +27,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 public class WebSocketClientTest {
     private static Server server = new Server(10000);
@@ -83,10 +89,32 @@ public class WebSocketClientTest {
 
     @Before
     public void setup() throws Exception {
+        sHeaders = null;
+        sCookies = null;
     }
 
     @After
     public void teardown() throws Exception {
+        sHeaders = null;
+        sCookies = null;
+    }
+
+    @Test
+    public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
+            ws = future.get(10000, TimeUnit.MILLISECONDS);
+            Assert.fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(IOException.class)));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
     }
 
     @Test
@@ -96,7 +124,7 @@ public class WebSocketClientTest {
         try {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
             ws = future.get(1000, TimeUnit.MILLISECONDS);
-            Assert.assertTrue(ws.isConnected());
+            assertThat(ws.isConnected(), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -124,8 +152,7 @@ public class WebSocketClientTest {
             }).get(1000, TimeUnit.MILLISECONDS);
 
             factory.destroy();
-            boolean completed = latch.await(500, TimeUnit.MILLISECONDS);
-            Assert.assertTrue(completed);
+            assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -160,7 +187,7 @@ public class WebSocketClientTest {
                 });
             }
 
-            Assert.assertTrue(latch.await(20000, TimeUnit.MILLISECONDS));
+            assertThat(latch.await(5000, TimeUnit.MILLISECONDS), is(true));
         } finally {
             for (WebSocket ws : set) {
                 ws.closeNow();
@@ -195,7 +222,7 @@ public class WebSocketClientTest {
                 ws.sendTextMessageAsync(MESSAGE);
             }
 
-            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+            assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -221,7 +248,7 @@ public class WebSocketClientTest {
             }).get(1000, TimeUnit.MILLISECONDS);
             ws.sendTextMessageAsync(JettyWebSocketServlet.CLOSE_REQUEST);
 
-            Assert.assertTrue(latch.await(500, TimeUnit.MILLISECONDS));
+            assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -232,94 +259,101 @@ public class WebSocketClientTest {
 
     @Test
     public void echoText_0000001Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(1);
+        WebSocketClientTestUtil.echoText(1);
     }
 
     @Test
     public void echoText_0000126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(126);
+        WebSocketClientTestUtil.echoText(126);
     }
 
     @Test
     public void echoText_0000127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(127);
+        WebSocketClientTestUtil.echoText(127);
     }
 
     @Test
     public void echoText_0000128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(128);
+        WebSocketClientTestUtil.echoText(128);
     }
 
     @Test
     public void echoText_0010000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(10000);
+        WebSocketClientTestUtil.echoText(10000);
     }
 
     @Test
     public void echoText_0065536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(65536);
+        WebSocketClientTestUtil.echoText(65536);
     }
 
     @Test
     public void echoText_1000000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoText(JettyWebSocketServlet.MAX_SIZE_1MB);
+        WebSocketClientTestUtil.echoText(JettyWebSocketServlet.MAX_SIZE_1MB);
     }
 
     @Test
     public void echoBinary_0000001Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(1);
+        WebSocketClientTestUtil.echoBinary(1);
     }
 
     @Test
     public void echoBinary_0000126Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(126);
+        WebSocketClientTestUtil.echoBinary(126);
     }
 
     @Test
     public void echoBinary_0000127Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(127);
+        WebSocketClientTestUtil.echoBinary(127);
     }
 
     @Test
     public void echoBinary_0000128Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(128);
+        WebSocketClientTestUtil.echoBinary(128);
     }
 
     @Test
     public void echoBinary_0010000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(10000);
+        WebSocketClientTestUtil.echoBinary(10000);
     }
 
     @Test
     public void echoBinary_0065536Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(65536);
+        WebSocketClientTestUtil.echoBinary(65536);
     }
 
     @Test
     public void echoBinary_1000000Byte() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        echoBinary(JettyWebSocketServlet.MAX_SIZE_1MB);
+        WebSocketClientTestUtil.echoBinary(JettyWebSocketServlet.MAX_SIZE_1MB);
     }
 
-    private static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        final CountDownLatch latch = new CountDownLatch(1);
-        byte[] data = fixedLengthByteArray(size);
+    static void callbackCookies(List<HttpCookie> cookies) {
+        sCookies = cookies;
+    }
 
-        final byte[] copy = Arrays.copyOf(data, data.length);
+    private static List<HttpCookie> sCookies;
+
+    static void callbackHeaders(Map<String, List<String>> headers) {
+        sHeaders = headers;
+    }
+
+    private static Map<String, List<String>> sHeaders;
+
+    @Test
+    public void connectWithHeaders() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
+        HttpHeader single = new HttpHeader.Builder("single").appendValue("value").build();
+        HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
+        HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
+        HttpHeader[] headers = {single, multi, multi2};
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(message, copy)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Binary message not matched");
-                    }
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
-            ws.sendBinaryMessageAsync(data);
-            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            assertThat(sHeaders.keySet(), hasItems("single", "multi"));
+            assertThat(sHeaders.get("single"), is(contains("value")));
+            assertThat(sHeaders.get("multi"), is(contains("value1,value2", "value3")));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -328,46 +362,36 @@ public class WebSocketClientTest {
         }
     }
 
-    private static byte[] fixedLengthByteArray(int length) {
-        byte[] ba = new byte[length];
-        for (int i = 0; i < length; i++) {
-            ba[i] = 10;
-        }
-        return ba;
-    }
-
-    private static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    @Test
+    public void connectWithCookies() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
-        final CountDownLatch latch = new CountDownLatch(1);
-        final String data = fixedLengthString(size);
-
         WebSocket ws = null;
+        HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
+        HttpHeader[] headers = {cookie};
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-                    if (data.equals(message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                    }
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            assertThat(sCookies, is(notNullValue()));
+            assertThat(sCookies, hasSize(2));
+            for (HttpCookie c : sCookies) {
+                switch (c.getName()) {
+                    case "name1":
+                        assertThat(c.getValue(), is("value1"));
+                        break;
+                    case "name2":
+                        assertThat(c.getValue(), is("value2"));
+                        break;
+                    default:
+                        Assert.fail();
+                        break;
                 }
-            }).get(1000, TimeUnit.MILLISECONDS);
-            ws.sendTextMessageAsync(data);
-            Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+            }
         } finally {
             if (ws != null) {
                 ws.closeNow();
             }
             factory.destroy();
         }
-    }
-
-    private static String fixedLengthString(int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sb.append("a");
-        }
-        return sb.toString();
     }
 }

@@ -15,6 +15,7 @@ public class Base64 {
      * @param encoder Encoder.
      */
     public static void setEncoder(Encoder encoder) {
+        ArgumentCheck.rejectNull(encoder);
         sEncoder = encoder;
     }
 

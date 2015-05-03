@@ -1,13 +1,25 @@
 package net.kazyx.apti;
 
 class HttpStatusLine {
-    final String version;
-    final int statusCode;
-    final String reason;
+    private final String mVersion;
+    private final int mStatusCode;
+    private final String mReason;
 
     HttpStatusLine(String version, int status, String reason) {
-        this.version = version;
-        this.statusCode = status;
-        this.reason = reason;
+        this.mVersion = version;
+        this.mStatusCode = status;
+        this.mReason = reason;
+    }
+
+    String version() {
+        return mVersion;
+    }
+
+    int statusCode() {
+        return mStatusCode;
+    }
+
+    String reason() {
+        return mReason;
     }
 }

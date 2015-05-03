@@ -7,7 +7,9 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 @org.eclipse.jetty.websocket.api.annotations.WebSocket
 public class JettyWebSocketServlet {
@@ -21,6 +23,13 @@ public class JettyWebSocketServlet {
         session.getPolicy().setMaxBinaryMessageSize(MAX_SIZE_1MB);
         session.getPolicy().setMaxTextMessageBufferSize(MAX_SIZE_1MB);
         session.getPolicy().setMaxTextMessageSize(MAX_SIZE_1MB);
+
+        List<HttpCookie> cookies = session.getUpgradeRequest().getCookies();
+        if (!cookies.isEmpty()) {
+            WebSocketClientTest.callbackCookies(cookies);
+        }
+        WebSocketClientTest.callbackHeaders(session.getUpgradeRequest().getHeaders());
+
         mSession = session;
     }
 

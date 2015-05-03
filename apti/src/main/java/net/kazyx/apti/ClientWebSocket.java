@@ -9,7 +9,12 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Client specific implementation of WebSocket.
+ */
 class ClientWebSocket extends WebSocket {
+    private static final String TAG = ClientWebSocket.class.getSimpleName();
+
     private final List<HttpHeader> mRequestHeaders;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
@@ -21,17 +26,18 @@ class ClientWebSocket extends WebSocket {
 
     @Override
     void onSocketConnected() {
-        getHandshake().tryUpgrade(getRemoteURI(), mRequestHeaders);
+        handshake().tryUpgrade(remoteUri(), mRequestHeaders);
     }
 
     @Override
     void onHandshakeFailed() {
+        AptiLog.d(TAG, "WebSocket handshake failure detected.");
         mConnectLatch.countDown();
     }
 
     @Override
     void onHandshakeCompleted() {
-        // Logger.d(TAG, "WebSocket handshake succeed!!");
+        // AptiLog.d(TAG, "WebSocket handshake succeed!!");
         mConnectLatch.countDown();
     }
 
@@ -42,13 +48,13 @@ class ClientWebSocket extends WebSocket {
      * @throws InterruptedException Awaiting thread interrupted.
      */
     void connect() throws IOException, InterruptedException {
-        final Socket socket = getSocketChannel().socket();
+        final Socket socket = socketChannel().socket();
         socket.setTcpNoDelay(true);
         // TODO bind local address here.
 
-        URI mURI = getRemoteURI();
-        getSocketChannel().connect(new InetSocketAddress(mURI.getHost(), (mURI.getPort() != -1) ? mURI.getPort() : 80));
-        getAsync().register(this, SelectionKey.OP_CONNECT);
+        URI uri = remoteUri();
+        socketChannel().connect(new InetSocketAddress(uri.getHost(), (uri.getPort() != -1) ? uri.getPort() : 80));
+        asyncSource().register(this, SelectionKey.OP_CONNECT);
 
         mConnectLatch.await();
 

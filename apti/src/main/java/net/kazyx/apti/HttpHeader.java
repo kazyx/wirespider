@@ -14,15 +14,24 @@ public class HttpHeader {
 
     final List<String> values = new ArrayList<>();
 
-    /**
-     * Create an HTTP header with single value.
-     *
-     * @param key   Header key.
-     * @param value Header value.
-     */
-    public HttpHeader(String key, String value) {
-        this.key = key;
-        this.values.add(value);
+    public static class Builder {
+        private final String name;
+        private final List<String> values = new ArrayList<>();
+
+        public Builder(String name) {
+            ArgumentCheck.rejectNull(name);
+            this.name = name;
+        }
+
+        public Builder appendValue(String value) {
+            ArgumentCheck.rejectNull(value);
+            values.add(value);
+            return this;
+        }
+
+        public HttpHeader build() {
+            return new HttpHeader(name, values);
+        }
     }
 
     /**
@@ -31,7 +40,7 @@ public class HttpHeader {
      * @param key    Header key
      * @param values List of header values.
      */
-    public HttpHeader(String key, List<String> values) {
+    private HttpHeader(String key, List<String> values) {
         this.key = key;
         this.values.addAll(values);
     }
@@ -54,10 +63,13 @@ public class HttpHeader {
     public String toHeaderLine() {
         StringBuilder sb = new StringBuilder();
         sb.append(key).append(": ");
-        char separator = key.equals(COOKIE) ? ';' : ',';
+        char separator = key.equalsIgnoreCase(COOKIE) ? ';' : ',';
 
         boolean first = true;
         for (String value : values) {
+            if (value == null || value.length() == 0) {
+                continue;
+            }
             if (!first) {
                 sb.append(separator).append(value);
             } else {

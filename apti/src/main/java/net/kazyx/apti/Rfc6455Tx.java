@@ -8,48 +8,48 @@ class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
     private final boolean mIsClient;
-    private final SelectionHandler mHandler;
+    private final SocketChannelProxy mProxy;
     private final WebSocket mWebSocket;
     private final Random mRandom;
 
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
-    Rfc6455Tx(WebSocket websocket, SelectionHandler socket, boolean isClient) {
+    Rfc6455Tx(WebSocket websocket, SocketChannelProxy proxy, boolean isClient) {
         mWebSocket = websocket;
         mIsClient = isClient;
-        mHandler = socket;
+        mProxy = proxy;
         long seed = new Random().nextLong();
         mRandom = new Random(seed);
     }
 
     @Override
     public void sendTextAsync(String data) {
-        // Logger.d(TAG, "sendTextAsync: " + data);
+        // AptiLog.d(TAG, "sendTextAsync: " + data);
         sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
-        // Logger.d(TAG, "sendBinaryAsync: " + data.length);
+        // AptiLog.d(TAG, "sendBinaryAsync: " + data.length);
         sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
     public void sendPingAsync() {
-        // Logger.d(TAG, "sendPingAsync");
+        // AptiLog.d(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
-        // Logger.d(TAG, "sendPingAsync: " + pingMessage);
+        // AptiLog.d(TAG, "sendPingAsync: " + pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
-        // Logger.d(TAG, "sendCloseAsync");
+        // AptiLog.d(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);
@@ -69,7 +69,7 @@ class Rfc6455Tx implements FrameTx {
             }
         }
 
-        long payloadLength = payload.length; // Length of array is Integer.MAX_VALUE
+        long payloadLength = payload.length; // Maximum length of array is Integer.MAX_VALUE
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
 
@@ -123,7 +123,7 @@ class Rfc6455Tx implements FrameTx {
                 mStream.write(payload);
             }
 
-            mHandler.writeAsync(mStream.toByteArray());
+            mProxy.writeAsync(mStream.toByteArray());
         } catch (IOException e) {
             mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, e.getMessage());
         } finally {

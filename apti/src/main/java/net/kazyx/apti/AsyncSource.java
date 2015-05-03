@@ -21,7 +21,7 @@ class AsyncSource {
      * Release all of thread resources.
      */
     synchronized void destroy() {
-        Logger.d(TAG, "destroy");
+        AptiLog.d(TAG, "destroy");
         mIsAlive = false;
         mConnectionThreadPool.shutdown();
         mTimer.purge();
@@ -41,11 +41,16 @@ class AsyncSource {
 
     final ExecutorService mConnectionThreadPool = Executors.newCachedThreadPool();
 
+    /**
+     * Asynchronously invoke task on cached thread pool if it is available.
+     *
+     * @param task Runnable to be invoked.
+     */
     void safeAsync(Runnable task) {
         try {
             mConnectionThreadPool.submit(task);
         } catch (RejectedExecutionException e) {
-            Logger.d(TAG, "RejectedExecution");
+            AptiLog.d(TAG, "RejectedExecution");
         }
     }
 
@@ -61,7 +66,7 @@ class AsyncSource {
 
         @Override
         public void run() {
-            // Logger.d(TAG, "SelectorThread started");
+            // AptiLog.d(TAG, "SelectorThread started");
             try {
                 while (true) {
                     if (!select()) {
@@ -72,20 +77,16 @@ class AsyncSource {
                         SelectionKey key = itr.next();
                         itr.remove();
                         if (key.isValid()) {
-                            SelectionHandler handler = (SelectionHandler) key.attachment();
-                            handler.onSelected(key);
-                        } else {
-                            key.cancel();
+                            ((SocketChannelProxy) key.attachment()).onSelected(key);
                         }
                     }
                 }
-                Logger.d(TAG, "Select Loop finished");
+                AptiLog.d(TAG, "Select Loop finished");
             } finally {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
                     IOUtil.close(key.channel());
-                    SelectionHandler handler = (SelectionHandler) key.attachment();
-                    handler.onCancelled();
+                    ((SocketChannelProxy) key.attachment()).onCancelled();
                 }
                 mQueue.clear();
                 IOUtil.close(mSelector);
@@ -97,7 +98,7 @@ class AsyncSource {
         private boolean select() {
             try {
                 mSelector.select();
-                //Logger.d(TAG, "selected: " + selected);
+                //AptiLog.d(TAG, "selected: " + selected);
                 if (this.isInterrupted()) {
                     return false;
                 }
@@ -110,12 +111,12 @@ class AsyncSource {
                 }
                 return true;
             } catch (IOException e) {
-                Logger.stacktrace(TAG, e);
+                AptiLog.printStackTrace(TAG, e);
                 return false;
             }
         }
 
-        void registerNewChannel(final SocketChannel channel, final int ops, final SelectionHandler handler) throws IOException {
+        void registerNewChannel(final SocketChannel channel, final int ops, final SocketChannelProxy handler) {
             synchronized (mQueue) {
                 mQueue.add(new Runnable() {
                     @Override
@@ -123,7 +124,7 @@ class AsyncSource {
                         try {
                             channel.register(mSelector, ops, handler);
                         } catch (ClosedChannelException e) {
-                            Logger.stacktrace(TAG, e);
+                            AptiLog.printStackTrace(TAG, e);
                         }
                     }
                 });
@@ -134,7 +135,13 @@ class AsyncSource {
 
     private final SelectorThread mSelectorThread;
 
-    void register(WebSocket ws, int ops) throws IOException {
-        mSelectorThread.registerNewChannel(ws.getSocketChannel(), ops, ws.getSelectionHandler());
+    /**
+     * Register new WebSocket to the Selector.
+     *
+     * @param ws  WebSocket to e registered.
+     * @param ops Selector operations.
+     */
+    void register(WebSocket ws, int ops) {
+        mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws.socketChannelProxy());
     }
 }
