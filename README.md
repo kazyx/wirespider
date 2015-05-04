@@ -1,5 +1,6 @@
 Apti WebSocket client
 =====
+[![Build Status](https://travis-ci.org/kazyx/apti.svg?branch=master)](https://travis-ci.org/kazyx/apti)
 
 Apti is a simple and compact WebSocket([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
