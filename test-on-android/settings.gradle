@@ -1,0 +1,4 @@
+include ':app'
+
+includeFlat 'apti'
+project(':apti').projectDir = new File(settingsDir, '../apti')

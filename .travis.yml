@@ -1,6 +1,6 @@
 language: java
 
-before_script: cd master
+before_script: cd apti
 script:
   - ./gradlew assemble
   - ./gradlew check
