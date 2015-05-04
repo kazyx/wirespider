@@ -47,7 +47,7 @@ public class WebSocketClientTest {
         handler.addServlet(new ServletHolder(servlet), "/");
         server.setHandler(handler);
 
-        Base64.setEncoder(new Base64.Encoder() {
+        Base64.encoder(new Base64.Encoder() {
             @Override
             public String encode(byte[] source) {
                 return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
@@ -91,12 +91,11 @@ public class WebSocketClientTest {
     public void setup() throws Exception {
         sHeaders = null;
         sCookies = null;
+        AptiLog.logLevel(AptiLog.Level.DEBUG);
     }
 
     @After
     public void teardown() throws Exception {
-        sHeaders = null;
-        sCookies = null;
     }
 
     @Test
@@ -169,6 +168,8 @@ public class WebSocketClientTest {
         final Set<WebSocket> set = new HashSet<>();
         int NUM_CONNECTIONS = 100;
 
+        AptiLog.logLevel(AptiLog.Level.EXCEPTIONS);
+
         final CountDownLatch latch = new CountDownLatch(NUM_CONNECTIONS);
         try {
             for (int i = 0; i < NUM_CONNECTIONS; i++) {
@@ -206,6 +207,7 @@ public class WebSocketClientTest {
         final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
         WebSocket ws = null;
+
         try {
             ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override

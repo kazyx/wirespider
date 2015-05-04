@@ -12,7 +12,7 @@ class SocketChannelProxy {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
     private static final int BUFFER_SIZE = 4096;
-    private final NonBlockingSocketConnection mSocketConnection;
+    private final Listener mListener;
 
     private SelectionKey mKey;
 
@@ -20,8 +20,8 @@ class SocketChannelProxy {
 
     private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
-    SocketChannelProxy(NonBlockingSocketConnection sc) {
-        this.mSocketConnection = sc;
+    SocketChannelProxy(Listener listener) {
+        this.mListener = listener;
     }
 
     void onSelected(SelectionKey key) {
@@ -41,7 +41,7 @@ class SocketChannelProxy {
                 onWriteReady();
             }
         } catch (IOException | CancelledKeyException e) {
-            mSocketConnection.onClosed();
+            onClosed();
         }
     }
 
@@ -53,7 +53,7 @@ class SocketChannelProxy {
     private void onClosed() {
         AptiLog.d(TAG, "onClosed");
         close();
-        mSocketConnection.onClosed();
+        mListener.onClosed();
     }
 
     private void onConnectReady() throws IOException {
@@ -61,7 +61,7 @@ class SocketChannelProxy {
         try {
             if (((SocketChannel) mKey.channel()).finishConnect()) {
                 mKey.interestOps(SelectionKey.OP_READ);
-                mSocketConnection.onConnected();
+                mListener.onSocketConnected();
                 return;
             }
         } catch (CancelledKeyException e) {
@@ -90,7 +90,7 @@ class SocketChannelProxy {
         }
 
         if (list.size() != 0) {
-            mSocketConnection.onDataReceived(list);
+            mListener.onDataReceived(list);
         }
     }
 
@@ -158,5 +158,24 @@ class SocketChannelProxy {
                 onClosed();
             }
         }
+    }
+
+    interface Listener {
+        /**
+         * Called when the Socket is connected.
+         */
+        void onSocketConnected();
+
+        /**
+         * Called when the Socket or SocketChannel is closed.
+         */
+        void onClosed();
+
+        /**
+         * Called when the data is received from the Socket.
+         *
+         * @param data Received data.
+         */
+        void onDataReceived(LinkedList<ByteBuffer> data);
     }
 }

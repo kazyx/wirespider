@@ -14,12 +14,12 @@ public class Base64 {
      *
      * @param encoder Encoder.
      */
-    public static void setEncoder(Encoder encoder) {
+    public static void encoder(Encoder encoder) {
         ArgumentCheck.rejectNull(encoder);
         sEncoder = encoder;
     }
 
-    static Encoder getEncoder() {
+    static Encoder encoder() {
         if (sEncoder == null) {
             throw new IllegalStateException("Base64.Encoder is not set yet. See Base64#setEncoder(Base64.Encoder)");
         }

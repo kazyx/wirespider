@@ -17,7 +17,7 @@ Now you can find `apti-x.y.z.jar` at `<apti-root>/apti/build/libs`
 
 ### Set-up
 ```java
-Base64.setEncoder(new Base64.Encoder() {
+Base64.encoder(new Base64.Encoder() {
     @Override
     public String encode(byte[] source) {
         // Please use apache-commons or Android Base64 etc.

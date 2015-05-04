@@ -14,7 +14,7 @@ public class AptiLogTest {
 
     @BeforeClass
     public static void setupClass() {
-        AptiLog.setWriter(new AptiLog.Writer() {
+        AptiLog.writer(new AptiLog.Writer() {
             @Override
             public void v(String tag, String message) {
                 if (sLatch != null) {
@@ -42,7 +42,7 @@ public class AptiLogTest {
 
     @Test
     public void logLevelVerbose() throws InterruptedException {
-        AptiLog.setLogLevel(AptiLog.Level.VERBOSE);
+        AptiLog.logLevel(AptiLog.Level.VERBOSE);
         sLatch = new CountDownLatch(3);
 
         callAllLogLevelsOnNewThread();
@@ -52,7 +52,7 @@ public class AptiLogTest {
 
     @Test
     public void logLevelDebug() throws InterruptedException {
-        AptiLog.setLogLevel(AptiLog.Level.DEBUG);
+        AptiLog.logLevel(AptiLog.Level.DEBUG);
         sLatch = new CountDownLatch(3);
 
         callAllLogLevelsOnNewThread();
@@ -63,7 +63,7 @@ public class AptiLogTest {
 
     @Test
     public void logLevelExceptions() throws InterruptedException {
-        AptiLog.setLogLevel(AptiLog.Level.EXCEPTIONS);
+        AptiLog.logLevel(AptiLog.Level.EXCEPTIONS);
         sLatch = new CountDownLatch(3);
 
         callAllLogLevelsOnNewThread();
@@ -74,7 +74,7 @@ public class AptiLogTest {
 
     @Test
     public void logLevelSilent() throws InterruptedException {
-        AptiLog.setLogLevel(AptiLog.Level.SILENT);
+        AptiLog.logLevel(AptiLog.Level.SILENT);
         sLatch = new CountDownLatch(3);
 
         callAllLogLevelsOnNewThread();
@@ -85,7 +85,7 @@ public class AptiLogTest {
 
     @Test(expected = NullPointerException.class)
     public void nullLogLevel() {
-        AptiLog.setLogLevel(null);
+        AptiLog.logLevel(null);
     }
 
     private void callAllLogLevelsOnNewThread() {
@@ -101,6 +101,6 @@ public class AptiLogTest {
 
     @Test(expected = NullPointerException.class)
     public void nullWriter() {
-        AptiLog.setWriter(null);
+        AptiLog.writer(null);
     }
 }

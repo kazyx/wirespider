@@ -16,7 +16,7 @@ class WebSocketClientTestUtil {
 
     static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.setMaxResponsePayloadSizeInBytes(size);
+        factory.maxResponsePayloadSizeInBytes(size);
         WebSocket ws = null;
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
@@ -50,7 +50,7 @@ class WebSocketClientTestUtil {
 
     static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.setMaxResponsePayloadSizeInBytes(size);
+        factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = fixedLengthByteArray(size);
 
@@ -93,7 +93,7 @@ class WebSocketClientTestUtil {
 
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.setMaxResponsePayloadSizeInBytes(size);
+        factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
         final String data = fixedLengthString(size);
 

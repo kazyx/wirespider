@@ -9,11 +9,11 @@ import java.util.ListIterator;
 class Rfc6455Rx implements FrameRx {
     private static final String TAG = Rfc6455Rx.class.getSimpleName();
 
-    private final WebSocket mWebSocket;
+    private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
 
-    Rfc6455Rx(WebSocket websocket, int maxPayload) {
-        mWebSocket = websocket;
+    Rfc6455Rx(FrameRx.Listener listener, int maxPayload) {
+        mListener = listener;
         mMaxPayloadSize = maxPayload;
     }
 
@@ -23,7 +23,6 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mReadOpCodeOperation = new Runnable() {
         @Override
         public void run() {
-            // AptiLog.d(TAG, "FirstByte operation");
             try {
                 byte first = readBytes(1)[0];
                 isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
@@ -34,12 +33,13 @@ class Rfc6455Rx implements FrameRx {
                 opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
                 mSecondByteOperation.run();
             } catch (BufferUnsatisfiedException e) {
+                // No need to flush this log. Always happens at frame end.
                 // AptiLog.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                mWebSocket.onProtocolViolation();
+                mListener.onProtocolViolation();
             }
         }
     };
@@ -50,7 +50,6 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mSecondByteOperation = new Runnable() {
         @Override
         public void run() {
-            // AptiLog.d(TAG, "SecondByte operation");
             try {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
@@ -73,12 +72,12 @@ class Rfc6455Rx implements FrameRx {
                         break;
                 }
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.d(TAG, "SecondByte BufferUnsatisfied");
+                AptiLog.v(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
-                mWebSocket.onPayloadOverflow();
+                mListener.onPayloadOverflow();
             }
         }
     };
@@ -86,7 +85,6 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mExtendedPayloadOperation = new Runnable() {
         @Override
         public void run() {
-            // AptiLog.d(TAG, "ExtendedPayloadLength operation");
             int size = payloadLength == 126 ? 2 : 8;
             try {
                 // TODO support large payload over 2GB
@@ -100,15 +98,15 @@ class Rfc6455Rx implements FrameRx {
                     mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.d(TAG, "ExtendedPayloadLength BufferUnsatisfied");
+                AptiLog.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
                 AptiLog.d(TAG, "ExtendedPayloadLength ProtocolViolation");
-                mWebSocket.onProtocolViolation();
+                mListener.onProtocolViolation();
             } catch (PayloadSizeOverflowException e) {
-                mWebSocket.onPayloadOverflow();
+                mListener.onPayloadOverflow();
             }
         }
     };
@@ -118,12 +116,11 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mMaskKeyOperation = new Runnable() {
         @Override
         public void run() {
-            // AptiLog.d(TAG, "MaskKey operation");
             try {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.d(TAG, "MaskKey BufferUnsatisfied");
+                AptiLog.v(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -134,7 +131,6 @@ class Rfc6455Rx implements FrameRx {
     private final Runnable mPayloadOperation = new Runnable() {
         @Override
         public void run() {
-            // AptiLog.d(TAG, "Payload operation: " + payloadLength);
             try {
                 byte[] payload = readBytes(payloadLength);
                 if (isMasked) {
@@ -144,12 +140,15 @@ class Rfc6455Rx implements FrameRx {
                 handleFrame(opcode, payload, isFinal);
                 mReadOpCodeOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.d(TAG, "Payload BufferUnsatisfied");
+                if (mSuspendedOperation != this) {
+                    // Flush log only for the first time
+                    AptiLog.v(TAG, "Payload BufferUnsatisfied");
+                }
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                mWebSocket.onProtocolViolation();
+                mListener.onProtocolViolation();
             } catch (IOException e) {
                 // TODO
                 e.printStackTrace();
@@ -167,7 +166,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
-        // AptiLog.d(TAG, "handleFrame: " + opcode);
+        AptiLog.v(TAG, "handleFrame", opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -178,16 +177,16 @@ class Rfc6455Rx implements FrameRx {
                     byte[] binary = mContinuationBuffer.toByteArray();
                     mContinuationBuffer.reset();
                     if (mContinuation == ContinuationMode.BINARY) {
-                        mWebSocket.onBinaryMessage(binary);
+                        mListener.onBinaryMessage(binary);
                     } else {
-                        mWebSocket.onTextMessage(ByteArrayUtil.toText(binary));
+                        mListener.onTextMessage(ByteArrayUtil.toText(binary));
                     }
                 }
                 break;
             case OpCode.TEXT:
                 if (isFinal) {
                     String text = ByteArrayUtil.toText(payload);
-                    mWebSocket.onTextMessage(text);
+                    mListener.onTextMessage(text);
                 } else {
                     mContinuationBuffer.write(payload);
                     mContinuation = ContinuationMode.TEXT;
@@ -195,7 +194,7 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.BINARY:
                 if (isFinal) {
-                    mWebSocket.onBinaryMessage(payload);
+                    mListener.onBinaryMessage(payload);
                 } else {
                     mContinuationBuffer.write(payload);
                     mContinuation = ContinuationMode.BINARY;
@@ -208,13 +207,13 @@ class Rfc6455Rx implements FrameRx {
                 if (payload.length > 125) {
                     throw new ProtocolViolationException("Ping payload too large");
                 }
-                mWebSocket.onPingFrame(ByteArrayUtil.toText(payload));
+                mListener.onPingFrame(ByteArrayUtil.toText(payload));
                 break;
             case OpCode.PONG:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for pong opcode");
                 }
-                mWebSocket.onPongFrame(ByteArrayUtil.toText(payload));
+                mListener.onPongFrame(ByteArrayUtil.toText(payload));
                 break;
             case OpCode.CONNECTION_CLOSE:
                 if (!isFinal) {
@@ -222,7 +221,7 @@ class Rfc6455Rx implements FrameRx {
                 }
                 int code = (payload.length >= 2) ? payload[1] & 0xFF + (payload[0] << 8) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
-                mWebSocket.onCloseFrame(code, reason);
+                mListener.onCloseFrame(code, reason);
                 break;
             default:
                 throw new ProtocolViolationException("Bad opcode: " + opcode);

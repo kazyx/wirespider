@@ -9,14 +9,12 @@ class Rfc6455Tx implements FrameTx {
 
     private final boolean mIsClient;
     private final SocketChannelProxy mProxy;
-    private final WebSocket mWebSocket;
     private final Random mRandom;
 
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
-    Rfc6455Tx(WebSocket websocket, SocketChannelProxy proxy, boolean isClient) {
-        mWebSocket = websocket;
+    Rfc6455Tx(SocketChannelProxy proxy, boolean isClient) {
         mIsClient = isClient;
         mProxy = proxy;
         long seed = new Random().nextLong();
@@ -25,31 +23,31 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendTextAsync(String data) {
-        // AptiLog.d(TAG, "sendTextAsync: " + data);
+        AptiLog.v(TAG, "sendTextAsync", data);
         sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
-        // AptiLog.d(TAG, "sendBinaryAsync: " + data.length);
+        AptiLog.v(TAG, "sendBinaryAsync", data.length);
         sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
     public void sendPingAsync() {
-        // AptiLog.d(TAG, "sendPingAsync");
+        AptiLog.v(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
-        // AptiLog.d(TAG, "sendPingAsync: " + pingMessage);
+        AptiLog.v(TAG, "sendPongAsync", pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
-        // AptiLog.d(TAG, "sendCloseAsync");
+        AptiLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);
@@ -125,7 +123,8 @@ class Rfc6455Tx implements FrameTx {
 
             mProxy.writeAsync(mStream.toByteArray());
         } catch (IOException e) {
-            mWebSocket.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.statusCode, e.getMessage());
+            // ByteArrayOutputStream never throws IOException
+            throw new IllegalStateException(e);
         } finally {
             IOUtil.close(mStream);
         }

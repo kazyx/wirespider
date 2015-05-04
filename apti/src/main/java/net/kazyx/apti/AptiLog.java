@@ -72,7 +72,7 @@ public class AptiLog {
      *
      * @param writer Writer.
      */
-    public static void setWriter(Writer writer) {
+    public static void writer(Writer writer) {
         ArgumentCheck.rejectNull(writer);
         sWriter = writer;
     }
@@ -85,7 +85,7 @@ public class AptiLog {
      *
      * @param level Level.
      */
-    public static void setLogLevel(Level level) {
+    public static void logLevel(Level level) {
         ArgumentCheck.rejectNull(level);
         sLevel = level;
     }
@@ -98,9 +98,33 @@ public class AptiLog {
         }
     }
 
+    static void v(String tag, String message, String detail) {
+        if (sLevel == Level.VERBOSE) {
+            sWriter.v(tag, message + ": " + detail);
+        }
+    }
+
+    static void v(String tag, String message, long detail) {
+        if (sLevel == Level.VERBOSE) {
+            sWriter.v(tag, message + ": " + detail);
+        }
+    }
+
     static void d(String tag, String message) {
         if (sLevel.level <= Level.DEBUG.level) {
             sWriter.d(tag, message);
+        }
+    }
+
+    static void d(String tag, String message, String detail) {
+        if (sLevel.level <= Level.DEBUG.level) {
+            sWriter.d(tag, message + ": " + detail);
+        }
+    }
+
+    static void d(String tag, String message, long detail) {
+        if (sLevel.level <= Level.DEBUG.level) {
+            sWriter.d(tag, message + ": " + detail);
         }
     }
 

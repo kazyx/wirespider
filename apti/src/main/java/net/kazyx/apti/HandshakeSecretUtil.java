@@ -27,7 +27,7 @@ final class HandshakeSecretUtil {
     static String newSecretKey() {
         byte[] nonce = new byte[16];
         sRandom.nextBytes(nonce);
-        return Base64.getEncoder().encode(nonce).trim();
+        return Base64.encoder().encode(nonce).trim();
     }
 
     /**
@@ -40,7 +40,7 @@ final class HandshakeSecretUtil {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             md.update((rawSecret + UUID).getBytes("UTF-8"));
-            return Base64.getEncoder().encode(md.digest()).trim();
+            return Base64.encoder().encode(md.digest()).trim();
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             throw new UnsupportedOperationException(e);
         }

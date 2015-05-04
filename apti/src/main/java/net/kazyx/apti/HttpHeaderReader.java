@@ -11,6 +11,8 @@ import java.util.Locale;
 import java.util.Map;
 
 class HttpHeaderReader {
+    private static final String TAG = HttpHeaderReader.class.getSimpleName();
+
     private HttpStatusLine mStatusLine;
     private List<HttpHeader> mHeaders;
 
@@ -32,7 +34,7 @@ class HttpHeaderReader {
     }
 
     /**
-     * @return Key and values dictionary of HTTP header fields. Keys of header are un-capitalized.
+     * @return List of HTTP header fields.
      */
     List<HttpHeader> headerFields() {
         return mHeaders;
@@ -54,6 +56,7 @@ class HttpHeaderReader {
         }
 
         String version = status[0].substring(5);
+        AptiLog.v(TAG, "HTTP version", version);
 
         int statusCode;
         try {
@@ -61,8 +64,10 @@ class HttpHeaderReader {
         } catch (NumberFormatException e) {
             throw new IOException("Failed to read status statusCode: " + line);
         }
+        AptiLog.v(TAG, "HTTP status code", statusCode);
 
         String reason = line.substring(line.indexOf(status[1]) + status[1].length());
+        AptiLog.v(TAG, "HTTP status reason", reason);
 
         mStatusLine = new HttpStatusLine(version, statusCode, reason);
     }
@@ -90,6 +95,7 @@ class HttpHeaderReader {
                 // End of HTTP header
                 break;
             }
+            AptiLog.v(TAG, line);
 
             if (name != null) {
                 // Check with existence of name, because value might be empty string

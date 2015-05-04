@@ -9,7 +9,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * WebSocket end point.
+ * Generic WebSocket connection.
  */
 public abstract class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
@@ -70,49 +70,10 @@ public abstract class WebSocket {
         mAsync = async;
         mSocketChannel = ch;
 
-        mSocketChannelProxy = new SocketChannelProxy(new NonBlockingSocketConnection() {
-            @Override
-            public void onConnected() {
-                onSocketConnected();
-            }
+        mSocketChannelProxy = new SocketChannelProxy(mChannelProxyListener);
 
-            @Override
-            public void onClosed() {
-                // AptiLog.d(TAG, "SocketChannelProxy onClosed");
-                if (mIsHandshakeCompleted) {
-                    closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
-                } else {
-                    onHandshakeFailed();
-                }
-            }
-
-            @Override
-            public void onDataReceived(final LinkedList<ByteBuffer> data) {
-                // AptiLog.d(TAG, "SocketChannelProxy onDataReceived");
-                if (!isConnected()) {
-                    try {
-                        LinkedList<ByteBuffer> remaining = mHandshake.onHandshakeResponse(data);
-                        mIsHandshakeCompleted = true;
-                        mIsConnected = true;
-                        onHandshakeCompleted();
-
-                        if (remaining.size() != 0) {
-                            mFrameRx.onDataReceived(remaining);
-                        }
-                    } catch (BufferUnsatisfiedException e) {
-                        // wait for the next data.
-                    } catch (HandshakeFailureException e) {
-                        AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
-                        closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Handshake failure");
-                    }
-                } else {
-                    mFrameRx.onDataReceived(data);
-                }
-            }
-        });
-
-        mFrameTx = new Rfc6455Tx(WebSocket.this, mSocketChannelProxy, isClient);
-        mFrameRx = new Rfc6455Rx(WebSocket.this, maxPayload);
+        mFrameTx = new Rfc6455Tx(mSocketChannelProxy, isClient);
+        mFrameRx = new Rfc6455Rx(mRxListener, maxPayload);
         mHandshake = new Rfc6455Handshake(mSocketChannelProxy, isClient);
     }
 
@@ -237,110 +198,134 @@ public abstract class WebSocket {
     }
 
     private void closeAndRaiseEvent(CloseStatusCode status, String message) {
+        closeAndRaiseEvent(status.asNumber(), message);
+    }
+
+    private void closeAndRaiseEvent(int status, String message) {
         if (!isConnected()) {
             return;
         }
 
         mSocketChannelProxy.close();
         IOUtil.close(mSocketChannel);
-        invokeOnClosed(status.asNumber(), message);
+        invokeOnClosed(status, message);
     }
 
     private void invokeOnClosed(int code, String reason) {
         synchronized (mCloseCallbackLock) {
             if (isConnected()) {
+                AptiLog.d(TAG, "Invoke onClosed", code);
                 mIsConnected = false;
                 mCallbackHandler.onClosed(code, reason);
             }
         }
     }
 
-    /**
-     * Called when received ping control frame.
-     *
-     * @param message Ping message.
-     */
-    void onPingFrame(String message) {
-        if (!isConnected()) {
-            return;
+    private SocketChannelProxy.Listener mChannelProxyListener = new SocketChannelProxy.Listener() {
+        @Override
+        public void onSocketConnected() {
+            WebSocket.this.onSocketConnected();
         }
-        mFrameTx.sendPongAsync(message);
-    }
 
-    /**
-     * Called when received pong control frame.
-     *
-     * @param message Pong message.
-     */
-    void onPongFrame(String message) {
-        if (!isConnected()) {
-            return;
-        }
-        // TODO should check pong message is same as ping message we've sent.
-        synchronized (mPingPongTaskLock) {
-            if (mPingPongTask != null) {
-                mPingPongTask.cancel();
-                mPingPongTask = null;
+        @Override
+        public void onClosed() {
+            if (mIsHandshakeCompleted) {
+                AptiLog.d(TAG, "Socket error detected");
+                closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
+            } else {
+                AptiLog.d(TAG, "Socket error detected while opening handshake");
+                onHandshakeFailed();
             }
         }
-    }
 
-    /**
-     * Called when received close control frame or Connection is closed abnormally..
-     *
-     * @param code   Close status code.
-     * @param reason Close reason phrase.
-     */
-    void onCloseFrame(int code, String reason) {
-        if (!isConnected()) {
-            return;
+        @Override
+        public void onDataReceived(final LinkedList<ByteBuffer> data) {
+            // AptiLog.d(TAG, "SocketChannelProxy onDataReceived");
+            if (!isConnected()) {
+                try {
+                    LinkedList<ByteBuffer> remaining = mHandshake.onHandshakeResponse(data);
+                    mIsHandshakeCompleted = true;
+                    mIsConnected = true;
+                    onHandshakeCompleted();
+
+                    if (remaining.size() != 0) {
+                        mFrameRx.onDataReceived(remaining);
+                    }
+                } catch (BufferUnsatisfiedException e) {
+                    // wait for the next data.
+                } catch (HandshakeFailureException e) {
+                    AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
+                    closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Handshake failure");
+                }
+            } else {
+                mFrameRx.onDataReceived(data);
+            }
         }
-        if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
-            sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
+    };
+
+    private FrameRx.Listener mRxListener = new FrameRx.Listener() {
+        @Override
+        public void onPingFrame(String message) {
+            if (!isConnected()) {
+                return;
+            }
+            mFrameTx.sendPongAsync(message);
         }
-        mSocketChannelProxy.close();
-        invokeOnClosed(code, reason);
-    }
 
-    /**
-     * Called when received binary message.
-     *
-     * @param message Received binary message.
-     */
-    void onBinaryMessage(byte[] message) {
-        if (!isConnected()) {
-            return;
+        @Override
+        public void onPongFrame(String message) {
+            if (!isConnected()) {
+                return;
+            }
+            // TODO should check pong message is same as ping message we've sent.
+            synchronized (mPingPongTaskLock) {
+                if (mPingPongTask != null) {
+                    mPingPongTask.cancel();
+                    mPingPongTask = null;
+                }
+            }
         }
-        mCallbackHandler.onBinaryMessage(message);
-    }
 
-    /**
-     * Called when received text message.
-     *
-     * @param message Received text message.
-     */
-    void onTextMessage(String message) {
-        if (!isConnected()) {
-            return;
+        @Override
+        public void onCloseFrame(int code, String reason) {
+            if (!isConnected()) {
+                return;
+            }
+            if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
+                sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
+            }
+            // TODO Wait for a minute to send close frame?
+            closeAndRaiseEvent(code, reason);
         }
-        mCallbackHandler.onTextMessage(message);
-    }
 
-    /**
-     * Called when received message violated WebSocket protocol.
-     */
-    void onProtocolViolation() {
-        AptiLog.d(TAG, "onProtocolViolation");
-        // TODO send error code to remote?
-        closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Protocol violation detected");
-    }
+        @Override
+        public void onBinaryMessage(byte[] message) {
+            if (!isConnected()) {
+                return;
+            }
+            mCallbackHandler.onBinaryMessage(message);
+        }
 
-    /**
-     * Called when received payload size is larger than maximum response payload size setting.
-     */
-    void onPayloadOverflow() {
-        AptiLog.d(TAG, "Response payload size overflow");
-        // TODO send error code to remote?
-        closeAndRaiseEvent(CloseStatusCode.MESSAGE_TOO_BIG, "Response payload size overflow");
-    }
+        @Override
+        public void onTextMessage(String message) {
+            if (!isConnected()) {
+                return;
+            }
+            mCallbackHandler.onTextMessage(message);
+        }
+
+        @Override
+        public void onProtocolViolation() {
+            AptiLog.d(TAG, "Protocol violation detected");
+            // TODO send error code to remote?
+            closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Protocol violation detected");
+        }
+
+        @Override
+        public void onPayloadOverflow() {
+            AptiLog.d(TAG, "Response payload size overflow");
+            // TODO send error code to remote?
+            closeAndRaiseEvent(CloseStatusCode.MESSAGE_TOO_BIG, "Response payload size overflow");
+        }
+    };
 }

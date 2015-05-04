@@ -29,7 +29,7 @@ public class WebSocketClientFactory {
      *
      * @param size Maximum size in bytes.
      */
-    public void setMaxResponsePayloadSizeInBytes(int size) {
+    public void maxResponsePayloadSizeInBytes(int size) {
         if (size < 1) {
             throw new IllegalArgumentException("Payload size must be positive value");
         }

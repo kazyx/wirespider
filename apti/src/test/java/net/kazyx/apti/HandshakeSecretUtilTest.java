@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.is;
 public class HandshakeSecretUtilTest {
     @BeforeClass
     public static void setupClass() throws Exception {
-        Base64.setEncoder(new Base64.Encoder() {
+        Base64.encoder(new Base64.Encoder() {
             @Override
             public String encode(byte[] source) {
                 return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
