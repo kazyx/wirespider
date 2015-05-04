@@ -19,8 +19,8 @@ class ClientWebSocket extends WebSocket {
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, List<HttpHeader> extraHeaders) {
-        super(async, uri, ch, handler, true);
+    ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, List<HttpHeader> extraHeaders) {
+        super(async, uri, ch, handler, maxPayload, true);
         mRequestHeaders = extraHeaders;
     }
 

@@ -143,7 +143,7 @@ public class WebSocketClientTest {
                 @Override
                 public void onClosed(int code, String reason) {
                     System.out.println("WebSocketConnection onClosed");
-                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
+                    if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
                         latch.countDown();
                     } else {
                         throw new IllegalStateException("Invalid close status code");
@@ -255,6 +255,30 @@ public class WebSocketClientTest {
             }
             factory.destroy();
         }
+    }
+
+    @Test
+    public void payloadLimit125() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        // Maximum size of 7 bits normal payload length
+        WebSocketClientTestUtil.payloadLimit(125);
+    }
+
+    @Test
+    public void payloadLimit126() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        // Minimum size of 2 Byte extended payload length
+        WebSocketClientTestUtil.payloadLimit(126);
+    }
+
+    @Test
+    public void payloadLimit65535() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        // Maximum size of 2 Byte extended payload length
+        WebSocketClientTestUtil.payloadLimit(65535);
+    }
+
+    @Test
+    public void payloadLimit65536() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        // Minimum size of 8 Byte extended payload length
+        WebSocketClientTestUtil.payloadLimit(65536);
     }
 
     @Test

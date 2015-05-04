@@ -10,9 +10,11 @@ class Rfc6455Rx implements FrameRx {
     private static final String TAG = Rfc6455Rx.class.getSimpleName();
 
     private final WebSocket mWebSocket;
+    private final int mMaxPayloadSize;
 
-    Rfc6455Rx(WebSocket websocket) {
+    Rfc6455Rx(WebSocket websocket, int maxPayload) {
         mWebSocket = websocket;
+        mMaxPayloadSize = maxPayload;
     }
 
     private boolean isFinal;
@@ -53,32 +55,30 @@ class Rfc6455Rx implements FrameRx {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
 
-                // TODO support large payload over 2GB
                 payloadLength = second & BitMask.BYTE_SYM_0x7F;
-                if (payloadLength == 0) {
-                    throw new ProtocolViolationException("Payload length zero");
+                if (payloadLength > mMaxPayloadSize) {
+                    throw new PayloadSizeOverflowException();
                 }
-
                 switch (payloadLength) {
                     case 126:
                     case 127:
                         mExtendedPayloadOperation.run();
                         break;
                     default:
+                        if (isMasked) {
+                            mMaskKeyOperation.run();
+                        } else {
+                            mPayloadOperation.run();
+                        }
                         break;
-                }
-                if (isMasked) {
-                    mMaskKeyOperation.run();
-                } else {
-                    mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
                 AptiLog.d(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (ProtocolViolationException e) {
-                mWebSocket.onProtocolViolation();
+            } catch (PayloadSizeOverflowException e) {
+                mWebSocket.onPayloadOverflow();
             }
         }
     };
@@ -89,7 +89,16 @@ class Rfc6455Rx implements FrameRx {
             // AptiLog.d(TAG, "ExtendedPayloadLength operation");
             int size = payloadLength == 126 ? 2 : 8;
             try {
+                // TODO support large payload over 2GB
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
+                if (payloadLength > mMaxPayloadSize) {
+                    throw new PayloadSizeOverflowException();
+                }
+                if (isMasked) {
+                    mMaskKeyOperation.run();
+                } else {
+                    mPayloadOperation.run();
+                }
             } catch (BufferUnsatisfiedException e) {
                 AptiLog.d(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
@@ -98,6 +107,8 @@ class Rfc6455Rx implements FrameRx {
             } catch (ProtocolViolationException e) {
                 AptiLog.d(TAG, "ExtendedPayloadLength ProtocolViolation");
                 mWebSocket.onProtocolViolation();
+            } catch (PayloadSizeOverflowException e) {
+                mWebSocket.onPayloadOverflow();
             }
         }
     };

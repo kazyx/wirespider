@@ -64,7 +64,7 @@ public abstract class WebSocket {
     private final Object mPingPongTaskLock = new Object();
     private TimerTask mPingPongTask;
 
-    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, boolean isClient) {
+    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, boolean isClient) {
         mURI = uri;
         mCallbackHandler = handler;
         mAsync = async;
@@ -80,7 +80,7 @@ public abstract class WebSocket {
             public void onClosed() {
                 // AptiLog.d(TAG, "SocketChannelProxy onClosed");
                 if (mIsHandshakeCompleted) {
-                    closeNow();
+                    closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
                 } else {
                     onHandshakeFailed();
                 }
@@ -103,7 +103,7 @@ public abstract class WebSocket {
                         // wait for the next data.
                     } catch (HandshakeFailureException e) {
                         AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
-                        closeNow();
+                        closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Handshake failure");
                     }
                 } else {
                     mFrameRx.onDataReceived(data);
@@ -112,7 +112,7 @@ public abstract class WebSocket {
         });
 
         mFrameTx = new Rfc6455Tx(WebSocket.this, mSocketChannelProxy, isClient);
-        mFrameRx = new Rfc6455Rx(WebSocket.this);
+        mFrameRx = new Rfc6455Rx(WebSocket.this, maxPayload);
         mHandshake = new Rfc6455Handshake(mSocketChannelProxy, isClient);
     }
 
@@ -170,7 +170,7 @@ public abstract class WebSocket {
             @Override
             public void run() {
                 synchronized (mPingPongTaskLock) {
-                    closeNow();
+                    closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
                 }
             }
         };
@@ -195,7 +195,7 @@ public abstract class WebSocket {
      * Close WebSocket connection gracefully.<br>
      * If it is already closed, nothing happens.<br>
      * <br>
-     * Same as {@link #closeAsync(CloseStatusCode, String)} with {@link CloseStatusCode#NORMAL_CLOSURE}.
+     * Equivalent to {@link #closeAsync(CloseStatusCode, String)} with {@link CloseStatusCode#NORMAL_CLOSURE}.
      */
     public void closeAsync() {
         closeAsync(CloseStatusCode.NORMAL_CLOSURE, "normal closure");
@@ -223,8 +223,8 @@ public abstract class WebSocket {
         mAsync.safeAsync(new Runnable() {
             @Override
             public void run() {
-                mSocketChannelProxy.close();
-                invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
+                // TODO Wait for a minute to send close frame?
+                closeNow();
             }
         });
     }
@@ -233,13 +233,17 @@ public abstract class WebSocket {
      * Close TCP connection without WebSocket closing handshake.
      */
     public void closeNow() {
+        closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
+    }
+
+    private void closeAndRaiseEvent(CloseStatusCode status, String message) {
         if (!isConnected()) {
             return;
         }
 
         mSocketChannelProxy.close();
         IOUtil.close(mSocketChannel);
-        invokeOnClosed(CloseStatusCode.NORMAL_CLOSURE.statusCode, "Normal Closure");
+        invokeOnClosed(status.asNumber(), message);
     }
 
     private void invokeOnClosed(int code, String reason) {
@@ -327,11 +331,16 @@ public abstract class WebSocket {
      */
     void onProtocolViolation() {
         AptiLog.d(TAG, "onProtocolViolation");
-        if (!isConnected()) {
-            return;
-        }
-        sendCloseFrame(CloseStatusCode.POLICY_VIOLATION, "WebSocket protocol violation");
-        mSocketChannelProxy.close();
-        invokeOnClosed(CloseStatusCode.POLICY_VIOLATION.statusCode, "WebSocket protocol violation");
+        // TODO send error code to remote?
+        closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Protocol violation detected");
+    }
+
+    /**
+     * Called when received payload size is larger than maximum response payload size setting.
+     */
+    void onPayloadOverflow() {
+        AptiLog.d(TAG, "Response payload size overflow");
+        // TODO send error code to remote?
+        closeAndRaiseEvent(CloseStatusCode.MESSAGE_TOO_BIG, "Response payload size overflow");
     }
 }

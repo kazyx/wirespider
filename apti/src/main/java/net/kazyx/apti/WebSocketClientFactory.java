@@ -22,6 +22,21 @@ public class WebSocketClientFactory {
         mAsync = new AsyncSource(mProvider);
     }
 
+    private int mMaxResponsePayloadSize = 65536;
+
+    /**
+     * Set maximum size of response payload.
+     *
+     * @param size Maximum size in bytes.
+     */
+    public void setMaxResponsePayloadSizeInBytes(int size) {
+        if (size < 1) {
+            throw new IllegalArgumentException("Payload size must be positive value");
+        }
+        AptiLog.d(TAG, "Max response payload size set to " + size);
+        mMaxResponsePayloadSize = size;
+    }
+
     /**
      * Destroy this {@link WebSocketClientFactory}.<br>
      * Note that any connections created by this instance will be released.
@@ -49,7 +64,8 @@ public class WebSocketClientFactory {
      * @param handler WebSocket connection event handler.
      * @param headers Additional HTTP header to be inserted to opening request.
      * @return Future of WebSocket instance.
-     * @throws IllegalStateException if this instance is already destroyed.
+     * @throws IllegalStateException                           if this instance is already destroyed.
+     * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
     public synchronized Future<WebSocket> openAsync(final URI uri, final WebSocketConnection handler, final List<HttpHeader> headers) {
         ArgumentCheck.rejectNullArgs(uri, handler);
@@ -67,7 +83,7 @@ public class WebSocketClientFactory {
                     ch = mProvider.openSocketChannel();
                     ch.configureBlocking(false);
 
-                    ws = new ClientWebSocket(mAsync, uri, ch, handler, headers);
+                    ws = new ClientWebSocket(mAsync, uri, ch, handler, mMaxResponsePayloadSize, headers);
                     ws.connect();
                     return ws;
                 } catch (IOException e) {
