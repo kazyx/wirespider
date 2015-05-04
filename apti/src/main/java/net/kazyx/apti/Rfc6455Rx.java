@@ -56,7 +56,7 @@ class Rfc6455Rx implements FrameRx {
 
                 payloadLength = second & BitMask.BYTE_SYM_0x7F;
                 if (payloadLength > mMaxPayloadSize) {
-                    throw new PayloadSizeOverflowException();
+                    throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
                 switch (payloadLength) {
                     case 126:
@@ -90,7 +90,7 @@ class Rfc6455Rx implements FrameRx {
                 // TODO support large payload over 2GB
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
                 if (payloadLength > mMaxPayloadSize) {
-                    throw new PayloadSizeOverflowException();
+                    throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
                 if (isMasked) {
                     mMaskKeyOperation.run();
@@ -102,9 +102,6 @@ class Rfc6455Rx implements FrameRx {
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (ProtocolViolationException e) {
-                AptiLog.d(TAG, "ExtendedPayloadLength ProtocolViolation");
-                mListener.onProtocolViolation();
             } catch (PayloadSizeOverflowException e) {
                 mListener.onPayloadOverflow();
             }
@@ -148,6 +145,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
+                AptiLog.d(TAG, "Payload protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             } catch (IOException e) {
                 // TODO
@@ -181,6 +179,7 @@ class Rfc6455Rx implements FrameRx {
                     } else {
                         mListener.onTextMessage(ByteArrayUtil.toText(binary));
                     }
+                    mContinuation = ContinuationMode.UNSET;
                 }
                 break;
             case OpCode.TEXT:

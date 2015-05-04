@@ -40,11 +40,11 @@ final class ByteArrayUtil {
      *
      * @param bytes Source byte array.
      * @return The long value
-     * @throws ProtocolViolationException Length of the byte array is larger than 8.
+     * @throws IllegalArgumentException Length of the byte array is larger than 8.
      */
-    static long toLong(byte[] bytes) throws ProtocolViolationException {
+    static long toLong(byte[] bytes) {
         if (bytes.length > 8) {
-            throw new ProtocolViolationException("bit length overflow: " + bytes.length);
+            throw new IllegalArgumentException("bit length overflow: " + bytes.length);
         }
         long value = 0;
         for (byte b : bytes) {
@@ -58,13 +58,14 @@ final class ByteArrayUtil {
      *
      * @param bytes Source byte array.
      * @return The unsigned integer value.
-     * @throws ProtocolViolationException Source byte array is out of unsigned integer range.
+     * @throws IllegalArgumentException     Length of the byte array is larger than 8.
+     * @throws PayloadSizeOverflowException if the size exceeds 32 bit signed integer range.
      */
-    static int toUnsignedInteger(byte[] bytes) throws ProtocolViolationException {
+    static int toUnsignedInteger(byte[] bytes) throws PayloadSizeOverflowException {
         long l = toLong(bytes);
         if (l < 0 || l > Integer.MAX_VALUE) {
             // TODO support large payload over 2GB
-            throw new ProtocolViolationException("Bad unsigned integer: " + l);
+            throw new PayloadSizeOverflowException("Bad unsigned integer: " + l);
         }
         return (int) l;
     }
