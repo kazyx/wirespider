@@ -31,6 +31,16 @@ public abstract class WebSocket {
         return mSocketChannel;
     }
 
+    private final int mMaxResponsePayloadSize;
+
+    /**
+     * @return Maximum size of response payload to accept.
+     * @see WebSocketClientFactory#maxResponsePayloadSizeInBytes(int)
+     */
+    public int maxResponsePayloadSizeInBytes() {
+        return mMaxResponsePayloadSize;
+    }
+
     private final WebSocketConnection mCallbackHandler;
 
     private final Object mCloseCallbackLock = new Object();
@@ -63,18 +73,25 @@ public abstract class WebSocket {
     private final Object mPingPongTaskLock = new Object();
     private TimerTask mPingPongTask;
 
-    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, boolean isClient) {
+    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload) {
         mURI = uri;
         mCallbackHandler = handler;
         mAsync = async;
         mSocketChannel = ch;
+        mMaxResponsePayloadSize = maxPayload;
 
         mSocketChannelProxy = new SocketChannelProxy(mAsync, mChannelProxyListener);
 
-        mFrameTx = new Rfc6455Tx(mSocketChannelProxy, isClient);
-        mFrameRx = new Rfc6455Rx(mRxListener, maxPayload);
-        mHandshake = new Rfc6455Handshake(mSocketChannelProxy, isClient);
+        mFrameTx = newFrameTx();
+        mFrameRx = newFrameRx(mRxListener);
+        mHandshake = newHandshake();
     }
+
+    abstract FrameTx newFrameTx();
+
+    abstract FrameRx newFrameRx(FrameRx.Listener listener);
+
+    abstract Handshake newHandshake();
 
     abstract void onSocketConnected();
 

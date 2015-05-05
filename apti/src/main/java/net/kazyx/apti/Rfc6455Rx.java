@@ -11,10 +11,12 @@ class Rfc6455Rx implements FrameRx {
 
     private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
+    private final boolean mIsClient;
 
-    Rfc6455Rx(FrameRx.Listener listener, int maxPayload) {
+    Rfc6455Rx(FrameRx.Listener listener, int maxPayload, boolean isClient) {
         mListener = listener;
         mMaxPayloadSize = maxPayload;
+        mIsClient = isClient;
     }
 
     private boolean isFinal;
@@ -54,6 +56,10 @@ class Rfc6455Rx implements FrameRx {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
 
+                if (mIsClient && isMasked) {
+                    throw new ProtocolViolationException("Masked payload from server");
+                }
+
                 payloadLength = second & BitMask.BYTE_SYM_0x7F;
                 if (payloadLength > mMaxPayloadSize) {
                     throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
@@ -78,6 +84,9 @@ class Rfc6455Rx implements FrameRx {
                 }
             } catch (PayloadSizeOverflowException e) {
                 mListener.onPayloadOverflow();
+            } catch (ProtocolViolationException e) {
+                AptiLog.d(TAG, "Protocol violation", e.getMessage());
+                mListener.onProtocolViolation();
             }
         }
     };

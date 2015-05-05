@@ -21,9 +21,24 @@ class ClientWebSocket extends WebSocket {
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
     ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, List<HttpHeader> extraHeaders, SocketBinder binder) {
-        super(async, uri, ch, handler, maxPayload, true);
+        super(async, uri, ch, handler, maxPayload);
         mRequestHeaders = extraHeaders;
         mSocketBinder = binder;
+    }
+
+    @Override
+    FrameTx newFrameTx() {
+        return new Rfc6455Tx(socketChannelProxy(), true);
+    }
+
+    @Override
+    FrameRx newFrameRx(FrameRx.Listener listener) {
+        return new Rfc6455Rx(listener, maxResponsePayloadSizeInBytes(), true);
+    }
+
+    @Override
+    Handshake newHandshake() {
+        return new Rfc6455Handshake(socketChannelProxy(), true);
     }
 
     @Override
