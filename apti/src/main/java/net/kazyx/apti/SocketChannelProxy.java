@@ -11,7 +11,7 @@ import java.util.LinkedList;
 class SocketChannelProxy {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
-    private static final int BUFFER_SIZE = 4096;
+    private final AsyncSource mAsync;
     private final Listener mListener;
 
     private SelectionKey mKey;
@@ -20,7 +20,8 @@ class SocketChannelProxy {
 
     private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
-    SocketChannelProxy(Listener listener) {
+    SocketChannelProxy(AsyncSource async, Listener listener) {
+        mAsync = async;
         this.mListener = listener;
     }
 
@@ -74,19 +75,15 @@ class SocketChannelProxy {
     private void onReadReady() throws IOException {
         // AptiLog.d(TAG, "onReadReady");
         SocketChannel ch = (SocketChannel) mKey.channel();
-        LinkedList<ByteBuffer> list = new LinkedList<>();
+        LinkedList<byte[]> list = new LinkedList<>();
+
 
         while (true) {
-            ByteBuffer buff = ByteBuffer.allocate(BUFFER_SIZE);
-            int length = ch.read(buff);
-            if (length == -1) {
-                onClosed();
-            } else if (length == 0) {
+            byte[] buff = mAsync.read(ch);
+            if (buff == null) {
                 break;
-            } else {
-                buff.flip();
-                list.add(buff);
             }
+            list.add(buff);
         }
 
         if (list.size() != 0) {
@@ -176,6 +173,6 @@ class SocketChannelProxy {
          *
          * @param data Received data.
          */
-        void onDataReceived(LinkedList<ByteBuffer> data);
+        void onDataReceived(LinkedList<byte[]> data);
     }
 }

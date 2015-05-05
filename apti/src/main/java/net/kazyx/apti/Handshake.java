@@ -1,7 +1,6 @@
 package net.kazyx.apti;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -22,5 +21,5 @@ interface Handshake {
      * @throws BufferUnsatisfiedException if received data does not contain CRLF. Waiting for the next data.
      * @throws HandshakeFailureException  if handshake failure is detected.
      */
-    LinkedList<ByteBuffer> onHandshakeResponse(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException;
+    LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException;
 }

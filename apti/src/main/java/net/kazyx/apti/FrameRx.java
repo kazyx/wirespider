@@ -1,6 +1,5 @@
 package net.kazyx.apti;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 interface FrameRx {
@@ -9,7 +8,7 @@ interface FrameRx {
      *
      * @param data List of received data.
      */
-    void onDataReceived(LinkedList<ByteBuffer> data);
+    void onDataReceived(LinkedList<byte[]> data);
 
     interface Listener {
         /**

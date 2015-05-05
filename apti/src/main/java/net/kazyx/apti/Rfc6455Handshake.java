@@ -3,7 +3,7 @@ package net.kazyx.apti;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -51,14 +51,12 @@ class Rfc6455Handshake implements Handshake {
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
-    public LinkedList<ByteBuffer> onHandshakeResponse(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException {
+    public LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException {
         boolean isHeaderEnd = false;
 
-        ListIterator<ByteBuffer> itr = data.listIterator();
+        ListIterator<byte[]> itr = data.listIterator();
         while (itr.hasNext()) {
-            ByteBuffer buff = itr.next();
-            byte[] ba = new byte[buff.remaining()];
-            buff.get(ba);
+            byte[] ba = itr.next();
 
             String str = ByteArrayUtil.toText(ba);
             // AptiLog.d(TAG, str);
@@ -71,8 +69,9 @@ class Rfc6455Handshake implements Handshake {
                 isHeaderEnd = true;
                 int end = index + 4;
                 mBuffer.write(ba, 0, end);
+
                 if (ba.length > end) {
-                    buff.position(end + 1);
+                    itr.set(Arrays.copyOfRange(ba, end, ba.length));
                 } else {
                     itr.remove();
                 }

@@ -1,7 +1,6 @@
 package net.kazyx.apti;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.TimerTask;
@@ -70,7 +69,7 @@ public abstract class WebSocket {
         mAsync = async;
         mSocketChannel = ch;
 
-        mSocketChannelProxy = new SocketChannelProxy(mChannelProxyListener);
+        mSocketChannelProxy = new SocketChannelProxy(mAsync, mChannelProxyListener);
 
         mFrameTx = new Rfc6455Tx(mSocketChannelProxy, isClient);
         mFrameRx = new Rfc6455Rx(mRxListener, maxPayload);
@@ -239,11 +238,11 @@ public abstract class WebSocket {
         }
 
         @Override
-        public void onDataReceived(final LinkedList<ByteBuffer> data) {
+        public void onDataReceived(final LinkedList<byte[]> data) {
             // AptiLog.d(TAG, "SocketChannelProxy onDataReceived");
             if (!isConnected()) {
                 try {
-                    LinkedList<ByteBuffer> remaining = mHandshake.onHandshakeResponse(data);
+                    LinkedList<byte[]> remaining = mHandshake.onHandshakeResponse(data);
                     mIsHandshakeCompleted = true;
                     mIsConnected = true;
                     onHandshakeCompleted();

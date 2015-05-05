@@ -24,7 +24,11 @@ class WebSocketClientTestUtil {
             ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
-                    closeLatch.countDown();
+                    if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
+                        closeLatch.countDown();
+                    } else {
+                        closeLatch.unlockByFailure();
+                    }
                 }
 
                 @Override
@@ -40,6 +44,7 @@ class WebSocketClientTestUtil {
 
             ws.sendBinaryMessageAsync(WebSocketClientTestUtil.fixedLengthByteArray(size + 1));
             assertThat(closeLatch.await(500, TimeUnit.MILLISECONDS), is(true));
+            assertThat(closeLatch.isUnlockedByFailure(), is(false));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -69,6 +74,7 @@ class WebSocketClientTestUtil {
                         latch.countDown();
                     } else {
                         System.out.println("Binary message not matched");
+                        latch.unlockByFailure();
                     }
                 }
             }).get(1000, TimeUnit.MILLISECONDS);
@@ -111,6 +117,7 @@ class WebSocketClientTestUtil {
                         latch.countDown();
                     } else {
                         System.out.println("Text message not matched");
+                        latch.unlockByFailure();
                     }
                 }
             }).get(1000, TimeUnit.MILLISECONDS);

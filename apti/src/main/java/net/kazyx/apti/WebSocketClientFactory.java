@@ -9,7 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
- * Factory to create WebSocket client connection.
+ * Factory of the WebSocket client connections.
  */
 public class WebSocketClientFactory {
     private static final String TAG = WebSocketClientFactory.class.getSimpleName();
@@ -47,11 +47,12 @@ public class WebSocketClientFactory {
 
     /**
      * Open WebSocket connection to the specified remote server.<br>
-     * Equivalent to {@code open(uri, handler, null);}.
+     * Equivalent to {@code openAsync(uri, handler, null);}.
      *
      * @param uri     URI of the remote server.
      * @param handler WebSocket connection event handler.
      * @return Future of WebSocket instance.
+     * @throws java.util.concurrent.RejectedExecutionException if this instance is already destroyed.
      */
     public synchronized Future<WebSocket> openAsync(URI uri, WebSocketConnection handler) {
         return openAsync(uri, handler, null);
@@ -64,15 +65,10 @@ public class WebSocketClientFactory {
      * @param handler WebSocket connection event handler.
      * @param headers Additional HTTP header to be inserted to opening request.
      * @return Future of WebSocket instance.
-     * @throws IllegalStateException                           if this instance is already destroyed.
      * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
     public synchronized Future<WebSocket> openAsync(final URI uri, final WebSocketConnection handler, final List<HttpHeader> headers) {
         ArgumentCheck.rejectNullArgs(uri, handler);
-
-        if (!mAsync.isAlive()) {
-            throw new IllegalStateException("This WebSocketClientFactory is already destroyed.");
-        }
 
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override

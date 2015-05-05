@@ -43,9 +43,9 @@ class ClientWebSocket extends WebSocket {
     }
 
     /**
-     * Synchronously openAsync WebSocket connection.
+     * Synchronously open WebSocket connection.
      *
-     * @throws IOException          Failed to openAsync connection.
+     * @throws IOException          Failed to open connection.
      * @throws InterruptedException Awaiting thread interrupted.
      */
     void connect() throws IOException, InterruptedException {

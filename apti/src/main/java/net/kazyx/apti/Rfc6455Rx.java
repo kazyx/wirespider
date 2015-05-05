@@ -2,7 +2,7 @@ package net.kazyx.apti;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -228,11 +228,11 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void onDataReceived(LinkedList<ByteBuffer> data) {
+    public void onDataReceived(LinkedList<byte[]> data) {
         // AptiLog.d(TAG, "onDataReceived");
         mReceivedBuffer.addAll(data);
-        for (ByteBuffer buff : data) {
-            mBufferSize += buff.limit();
+        for (byte[] buff : data) {
+            mBufferSize += buff.length;
         }
 
         synchronized (mOperationSequenceLock) {
@@ -250,7 +250,7 @@ class Rfc6455Rx implements FrameRx {
 
     private int mBufferSize = 0;
 
-    private final LinkedList<ByteBuffer> mReceivedBuffer = new LinkedList<>();
+    private final LinkedList<byte[]> mReceivedBuffer = new LinkedList<>();
 
     private byte[] readBytes(int length) throws BufferUnsatisfiedException {
         if (mBufferSize < length) {
@@ -261,15 +261,18 @@ class Rfc6455Rx implements FrameRx {
         byte[] ba = new byte[length];
         int remaining = length;
 
-        ListIterator<ByteBuffer> itr = mReceivedBuffer.listIterator();
+        ListIterator<byte[]> itr = mReceivedBuffer.listIterator();
         while (itr.hasNext()) {
-            ByteBuffer buff = itr.next();
-            int copied = Math.min(remaining, buff.remaining());
-            buff.get(ba, length - remaining, copied);
+            byte[] buff = itr.next();
+            int copied = Math.min(remaining, buff.length);
+            System.arraycopy(buff, 0, ba, length - remaining, copied);
+
             remaining -= copied;
 
-            if (buff.remaining() == 0) {
+            if (copied == buff.length) {
                 itr.remove();
+            } else {
+                itr.set(Arrays.copyOfRange(buff, copied, buff.length));
             }
             if (remaining == 0) {
                 break;

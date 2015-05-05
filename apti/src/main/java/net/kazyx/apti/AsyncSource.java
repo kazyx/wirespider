@@ -1,6 +1,7 @@
 package net.kazyx.apti;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -16,6 +17,8 @@ import java.util.concurrent.RejectedExecutionException;
 
 class AsyncSource {
     private static final String TAG = AsyncSource.class.getSimpleName();
+
+    private static final int DIRECT_BUFFER_SIZE = 4096;
 
     /**
      * Release all of thread resources.
@@ -55,6 +58,8 @@ class AsyncSource {
     }
 
     final Timer mTimer = new Timer("apti-timer");
+
+    private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 
     static class SelectorThread extends Thread {
         private final Selector mSelector;
@@ -143,5 +148,23 @@ class AsyncSource {
      */
     void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws.socketChannelProxy());
+    }
+
+    byte[] read(SocketChannel ch) throws IOException {
+        try {
+            int length = ch.read(mByteBuffer);
+            if (length == -1) {
+                throw new IOException("EOF");
+            } else if (length == 0) {
+                return null;
+            } else {
+                mByteBuffer.flip();
+                byte[] ret = new byte[length];
+                mByteBuffer.get(ret);
+                return ret;
+            }
+        } finally {
+            mByteBuffer.clear();
+        }
     }
 }
