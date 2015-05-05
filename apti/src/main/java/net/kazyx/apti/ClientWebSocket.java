@@ -16,12 +16,14 @@ class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
     private final List<HttpHeader> mRequestHeaders;
+    private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, List<HttpHeader> extraHeaders) {
+    ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, List<HttpHeader> extraHeaders, SocketBinder binder) {
         super(async, uri, ch, handler, maxPayload, true);
         mRequestHeaders = extraHeaders;
+        mSocketBinder = binder;
     }
 
     @Override
@@ -50,8 +52,10 @@ class ClientWebSocket extends WebSocket {
      */
     void connect() throws IOException, InterruptedException {
         final Socket socket = socketChannel().socket();
+        if (mSocketBinder != null) {
+            mSocketBinder.bind(socket);
+        }
         socket.setTcpNoDelay(true);
-        // TODO bind local address here.
 
         URI uri = remoteUri();
         socketChannel().connect(new InetSocketAddress(uri.getHost(), (uri.getPort() != -1) ? uri.getPort() : 80));

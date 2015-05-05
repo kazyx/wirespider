@@ -37,6 +37,17 @@ public class WebSocketClientFactory {
         mMaxResponsePayloadSize = size;
     }
 
+    private SocketBinder mSocketBinder;
+
+    /**
+     * Set {@link SocketBinder} to be used before opening socket connection.
+     *
+     * @param binder SocketBinder.
+     */
+    public void socketBinder(SocketBinder binder) {
+        mSocketBinder = binder;
+    }
+
     /**
      * Destroy this {@link WebSocketClientFactory}.<br>
      * Note that any connections created by this instance will be released.
@@ -79,7 +90,7 @@ public class WebSocketClientFactory {
                     ch = mProvider.openSocketChannel();
                     ch.configureBlocking(false);
 
-                    ws = new ClientWebSocket(mAsync, uri, ch, handler, mMaxResponsePayloadSize, headers);
+                    ws = new ClientWebSocket(mAsync, uri, ch, handler, mMaxResponsePayloadSize, headers, mSocketBinder);
                     ws.connect();
                     return ws;
                 } catch (IOException e) {
