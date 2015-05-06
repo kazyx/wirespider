@@ -1,6 +1,17 @@
 language: java
 
-before_script: cd apti
+jdk:
+- oraclejdk7
+
+env:
+- TERM=dumb
+
+before_script:
+- cd apti
+
 script:
-  - ./gradlew assemble
-  - ./gradlew check
+- ./gradlew assemble
+- ./gradlew check
+
+after_success:
+- ./gradlew jacocoTestReport coveralls

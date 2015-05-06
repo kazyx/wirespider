@@ -1,13 +1,28 @@
 apply plugin: 'java'
+apply plugin: 'jacoco'
+apply plugin: 'findbugs'
+apply plugin: 'com.github.kt3k.coveralls'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1'
+    }
+}
+
+repositories {
+    jcenter()
+}
+
+def utf8 = 'UTF-8'
+[compileJava, compileTestJava]*.options*.encoding = utf8
 
 sourceCompatibility = 7
 targetCompatibility = 7
 
 version = '0.1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     testCompile ('junit:junit:4.12') {
@@ -28,5 +43,19 @@ sourceSets {
         java {
             srcDir 'test/java'
         }
+    }
+}
+
+findbugs {
+    ignoreFailures = true
+    toolVersion = "2.0.1"
+    sourceSets = [sourceSets.main]
+    effort = "max"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
     }
 }
