@@ -7,7 +7,7 @@ public class AptiLog {
     public enum Level {
         VERBOSE(0),
         DEBUG(10),
-        EXCEPTIONS(20),
+        ERROR(20),
         SILENT(30);
 
         private final int level;
@@ -35,6 +35,14 @@ public class AptiLog {
         void d(String tag, String message);
 
         /**
+         * Flush error logs.
+         *
+         * @param tag     Tag of the message.
+         * @param message Log message.
+         */
+        void e(String tag, String message);
+
+        /**
          * Flush caught exception logs.
          *
          * @param tag Tag of the message.
@@ -58,6 +66,11 @@ public class AptiLog {
         @Override
         public void d(String tag, String message) {
             System.out.println(mDateFormat.format(new Date()) + ":D: " + tag + ": " + message);
+        }
+
+        @Override
+        public void e(String tag, String message) {
+            System.err.println(mDateFormat.format(new Date()) + ":E: " + tag + ": " + message);
         }
 
         @Override
@@ -128,8 +141,26 @@ public class AptiLog {
         }
     }
 
+    static void e(String tag, String message) {
+        if (sLevel.level <= Level.ERROR.level) {
+            sWriter.e(tag, message);
+        }
+    }
+
+    static void e(String tag, String message, String detail) {
+        if (sLevel.level <= Level.ERROR.level) {
+            sWriter.e(tag, message + ": " + detail);
+        }
+    }
+
+    static void e(String tag, String message, long detail) {
+        if (sLevel.level <= Level.ERROR.level) {
+            sWriter.e(tag, message + ": " + detail);
+        }
+    }
+
     static void printStackTrace(String tag, Throwable th) {
-        if (sLevel.level <= Level.EXCEPTIONS.level) {
+        if (sLevel.level <= Level.ERROR.level) {
             sWriter.printStackTrace(tag, th);
         }
     }

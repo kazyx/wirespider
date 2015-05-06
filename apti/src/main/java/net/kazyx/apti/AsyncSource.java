@@ -10,10 +10,10 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 class AsyncSource {
     private static final String TAG = AsyncSource.class.getSimpleName();
@@ -25,16 +25,9 @@ class AsyncSource {
      */
     synchronized void destroy() {
         AptiLog.d(TAG, "destroy");
-        mIsAlive = false;
         mConnectionThreadPool.shutdown();
-        mTimer.purge();
+        mScheduler.shutdownNow();
         mSelectorThread.interrupt();
-    }
-
-    private boolean mIsAlive = true;
-
-    synchronized boolean isAlive() {
-        return mIsAlive;
     }
 
     AsyncSource(SelectorProvider provider) throws IOException {
@@ -57,7 +50,7 @@ class AsyncSource {
         }
     }
 
-    final Timer mTimer = new Timer("apti-timer");
+    final ScheduledExecutorService mScheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 

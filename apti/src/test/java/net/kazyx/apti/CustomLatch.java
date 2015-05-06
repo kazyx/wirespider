@@ -28,6 +28,10 @@ public class CustomLatch {
         return mLatch.await(time, unit);
     }
 
+    public synchronized boolean isUnlockedByCountDown() {
+        return mLatch.getCount() == 0 && !isUnlockedByFailure;
+    }
+
     public boolean isUnlockedByFailure() {
         return isUnlockedByFailure;
     }

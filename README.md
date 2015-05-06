@@ -10,7 +10,7 @@ Apti is a simple and compact WebSocket([RFC6455](http://tools.ietf.org/html/rfc6
 
 ## How to build
 ```bash
-cd <apti-root>/master
+cd <apti-root>/apti
 ./gradlew assemble
 ```
 Now you can find `apti-x.y.z.jar` at `<apti-root>/apti/build/libs`

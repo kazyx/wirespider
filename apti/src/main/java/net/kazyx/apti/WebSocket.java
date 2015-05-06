@@ -3,8 +3,8 @@ package net.kazyx.apti;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
-import java.util.TimerTask;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,7 +71,7 @@ public abstract class WebSocket {
     }
 
     private final Object mPingPongTaskLock = new Object();
-    private TimerTask mPingPongTask;
+    private ScheduledFuture<?> mPingPongFuture;
 
     WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload) {
         mURI = uri;
@@ -143,23 +143,23 @@ public abstract class WebSocket {
             return;
         }
 
-        TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                synchronized (mPingPongTaskLock) {
-                    closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
-                }
-            }
-        };
-
         synchronized (mPingPongTaskLock) {
-            if (mPingPongTask != null) {
-                mPingPongTask.cancel();
+            if (mPingPongFuture != null) {
+                mPingPongFuture.cancel(false);
+                AptiLog.d(TAG, "Previous pong waiter is cancelled");
             }
-            mPingPongTask = task;
 
             try {
-                mAsync.mTimer.schedule(task, unit.toMillis(timeout));
+                mPingPongFuture = mAsync.mScheduler.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (mPingPongTaskLock) {
+                            AptiLog.d(TAG, "No response for Ping frame");
+                            closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
+                        }
+                    }
+                }, timeout, unit);
+                AptiLog.d(TAG, "Connection will be closed after " + unit.toSeconds(timeout) + " seconds, unless pong frame is received.");
             } catch (IllegalStateException e) {
                 throw new RejectedExecutionException(e);
             }
@@ -191,17 +191,23 @@ public abstract class WebSocket {
             return;
         }
 
-        sendCloseFrame(code, reason);
+        sendCloseFrame(code, reason, true);
     }
 
-    private void sendCloseFrame(CloseStatusCode code, String reason) {
+    private void sendCloseFrame(CloseStatusCode code, String reason, final boolean waitForResponse) {
         mFrameTx.sendCloseAsync(code, reason);
 
         mAsync.safeAsync(new Runnable() {
             @Override
             public void run() {
-                // TODO Wait for a minute to send close frame?
-                closeNow();
+                if (waitForResponse) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        AptiLog.e(TAG, "Close frame response waiter interrupted");
+                    }
+                }
+                closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
             }
         });
     }
@@ -271,7 +277,7 @@ public abstract class WebSocket {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
                     AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
-                    closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Handshake failure");
+                    onHandshakeFailed();
                 }
             } else {
                 mFrameRx.onDataReceived(data);
@@ -285,6 +291,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
+            AptiLog.d(TAG, "onPingFrame", message);
             mFrameTx.sendPongAsync(message);
         }
 
@@ -293,11 +300,12 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
+            AptiLog.d(TAG, "onPongFrame", message);
             // TODO should check pong message is same as ping message we've sent.
             synchronized (mPingPongTaskLock) {
-                if (mPingPongTask != null) {
-                    mPingPongTask.cancel();
-                    mPingPongTask = null;
+                if (mPingPongFuture != null) {
+                    mPingPongFuture.cancel(false);
+                    mPingPongFuture = null;
                 }
             }
         }
@@ -307,8 +315,9 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
+            AptiLog.d(TAG, "onCloseFrame", code + " " + reason);
             if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
-                sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response");
+                sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response", false);
             }
             // TODO Wait for a minute to send close frame?
             closeAndRaiseEvent(code, reason);

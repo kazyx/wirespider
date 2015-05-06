@@ -3,8 +3,10 @@ package net.kazyx.apti;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -17,6 +19,19 @@ public class JettyWebSocketServlet {
     private Session mSession;
 
     public static final int MAX_SIZE_1MB = 1000000;
+
+    public static final String REJECT_KEY = "reject_upgrade";
+
+    @OnWebSocketFrame
+    public void onFrame(Frame frame) throws IOException {
+        if (OpCode.CONNECTION_CLOSE == frame.getOpCode()) {
+            System.out.println("JettyWebSocketServlet: close frame handled");
+            WebSocketClientTest.callbackCloseFrame();
+        } else if (OpCode.PING == frame.getOpCode()) {
+            System.out.println("JettyWebSocketServlet: ping frame handled");
+            WebSocketClientTest.callbackPingFrame();
+        }
+    }
 
     @OnWebSocketConnect
     public void onConnected(Session session) {
@@ -49,7 +64,7 @@ public class JettyWebSocketServlet {
     @OnWebSocketMessage
     public void onBinaryMessage(byte buf[], int offset, int length) throws UnsupportedEncodingException {
         ByteBuffer buff = ByteBuffer.wrap(buf, offset, length);
-        System.out.println("JettyWebSocketServlet: ByteBuffer: " + buff.toString());
+        // System.out.println("JettyWebSocketServlet: ByteBuffer: " + buff.toString());
 
         try {
             mSession.getRemote().sendBytes(buff);

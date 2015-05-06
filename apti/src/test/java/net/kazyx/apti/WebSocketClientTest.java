@@ -3,6 +3,9 @@ package net.kazyx.apti;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.After;
@@ -13,8 +16,10 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.HttpCookie;
+import java.net.Socket;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +44,17 @@ public class WebSocketClientTest {
         WebSocketServlet servlet = new WebSocketServlet() {
             @Override
             public void configure(WebSocketServletFactory factory) {
-                factory.register(JettyWebSocketServlet.class);
+                factory.setCreator(new WebSocketCreator() {
+                    @Override
+                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
+                        if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
+                            System.out.println("JettyWebSocket: Reject upgrade");
+                            return null;
+                        } else {
+                            return new JettyWebSocketServlet();
+                        }
+                    }
+                });
             }
         };
 
@@ -91,29 +106,15 @@ public class WebSocketClientTest {
     public void setup() throws Exception {
         sHeaders = null;
         sCookies = null;
+        sPingFrameLatch = null;
+        sCloseFrameLatch = null;
+        sCookieCbLatch = null;
+        sHeaderCbLatch = null;
         AptiLog.logLevel(AptiLog.Level.DEBUG);
     }
 
     @After
     public void teardown() throws Exception {
-    }
-
-    @Test
-    public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
-            ws = future.get(10000, TimeUnit.MILLISECONDS);
-            fail();
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(IOException.class)));
-        } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            factory.destroy();
-        }
     }
 
     @Test
@@ -124,6 +125,94 @@ public class WebSocketClientTest {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             assertThat(ws.isConnected(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    static void callbackCloseFrame() {
+        if (sCloseFrameLatch != null) {
+            sCloseFrameLatch.countDown();
+        }
+    }
+
+    private static CustomLatch sCloseFrameLatch;
+
+    @Test
+    public void gracefulClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sCloseFrameLatch = new CustomLatch(1);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.closeAsync();
+            assertThat(sCloseFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    static void callbackPingFrame() {
+        if (sPingFrameLatch != null) {
+            sPingFrameLatch.countDown();
+        }
+    }
+
+    private static CustomLatch sPingFrameLatch;
+
+    @Test
+    public void sendPingPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sPingFrameLatch = new CustomLatch(2);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (sPingFrameLatch != null) {
+                        sPingFrameLatch.unlockByFailure();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
+
+            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(false));
+            assertThat(ws.isConnected(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void disconnectIfNoPongComes() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sPingFrameLatch = new CustomLatch(2);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (sPingFrameLatch != null) {
+                        sPingFrameLatch.countDown();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.checkConnectionAsync(1, TimeUnit.MICROSECONDS);
+
+            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(true));
+            assertThat(ws.isConnected(), is(false));
         } finally {
             if (ws != null) {
                 ws.closeNow();
@@ -168,7 +257,7 @@ public class WebSocketClientTest {
         final Set<WebSocket> set = new HashSet<>();
         int NUM_CONNECTIONS = 100;
 
-        AptiLog.logLevel(AptiLog.Level.EXCEPTIONS);
+        AptiLog.logLevel(AptiLog.Level.ERROR);
 
         final CountDownLatch latch = new CountDownLatch(NUM_CONNECTIONS);
         try {
@@ -353,16 +442,83 @@ public class WebSocketClientTest {
         WebSocketClientTestUtil.echoBinary(JettyWebSocketServlet.MAX_SIZE_1MB);
     }
 
-    static void callbackCookies(List<HttpCookie> cookies) {
-        sCookies = cookies;
+    @Test
+    public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        final CustomLatch latch = new CustomLatch(1);
+        factory.socketBinder(new SocketBinder() {
+            @Override
+            public void bind(Socket socket) throws IOException {
+                latch.countDown();
+            }
+        });
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection()).get(500, TimeUnit.MILLISECONDS);
+            assertThat(latch.isUnlockedByCountDown(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
     }
 
+    @Test
+    public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
+            ws = future.get(10000, TimeUnit.MILLISECONDS);
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(IOException.class)));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Collections.singletonList(reject));
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), is(instanceOf(IOException.class)));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    static void callbackCookies(List<HttpCookie> cookies) {
+        sCookies = cookies;
+        if (sCookieCbLatch != null) {
+            sCookieCbLatch.countDown();
+        }
+    }
+
+    private static CustomLatch sCookieCbLatch;
     private static List<HttpCookie> sCookies;
 
     static void callbackHeaders(Map<String, List<String>> headers) {
         sHeaders = headers;
+        if (sHeaderCbLatch != null) {
+            sHeaderCbLatch.countDown();
+        }
     }
 
+    private static CustomLatch sHeaderCbLatch;
     private static Map<String, List<String>> sHeaders;
 
     @Test
@@ -373,9 +529,11 @@ public class WebSocketClientTest {
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
+        sHeaderCbLatch = new CustomLatch(1);
         try {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
             ws = future.get(1000, TimeUnit.MILLISECONDS);
+            sHeaderCbLatch.await(500, TimeUnit.MILLISECONDS);
 
             assertThat(sHeaders.keySet(), hasItems("single", "multi"));
             assertThat(sHeaders.get("single"), is(contains("value")));
@@ -394,9 +552,11 @@ public class WebSocketClientTest {
         WebSocket ws = null;
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
+        sCookieCbLatch = new CustomLatch(1);
         try {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
             ws = future.get(1000, TimeUnit.MILLISECONDS);
+            sCookieCbLatch.await(500, TimeUnit.MILLISECONDS);
 
             assertThat(sCookies, is(notNullValue()));
             assertThat(sCookies, hasSize(2));

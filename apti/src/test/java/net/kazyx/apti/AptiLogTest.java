@@ -30,6 +30,13 @@ public class AptiLogTest {
             }
 
             @Override
+            public void e(String tag, String message) {
+                if (sLatch != null) {
+                    sLatch.countDown();
+                }
+            }
+
+            @Override
             public void printStackTrace(String tag, Throwable th) {
                 if (sLatch != null) {
                     sLatch.countDown();
@@ -43,7 +50,7 @@ public class AptiLogTest {
     @Test
     public void logLevelVerbose() throws InterruptedException {
         AptiLog.logLevel(AptiLog.Level.VERBOSE);
-        sLatch = new CountDownLatch(3);
+        sLatch = new CountDownLatch(4);
 
         callAllLogLevelsOnNewThread();
 
@@ -53,7 +60,7 @@ public class AptiLogTest {
     @Test
     public void logLevelDebug() throws InterruptedException {
         AptiLog.logLevel(AptiLog.Level.DEBUG);
-        sLatch = new CountDownLatch(3);
+        sLatch = new CountDownLatch(4);
 
         callAllLogLevelsOnNewThread();
 
@@ -62,9 +69,9 @@ public class AptiLogTest {
     }
 
     @Test
-    public void logLevelExceptions() throws InterruptedException {
-        AptiLog.logLevel(AptiLog.Level.EXCEPTIONS);
-        sLatch = new CountDownLatch(3);
+    public void logLevelError() throws InterruptedException {
+        AptiLog.logLevel(AptiLog.Level.ERROR);
+        sLatch = new CountDownLatch(4);
 
         callAllLogLevelsOnNewThread();
 
@@ -75,12 +82,12 @@ public class AptiLogTest {
     @Test
     public void logLevelSilent() throws InterruptedException {
         AptiLog.logLevel(AptiLog.Level.SILENT);
-        sLatch = new CountDownLatch(3);
+        sLatch = new CountDownLatch(4);
 
         callAllLogLevelsOnNewThread();
 
         assertThat(sLatch.await(100, TimeUnit.MILLISECONDS), is(false));
-        assertThat(sLatch.getCount(), is(3L));
+        assertThat(sLatch.getCount(), is(4L));
     }
 
     @Test(expected = NullPointerException.class)
@@ -94,6 +101,7 @@ public class AptiLogTest {
             public void run() {
                 AptiLog.v(TAG, "verbose");
                 AptiLog.d(TAG, "debug");
+                AptiLog.e(TAG, "error");
                 AptiLog.printStackTrace(TAG, new Exception("exception"));
             }
         }).start();
