@@ -23,13 +23,14 @@ public class JettyWebSocketServlet {
     public static final String REJECT_KEY = "reject_upgrade";
 
     @OnWebSocketFrame
-    public void onFrame(Frame frame) throws IOException {
+    public void onFrame(Frame frame) throws IOException, InterruptedException {
         if (OpCode.CONNECTION_CLOSE == frame.getOpCode()) {
             System.out.println("JettyWebSocketServlet: close frame handled");
             WebSocketClientTest.callbackCloseFrame();
         } else if (OpCode.PING == frame.getOpCode()) {
             System.out.println("JettyWebSocketServlet: ping frame handled");
             WebSocketClientTest.callbackPingFrame();
+            Thread.sleep(100);
         }
     }
 
