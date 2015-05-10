@@ -23,14 +23,13 @@ public class JettyWebSocketServlet {
     public static final String REJECT_KEY = "reject_upgrade";
 
     @OnWebSocketFrame
-    public void onFrame(Frame frame) throws IOException, InterruptedException {
+    public void onFrame(Frame frame) throws IOException {
         if (OpCode.CONNECTION_CLOSE == frame.getOpCode()) {
             System.out.println("JettyWebSocketServlet: close frame handled");
             WebSocketClientTest.callbackCloseFrame();
         } else if (OpCode.PING == frame.getOpCode()) {
             System.out.println("JettyWebSocketServlet: ping frame handled");
             WebSocketClientTest.callbackPingFrame();
-            Thread.sleep(100);
         }
     }
 
@@ -52,11 +51,16 @@ public class JettyWebSocketServlet {
 
     public static final String CLOSE_REQUEST = "close";
 
+    public static final String SLEEP_REQUEST = "sleep";
+
     @OnWebSocketMessage
-    public void onTextMessage(String message) {
+    public void onTextMessage(String message) throws InterruptedException {
         if (message.equals(CLOSE_REQUEST)) {
             System.out.println("JettyWebSocketServlet: close request received");
             mSession.close(1000, "Normal closure");
+        } else if (message.equals(SLEEP_REQUEST)) {
+            System.out.println("JettyWebSocketServlet: sleep request received. Start sleep for 2 sec");
+            Thread.sleep(2000);
         } else {
             mSession.getRemote().sendStringByFuture(message);
         }

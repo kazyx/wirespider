@@ -159,7 +159,7 @@ public abstract class WebSocket {
                         }
                     }
                 }, timeout, unit);
-                AptiLog.d(TAG, "Connection will be closed after " + unit.toSeconds(timeout) + " seconds, unless pong frame is received.");
+                AptiLog.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
             } catch (IllegalStateException e) {
                 throw new RejectedExecutionException(e);
             }

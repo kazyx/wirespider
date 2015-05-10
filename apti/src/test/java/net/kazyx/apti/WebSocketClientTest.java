@@ -197,22 +197,21 @@ public class WebSocketClientTest {
     @Test
     public void disconnectIfNoPongComes() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
-        sPingFrameLatch = new CustomLatch(2);
+        final CustomLatch latch = new CustomLatch(1);
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
-                    if (sPingFrameLatch != null) {
-                        sPingFrameLatch.countDown();
-                    }
+                    latch.countDown();
                 }
             });
             ws = future.get(500, TimeUnit.MILLISECONDS);
-            ws.checkConnectionAsync(1, TimeUnit.MICROSECONDS);
+            ws.sendTextMessageAsync(JettyWebSocketServlet.SLEEP_REQUEST); // Jetty thread will sleep for 2 sec.
+            Thread.sleep(200);
+            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
 
-            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(true));
-            assertThat(ws.isConnected(), is(false));
+            assertThat(latch.await(1000, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
