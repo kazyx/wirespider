@@ -41,6 +41,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
+                AptiLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             }
         }
@@ -56,8 +57,8 @@ class Rfc6455Rx implements FrameRx {
                 byte second = readBytes(1)[0];
                 isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
 
-                if (mIsClient && isMasked) {
-                    throw new ProtocolViolationException("Masked payload from server");
+                if (!(mIsClient ^ isMasked)) {
+                    throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");
                 }
 
                 payloadLength = second & BitMask.BYTE_SYM_0x7F;
@@ -83,6 +84,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
+                AptiLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             } catch (ProtocolViolationException e) {
                 AptiLog.d(TAG, "Protocol violation", e.getMessage());
@@ -112,6 +114,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
+                AptiLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             }
         }
@@ -154,7 +157,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                AptiLog.d(TAG, "Payload protocol violation", e.getMessage());
+                AptiLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             } catch (IOException e) {
                 // TODO
@@ -225,7 +228,7 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.CONNECTION_CLOSE:
                 if (!isFinal) {
-                    throw new ProtocolViolationException("Non-final flag for closeAsync opcode");
+                    throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
                 int code = (payload.length >= 2) ? payload[1] & 0xFF + (payload[0] << 8) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
                 String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";

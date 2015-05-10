@@ -28,11 +28,15 @@ public class CustomLatch {
         return mLatch.await(time, unit);
     }
 
+    public synchronized long getCount() {
+        return mLatch.getCount();
+    }
+
     public synchronized boolean isUnlockedByCountDown() {
         return mLatch.getCount() == 0 && !isUnlockedByFailure;
     }
 
-    public boolean isUnlockedByFailure() {
+    public synchronized boolean isUnlockedByFailure() {
         return isUnlockedByFailure;
     }
 }
