@@ -42,13 +42,16 @@ final class ByteArrayUtil {
      * @return The long value
      * @throws IllegalArgumentException Length of the byte array is larger than 8.
      */
-    static long toLong(byte[] bytes) {
-        if (bytes.length > 8) {
+    static long toUnsignedLong(byte[] bytes) throws PayloadSizeOverflowException {
+        if (8 < bytes.length) {
             throw new IllegalArgumentException("bit length overflow: " + bytes.length);
         }
         long value = 0;
         for (byte b : bytes) {
             value = (value << 8) + (b & 0xFF);
+        }
+        if (value < 0) {
+            throw new PayloadSizeOverflowException("Exceeds int64 range: " + value);
         }
         return value;
     }
@@ -62,10 +65,10 @@ final class ByteArrayUtil {
      * @throws PayloadSizeOverflowException if the size exceeds 32 bit signed integer range.
      */
     static int toUnsignedInteger(byte[] bytes) throws PayloadSizeOverflowException {
-        long l = toLong(bytes);
-        if (l < 0 || l > Integer.MAX_VALUE) {
+        long l = toUnsignedLong(bytes);
+        if (Integer.MAX_VALUE < l) {
             // TODO support large payload over 2GB
-            throw new PayloadSizeOverflowException("Bad unsigned integer: " + l);
+            throw new PayloadSizeOverflowException("Exceeds int32 range: " + l);
         }
         return (int) l;
     }

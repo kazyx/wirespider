@@ -4,6 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class AptiLog {
+    private AptiLog() {
+    }
+
     public enum Level {
         VERBOSE(0),
         DEBUG(10),
@@ -51,10 +54,10 @@ public class AptiLog {
         void printStackTrace(String tag, Throwable th);
     }
 
-    private static class DefaultWriter implements Writer {
+    public static class DefaultWriter implements Writer {
         private final SimpleDateFormat mDateFormat;
 
-        private DefaultWriter() {
+        public DefaultWriter() {
             mDateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
         }
 

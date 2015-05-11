@@ -1,6 +1,5 @@
 package net.kazyx.apti;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -10,10 +9,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class RxErrorEndTest {
-
-    @Before
-    public void setup() {
-    }
 
     private LinkedList<byte[]> asLinkedList(byte[] data) {
         return new LinkedList<>(Collections.singletonList(data));

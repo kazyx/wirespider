@@ -220,6 +220,42 @@ public class WebSocketClientTest {
         }
     }
 
+    static void callbackPongFrame() {
+        if (sPongFrameLatch != null) {
+            sPongFrameLatch.countDown();
+        }
+    }
+
+    private static CustomLatch sPongFrameLatch;
+
+    @Test
+    public void receivePing() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sPongFrameLatch = new CustomLatch(1);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (sPongFrameLatch != null) {
+                        sPongFrameLatch.unlockByFailure();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.sendTextMessageAsync(JettyWebSocketServlet.PING_REQUEST);
+
+            assertThat(sPongFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(true));
+            assertThat(ws.isConnected(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
@@ -345,6 +381,12 @@ public class WebSocketClientTest {
             }
             factory.destroy();
         }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void payloadLimitNonPositive() throws IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        factory.maxResponsePayloadSizeInBytes(0);
     }
 
     @Test

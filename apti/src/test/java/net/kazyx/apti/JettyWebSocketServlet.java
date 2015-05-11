@@ -30,6 +30,9 @@ public class JettyWebSocketServlet {
         } else if (OpCode.PING == frame.getOpCode()) {
             System.out.println("JettyWebSocketServlet: ping frame handled");
             WebSocketClientTest.callbackPingFrame();
+        } else if (OpCode.PONG == frame.getOpCode()) {
+            System.out.println("JettyWebSocketServlet: pong frame handled");
+            WebSocketClientTest.callbackPongFrame();
         }
     }
 
@@ -53,14 +56,20 @@ public class JettyWebSocketServlet {
 
     public static final String SLEEP_REQUEST = "sleep";
 
+    public static final String PING_REQUEST = "ping";
+
     @OnWebSocketMessage
-    public void onTextMessage(String message) throws InterruptedException {
+    public void onTextMessage(String message) throws InterruptedException, IOException {
         if (message.equals(CLOSE_REQUEST)) {
             System.out.println("JettyWebSocketServlet: close request received");
             mSession.close(1000, "Normal closure");
         } else if (message.equals(SLEEP_REQUEST)) {
             System.out.println("JettyWebSocketServlet: sleep request received. Start sleep for 2 sec");
             Thread.sleep(2000);
+        } else if (message.equals(PING_REQUEST)) {
+            String pingMsg = "hello";
+            ByteBuffer buff = ByteBuffer.wrap(pingMsg.getBytes("UTF-8"));
+            mSession.getRemote().sendPing(buff);
         } else {
             mSession.getRemote().sendStringByFuture(message);
         }
