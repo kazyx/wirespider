@@ -14,7 +14,7 @@ class HttpHeaderReader {
     private static final String TAG = HttpHeaderReader.class.getSimpleName();
 
     private HttpStatusLine mStatusLine;
-    private List<HttpHeader> mHeaders;
+    private Map<String, HttpHeader> mHeaders;
 
     /**
      * @param data HTTP header data as byte array.
@@ -36,7 +36,7 @@ class HttpHeaderReader {
     /**
      * @return List of HTTP header fields.
      */
-    List<HttpHeader> headerFields() {
+    Map<String, HttpHeader> headerFields() {
         return mHeaders;
     }
 
@@ -57,6 +57,10 @@ class HttpHeaderReader {
 
         String version = status[0].substring(5);
         AptiLog.v(TAG, "HTTP version", version);
+
+        if (!version.equals("1.1")) {
+            throw new IOException("HTTP version not 1.1: " + version);
+        }
 
         int statusCode;
         try {
@@ -107,19 +111,17 @@ class HttpHeaderReader {
 
                 // Previous header ends by the previous line
                 appendToHeaderContainer(name, sb.toString(), headers);
-                name = null;
                 sb.setLength(0);
             }
 
             // Search header token
             if (line.startsWith(" ") || line.startsWith("\t")) {
-                continue;
+                throw new IOException("Leading line starts with WS or Tab");
             }
 
             int index = line.indexOf(":");
             if (index <= 0) {
-                // No colon, starts with colon
-                continue;
+                throw new IOException("Leading line missing header name separator");
             }
 
             name = line.substring(0, index).toLowerCase(Locale.US);
@@ -131,13 +133,13 @@ class HttpHeaderReader {
             appendToHeaderContainer(name, sb.toString(), headers);
         }
 
-        List<HttpHeader> parsed = new ArrayList<>(headers.size());
+        Map<String, HttpHeader> parsed = new HashMap<>(headers.size());
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             HttpHeader.Builder builder = new HttpHeader.Builder(entry.getKey());
             for (String value : entry.getValue()) {
                 builder.appendValue(value);
             }
-            parsed.add(builder.build());
+            parsed.put(entry.getKey(), builder.build());
         }
         mHeaders = parsed;
     }

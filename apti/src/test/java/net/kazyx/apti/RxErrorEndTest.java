@@ -2,36 +2,35 @@ package net.kazyx.apti;
 
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.io.UnsupportedEncodingException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class RxErrorEndTest {
 
-    private LinkedList<byte[]> asLinkedList(byte[] data) {
-        return new LinkedList<>(Collections.singletonList(data));
-    }
-
     private void serverViolationTest(byte[] data) {
+        final CustomLatch latch = new CustomLatch(1);
         Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
             @Override
             public void onProtocolViolation() {
-                // success
+                latch.countDown();
             }
         }, 1000, true);
-        rx.onDataReceived(asLinkedList(data));
+        rx.onDataReceived(TestUtil.asLinkedList(data));
+        assertThat(latch.isUnlockedByCountDown(), is(true));
     }
 
     private void clientViolationTest(byte[] data) {
+        final CustomLatch latch = new CustomLatch(1);
         Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
             @Override
             public void onProtocolViolation() {
-                // success
+                latch.countDown();
             }
         }, 1000, false);
-        rx.onDataReceived(asLinkedList(data));
+        rx.onDataReceived(TestUtil.asLinkedList(data));
+        assertThat(latch.isUnlockedByCountDown(), is(true));
     }
 
     @Test
@@ -157,25 +156,16 @@ public class RxErrorEndTest {
                 latch.countDown();
             }
         }, limit, true);
-        rx.onDataReceived(asLinkedList(data));
+        rx.onDataReceived(TestUtil.asLinkedList(data));
         assertThat(latch.getCount(), is(1L));
-        rx.onDataReceived(asLinkedList(overflowData));
+        rx.onDataReceived(TestUtil.asLinkedList(overflowData));
         assertThat(latch.isUnlockedByCountDown(), is(true));
-    }
-
-    static byte[] fixedLengthByteArray(int length) {
-        System.out.println("Create random byte array: " + length);
-        byte[] ba = new byte[length];
-        for (int i = 0; i < length; i++) {
-            ba[i] = 10;
-        }
-        return ba;
     }
 
     @Test
     public void payloadOverflowAtNonExtended() {
         int limit = 124;
-        byte[] payload = fixedLengthByteArray(limit + 1);
+        byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
 
         byte[] data = new byte[2 + limit];
         data[0] = (byte) 0b10000010;
@@ -192,7 +182,7 @@ public class RxErrorEndTest {
     @Test
     public void payloadOverflowAtNonExtendedEnd() {
         int limit = 125;
-        byte[] payload = fixedLengthByteArray(limit + 1);
+        byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
 
         byte[] data = new byte[2 + limit];
         data[0] = (byte) 0b10000010;
@@ -212,7 +202,7 @@ public class RxErrorEndTest {
     @Test
     public void payloadOverflowAtFirstExtensionBeginning() {
         int limit = 126;
-        byte[] payload = fixedLengthByteArray(limit + 1);
+        byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
 
         byte[] data = new byte[4 + limit];
         data[0] = (byte) 0b10000010;
@@ -234,7 +224,7 @@ public class RxErrorEndTest {
     @Test
     public void payloadOverflowAtFirstExtensionEnd() {
         int limit = 0x00ffff;
-        byte[] payload = fixedLengthByteArray(limit + 1);
+        byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
 
         byte[] data = new byte[4 + limit];
         data[0] = (byte) 0b10000010;
@@ -262,7 +252,7 @@ public class RxErrorEndTest {
     @Test
     public void payloadOverflowAtSecondExtensionBeginning() {
         int limit = 0x010000;
-        byte[] payload = fixedLengthByteArray(limit + 1);
+        byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
 
         byte[] data = new byte[10 + limit];
         data[0] = (byte) 0b10000010;
@@ -296,7 +286,7 @@ public class RxErrorEndTest {
     @Test
     public void payloadOverflowMaxInt() {
         int payloadSize = 10;
-        byte[] payload = fixedLengthByteArray(payloadSize); // dummy payload. process will end before this data is read.
+        byte[] payload = TestUtil.fixedLengthByteArray(payloadSize); // dummy payload. process will end before this data is read.
 
         byte[] overflowData = new byte[10 + payloadSize];
         overflowData[0] = (byte) 0b10000010;
@@ -319,7 +309,41 @@ public class RxErrorEndTest {
                 latch.countDown();
             }
         }, Integer.MAX_VALUE, true);
-        rx.onDataReceived(asLinkedList(overflowData));
+        rx.onDataReceived(TestUtil.asLinkedList(overflowData));
         assertThat(latch.isUnlockedByCountDown(), is(true));
+    }
+
+    @Test
+    public void pingPayloadMaximum() throws UnsupportedEncodingException {
+        int payloadSize = 125;
+        byte[] payload = TestUtil.fixedLengthString(payloadSize).getBytes("UTF-8");
+        byte[] data = new byte[2 + payloadSize];
+        data[0] = (byte) 0b10001001;
+        data[1] = (byte) payloadSize;
+        System.arraycopy(payload, 0, data, 2, payloadSize);
+
+        final CustomLatch latch = new CustomLatch(1);
+        Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            @Override
+            public void onPingFrame(String message) {
+                latch.countDown();
+            }
+        }, 1000, true);
+        rx.onDataReceived(TestUtil.asLinkedList(data));
+        assertThat(latch.isUnlockedByCountDown(), is(true));
+    }
+
+    @Test
+    public void pingPayloadTooLarge() throws UnsupportedEncodingException {
+        int payloadSize = 126;
+        byte[] payload = TestUtil.fixedLengthString(payloadSize).getBytes("UTF-8");
+        byte[] data = new byte[4 + payloadSize];
+        data[0] = (byte) 0b10001001;
+        data[1] = 126;
+        data[2] = 0;
+        data[3] = (byte) payloadSize;
+        System.arraycopy(payload, 0, data, 4, payloadSize);
+
+        serverViolationTest(data);
     }
 }

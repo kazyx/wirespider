@@ -9,6 +9,8 @@ import java.util.List;
 public class HttpHeader {
     public static final String COOKIE = "Cookie";
     public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
+    public static final String UPGRADE = "Upgrade";
+    public static final String CONNECTION = "Connection";
 
     final String key;
 

@@ -38,11 +38,11 @@ class WebSocketClientTestUtil {
                 }
             }).get(1000, TimeUnit.MILLISECONDS);
 
-            ws.sendBinaryMessageAsync(WebSocketClientTestUtil.fixedLengthByteArray(size - 1));
-            ws.sendBinaryMessageAsync(WebSocketClientTestUtil.fixedLengthByteArray(size));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size - 1));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size));
             assertThat(messageLatch.await(500, TimeUnit.MILLISECONDS), is(true));
 
-            ws.sendBinaryMessageAsync(WebSocketClientTestUtil.fixedLengthByteArray(size + 1));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size + 1));
             assertThat(closeLatch.await(500, TimeUnit.MILLISECONDS), is(true));
             assertThat(closeLatch.isUnlockedByFailure(), is(false));
         } finally {
@@ -57,7 +57,7 @@ class WebSocketClientTestUtil {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
-        byte[] data = fixedLengthByteArray(size);
+        byte[] data = TestUtil.fixedLengthByteArray(size);
 
         final byte[] copy = Arrays.copyOf(data, data.length);
         WebSocket ws = null;
@@ -89,19 +89,11 @@ class WebSocketClientTestUtil {
         }
     }
 
-    static byte[] fixedLengthByteArray(int length) {
-        byte[] ba = new byte[length];
-        for (int i = 0; i < length; i++) {
-            ba[i] = 10;
-        }
-        return ba;
-    }
-
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
-        final String data = fixedLengthString(size);
+        final String data = TestUtil.fixedLengthString(size);
 
         WebSocket ws = null;
         try {
@@ -130,13 +122,5 @@ class WebSocketClientTestUtil {
             }
             factory.destroy();
         }
-    }
-
-    static String fixedLengthString(int length) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            sb.append("a");
-        }
-        return sb.toString();
     }
 }

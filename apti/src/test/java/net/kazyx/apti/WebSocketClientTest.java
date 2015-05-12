@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -511,7 +512,7 @@ public class WebSocketClientTest {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection());
             ws = future.get(10000, TimeUnit.MILLISECONDS);
             fail();
         } catch (ExecutionException e) {
@@ -562,6 +563,21 @@ public class WebSocketClientTest {
 
     private static CustomLatch sHeaderCbLatch;
     private static Map<String, List<String>> sHeaders;
+
+    @Test
+    public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), new ArrayList<HttpHeader>());
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
 
     @Test
     public void connectWithHeaders() throws IOException, InterruptedException, ExecutionException, TimeoutException {

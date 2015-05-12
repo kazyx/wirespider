@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
+import java.util.Map;
 
 class Rfc6455Handshake implements Handshake {
     private static final String TAG = Rfc6455Handshake.class.getSimpleName();
@@ -98,22 +100,21 @@ class Rfc6455Handshake implements Handshake {
                 throw new HandshakeFailureException("HTTP Status code not 101: " + statusLine.statusCode());
             }
 
-            List<HttpHeader> resHeaders = headerReader.headerFields();
+            Map<String, HttpHeader> resHeaders = headerReader.headerFields();
 
-            boolean validated = false;
-            for (HttpHeader header : resHeaders) {
-                if (header.key.equalsIgnoreCase(HttpHeader.SEC_WEBSOCKET_ACCEPT)) {
-                    String expected = HandshakeSecretUtil.scrambleSecret(mSecret);
-                    validated = header.values.get(0).equals(expected);
-                    if (!validated) {
-                        throw new HandshakeFailureException("Invalid Sec-WebSocket-Accept header value");
-                    }
-                    break;
-                }
+            HttpHeader upgrade = resHeaders.get(HttpHeader.UPGRADE.toLowerCase(Locale.US));
+            if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade.values.get(0))) {
+                throw new HandshakeFailureException("Upgrade header error");
             }
 
-            if (!validated) {
-                throw new HandshakeFailureException("No Sec-WebSocket-Accept header");
+            HttpHeader connection = resHeaders.get(HttpHeader.CONNECTION.toLowerCase(Locale.US));
+            if (connection == null || !"Upgrade".equalsIgnoreCase(connection.values.get(0))) {
+                throw new HandshakeFailureException("Connection header error");
+            }
+
+            HttpHeader accept = resHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.toLowerCase(Locale.US));
+            if (accept == null || !HandshakeSecretUtil.scrambleSecret(mSecret).equals(accept.values.get(0))) {
+                throw new HandshakeFailureException("Sec-WebSocket-Accept header error");
             }
         } catch (IOException e) {
             throw new HandshakeFailureException(e);
