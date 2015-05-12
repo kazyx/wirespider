@@ -135,6 +135,45 @@ public class WebSocketClientTest {
         }
     }
 
+    @Test
+    public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        final CustomLatch latch = new CustomLatch(2);
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new WebSocketConnection() {
+                @Override
+                public void onTextMessage(String message) {
+                    latch.countDown();
+                }
+
+                @Override
+                public void onBinaryMessage(byte[] message) {
+                    latch.countDown();
+                }
+
+                @Override
+                public void onClosed(int code, String reason) {
+                    latch.countDown();
+                }
+            });
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
+            ws.closeNow();
+            Thread.sleep(200);
+            ws.sendTextMessageAsync("test");
+            ws.sendBinaryMessageAsync("test".getBytes("UTF-8"));
+            ws.checkConnectionAsync(100, TimeUnit.MILLISECONDS);
+            ws.closeAsync();
+            Thread.sleep(500);
+            assertThat(latch.getCount(), is(1L));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     static void callbackCloseFrame() {
         if (sCloseFrameLatch != null) {
             sCloseFrameLatch.countDown();
@@ -169,8 +208,25 @@ public class WebSocketClientTest {
 
     private static CustomLatch sPingFrameLatch;
 
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nonPositiveTimeoutForPingPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.checkConnectionAsync(0, TimeUnit.MILLISECONDS);
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     @Test
-    public void sendPingPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         sPingFrameLatch = new CustomLatch(2);
         WebSocket ws = null;
@@ -184,6 +240,34 @@ public class WebSocketClientTest {
                 }
             });
             ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
+
+            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(false));
+            assertThat(ws.isConnected(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void sendPingTwice() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sPingFrameLatch = new CustomLatch(3);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (sPingFrameLatch != null) {
+                        sPingFrameLatch.unlockByFailure();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
             ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
 
             assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(false));
