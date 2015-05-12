@@ -2,14 +2,12 @@ package net.kazyx.apti;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Random;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
     private final boolean mIsClient;
     private final SocketChannelProxy mProxy;
-    private final Random mRandom;
 
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
@@ -17,8 +15,6 @@ class Rfc6455Tx implements FrameTx {
     Rfc6455Tx(SocketChannelProxy proxy, boolean isClient) {
         mIsClient = isClient;
         mProxy = proxy;
-        long seed = new Random().nextLong();
-        mRandom = new Random(seed);
     }
 
     @Override
@@ -108,7 +104,7 @@ class Rfc6455Tx implements FrameTx {
             mStream.write(header);
 
             if (mIsClient) {
-                int mask = mRandom.nextInt();
+                int mask = RandomSource.random().nextInt();
                 byte[] maskingKey = {
                         (byte) mask,
                         (byte) (mask >>> 8),

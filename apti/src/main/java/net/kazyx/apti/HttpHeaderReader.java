@@ -21,7 +21,7 @@ class HttpHeaderReader {
      * @throws IOException Failed to parse status line or header fields.
      */
     HttpHeaderReader(byte[] data) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data)));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), "UTF-8"));
         readStatusLine(reader);
         readHeader(reader);
     }

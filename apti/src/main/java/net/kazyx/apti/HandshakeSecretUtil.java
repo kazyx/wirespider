@@ -3,18 +3,10 @@ package net.kazyx.apti;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Random;
 
 final class HandshakeSecretUtil {
     private HandshakeSecretUtil() {
     }
-
-    static {
-        long seed = new Random().nextLong();
-        sRandom = new Random(seed);
-    }
-
-    private static Random sRandom;
 
     /**
      * WebSocket GUID
@@ -26,7 +18,7 @@ final class HandshakeSecretUtil {
      */
     static String newSecretKey() {
         byte[] nonce = new byte[16];
-        sRandom.nextBytes(nonce);
+        RandomSource.random().nextBytes(nonce);
         return Base64.encoder().encode(nonce).trim();
     }
 

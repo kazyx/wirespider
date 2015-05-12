@@ -53,6 +53,13 @@ findbugs {
     effort = "max"
 }
 
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
 jacocoTestReport {
     reports {
         xml.enabled = true
