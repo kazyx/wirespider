@@ -114,7 +114,8 @@ public abstract class WebSocket {
     }
 
     /**
-     * Send binary message asynchronously.
+     * Send binary message asynchronously.<br>
+     * Note that byte array data might be changed to the masked data in case of client side.
      *
      * @param message Binary message to send.
      */
