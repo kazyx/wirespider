@@ -58,6 +58,8 @@ public class JettyWebSocketServlet {
 
     public static final String PING_REQUEST = "ping";
 
+    public static final String ASSERT_REQUEST = "assert";
+
     @OnWebSocketMessage
     public void onTextMessage(String message) throws InterruptedException, IOException {
         if (message.equals(CLOSE_REQUEST)) {
@@ -70,6 +72,9 @@ public class JettyWebSocketServlet {
             String pingMsg = "hello";
             ByteBuffer buff = ByteBuffer.wrap(pingMsg.getBytes("UTF-8"));
             mSession.getRemote().sendPing(buff);
+        } else if (message.equals(ASSERT_REQUEST)) {
+            System.out.println("JettyWebSocketServlet: assertRequested");
+            WebSocketClientTest.callbackAssert();
         } else {
             mSession.getRemote().sendStringByFuture(message);
         }

@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-class SocketChannelProxy {
+class SocketChannelProxy implements SocketChannelWriter {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
     private final AsyncSource mAsync;
@@ -91,11 +91,13 @@ class SocketChannelProxy {
         }
     }
 
-    void writeAsync(byte[] data) {
+    @Override
+    public void writeAsync(byte[] data) {
         writeAsync(data, false);
     }
 
-    void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+    @Override
+    public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
         // AptiLog.d(TAG, "writeAsync");
         if (mIsClosed) {
             AptiLog.d(TAG, "Quit writeAsync due to closed state");

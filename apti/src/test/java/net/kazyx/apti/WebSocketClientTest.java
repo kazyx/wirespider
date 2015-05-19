@@ -200,6 +200,33 @@ public class WebSocketClientTest {
         }
     }
 
+    static void callbackAssert() {
+        if (sAssertLatch != null) {
+            sAssertLatch.unlockByFailure();
+        }
+    }
+
+    private static CustomLatch sAssertLatch;
+
+    @Test
+    public void requestSendAfterClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        sAssertLatch = new CustomLatch(1);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.closeAsync();
+            ws.sendTextMessageAsync(JettyWebSocketServlet.ASSERT_REQUEST);
+            assertThat(sAssertLatch.await(500, TimeUnit.MILLISECONDS), is(false));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     static void callbackPingFrame() {
         if (sPingFrameLatch != null) {
             sPingFrameLatch.countDown();

@@ -7,14 +7,14 @@ class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
     private final boolean mIsClient;
-    private final SocketChannelProxy mProxy;
+    private final SocketChannelWriter mWriter;
 
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
-    Rfc6455Tx(SocketChannelProxy proxy, boolean isClient) {
+    Rfc6455Tx(SocketChannelWriter writer, boolean isClient) {
         mIsClient = isClient;
-        mProxy = proxy;
+        mWriter = writer;
     }
 
     @Override
@@ -117,7 +117,7 @@ class Rfc6455Tx implements FrameTx {
                 mStream.write(payload);
             }
 
-            mProxy.writeAsync(mStream.toByteArray());
+            mWriter.writeAsync(mStream.toByteArray());
         } catch (IOException e) {
             // ByteArrayOutputStream never throws IOException
             throw new IllegalStateException(e);

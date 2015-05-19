@@ -14,13 +14,13 @@ class Rfc6455Handshake implements Handshake {
     private static final String TAG = Rfc6455Handshake.class.getSimpleName();
     private String mSecret;
 
-    private final SocketChannelProxy mSocketChannelProxy;
+    private final SocketChannelWriter mWriter;
 
     private final boolean mIsClient;
 
-    Rfc6455Handshake(SocketChannelProxy proxy, boolean isClient) {
+    Rfc6455Handshake(SocketChannelWriter writer, boolean isClient) {
         mIsClient = isClient;
-        mSocketChannelProxy = proxy;
+        mWriter = writer;
     }
 
     @Override
@@ -47,7 +47,7 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        mSocketChannelProxy.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
+        mWriter.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
