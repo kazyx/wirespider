@@ -2,10 +2,21 @@ package net.kazyx.apti;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class HttpHeaderTest {
+    @Test
+    public void readStatusLine() throws IOException {
+        String header = "HTTP/1.1 101 Switching Protocols\r\n\r\n";
+        HttpStatusLine line = new HttpHeaderReader(header.getBytes("UTF-8")).statusLine();
+        assertThat(line.version(), is("1.1"));
+        assertThat(line.statusCode(), is(101));
+        assertThat(line.reason(), is("Switching Protocols"));
+    }
+
     @Test
     public void singleValue() {
         HttpHeader header = new HttpHeader.Builder("name").appendValue("value").build();

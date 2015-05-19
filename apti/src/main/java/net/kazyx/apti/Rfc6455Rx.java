@@ -160,8 +160,8 @@ class Rfc6455Rx implements FrameRx {
                 AptiLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             } catch (IOException e) {
-                // TODO
-                e.printStackTrace();
+                // Never happens.
+                mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Unexpected IOException");
             }
         }
     };

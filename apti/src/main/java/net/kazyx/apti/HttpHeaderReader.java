@@ -70,7 +70,7 @@ class HttpHeaderReader {
         }
         AptiLog.v(TAG, "HTTP status code", statusCode);
 
-        String reason = line.substring(line.indexOf(status[1]) + status[1].length());
+        String reason = line.substring(line.indexOf(status[1]) + status[1].length() + 1);
         AptiLog.v(TAG, "HTTP status reason", reason);
 
         mStatusLine = new HttpStatusLine(version, statusCode, reason);
