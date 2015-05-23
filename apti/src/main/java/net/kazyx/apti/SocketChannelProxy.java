@@ -29,7 +29,7 @@ class SocketChannelProxy implements SocketChannelWriter {
         mKey = key;
         try {
             if (!key.isValid()) {
-                AptiLog.d(TAG, "Skip invalid key");
+                Log.d(TAG, "Skip invalid key");
                 return;
             }
             if (key.isConnectable()) {
@@ -47,18 +47,18 @@ class SocketChannelProxy implements SocketChannelWriter {
     }
 
     void onCancelled() {
-        AptiLog.d(TAG, "onCancelled");
+        Log.d(TAG, "onCancelled");
         onClosed();
     }
 
     private void onClosed() {
-        AptiLog.d(TAG, "onClosed");
+        Log.d(TAG, "onClosed");
         close();
         mListener.onClosed();
     }
 
     private void onConnectReady() throws IOException {
-        // AptiLog.d(TAG, "onConnectReady");
+        // Log.d(TAG, "onConnectReady");
         try {
             if (((SocketChannel) mKey.channel()).finishConnect()) {
                 mKey.interestOps(SelectionKey.OP_READ);
@@ -68,12 +68,12 @@ class SocketChannelProxy implements SocketChannelWriter {
         } catch (CancelledKeyException e) {
             // Connected but SelectionKey is cancelled. Fall through to failure
         }
-        AptiLog.d(TAG, "Failed to connect");
+        Log.d(TAG, "Failed to connect");
         onClosed();
     }
 
     private void onReadReady() throws IOException {
-        // AptiLog.d(TAG, "onReadReady");
+        // Log.d(TAG, "onReadReady");
         SocketChannel ch = (SocketChannel) mKey.channel();
         LinkedList<byte[]> list = new LinkedList<>();
 
@@ -98,9 +98,9 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     @Override
     public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
-        // AptiLog.d(TAG, "writeAsync");
+        // Log.d(TAG, "writeAsync");
         if (mIsClosed) {
-            AptiLog.d(TAG, "Quit writeAsync due to closed state");
+            Log.d(TAG, "Quit writeAsync due to closed state");
             return;
         }
         synchronized (mWriteQueue) {
@@ -134,7 +134,7 @@ class SocketChannelProxy implements SocketChannelWriter {
     }
 
     private void onWriteReady() throws IOException {
-        // AptiLog.d(TAG, "onWriteReady");
+        // Log.d(TAG, "onWriteReady");
         byte[] data;
         synchronized (mWriteQueue) {
             data = mWriteQueue.removeFirst();
@@ -142,7 +142,7 @@ class SocketChannelProxy implements SocketChannelWriter {
         ByteBuffer buff = ByteBuffer.wrap(data);
         SocketChannel ch = (SocketChannel) mKey.channel();
         int written = ch.write(buff);
-        // AptiLog.d(TAG, "Expected: " + data.length + ", Written: " + written);
+        // Log.d(TAG, "Expected: " + data.length + ", Written: " + written);
 
         if (written != data.length) {
             mWriteQueue.addFirst(Arrays.copyOfRange(data, written, data.length));

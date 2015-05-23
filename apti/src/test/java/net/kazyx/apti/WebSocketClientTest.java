@@ -112,7 +112,7 @@ public class WebSocketClientTest {
         sCloseFrameLatch = null;
         sCookieCbLatch = null;
         sHeaderCbLatch = null;
-        AptiLog.logLevel(AptiLog.Level.DEBUG);
+        Log.logLevel(Log.Level.DEBUG);
     }
 
     @After
@@ -405,7 +405,7 @@ public class WebSocketClientTest {
         final Set<WebSocket> set = new HashSet<>();
         int NUM_CONNECTIONS = 100;
 
-        AptiLog.logLevel(AptiLog.Level.ERROR);
+        Log.logLevel(Log.Level.ERROR);
 
         final CountDownLatch latch = new CountDownLatch(NUM_CONNECTIONS);
         try {

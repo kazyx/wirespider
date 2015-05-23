@@ -147,7 +147,7 @@ public abstract class WebSocket {
         synchronized (mPingPongTaskLock) {
             if (mPingPongFuture != null) {
                 mPingPongFuture.cancel(false);
-                AptiLog.d(TAG, "Previous pong waiter is cancelled");
+                Log.d(TAG, "Previous pong waiter is cancelled");
             }
 
             try {
@@ -155,12 +155,12 @@ public abstract class WebSocket {
                     @Override
                     public void run() {
                         synchronized (mPingPongTaskLock) {
-                            AptiLog.d(TAG, "No response for Ping frame");
+                            Log.d(TAG, "No response for Ping frame");
                             closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
                         }
                     }
                 }, timeout, unit);
-                AptiLog.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
+                Log.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
             } catch (IllegalStateException e) {
                 throw new RejectedExecutionException(e);
             }
@@ -205,7 +205,7 @@ public abstract class WebSocket {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
-                        AptiLog.e(TAG, "Close frame response waiter interrupted");
+                        Log.e(TAG, "Close frame response waiter interrupted");
                     }
                 }
                 closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
@@ -237,7 +237,7 @@ public abstract class WebSocket {
     private void invokeOnClosed(int code, String reason) {
         synchronized (mCloseCallbackLock) {
             if (isConnected()) {
-                AptiLog.d(TAG, "Invoke onClosed", code);
+                Log.d(TAG, "Invoke onClosed", code);
                 mIsConnected = false;
                 mCallbackHandler.onClosed(code, reason);
             }
@@ -253,17 +253,17 @@ public abstract class WebSocket {
         @Override
         public void onClosed() {
             if (mIsHandshakeCompleted) {
-                AptiLog.d(TAG, "Socket error detected");
+                Log.d(TAG, "Socket error detected");
                 closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
             } else {
-                AptiLog.d(TAG, "Socket error detected while opening handshake");
+                Log.d(TAG, "Socket error detected while opening handshake");
                 onHandshakeFailed();
             }
         }
 
         @Override
         public void onDataReceived(final LinkedList<byte[]> data) {
-            // AptiLog.d(TAG, "SocketChannelProxy onDataReceived");
+            // Log.d(TAG, "SocketChannelProxy onDataReceived");
             if (!isConnected()) {
                 try {
                     LinkedList<byte[]> remaining = mHandshake.onHandshakeResponse(data);
@@ -277,7 +277,7 @@ public abstract class WebSocket {
                 } catch (BufferUnsatisfiedException e) {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
-                    AptiLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
+                    Log.d(TAG, "HandshakeFailureException: " + e.getMessage());
                     onHandshakeFailed();
                 }
             } else {
@@ -292,7 +292,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            AptiLog.d(TAG, "onPingFrame", message);
+            Log.d(TAG, "onPingFrame", message);
             mFrameTx.sendPongAsync(message);
         }
 
@@ -301,7 +301,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            AptiLog.d(TAG, "onPongFrame", message);
+            Log.d(TAG, "onPongFrame", message);
             // TODO should check pong message is same as ping message we've sent.
             synchronized (mPingPongTaskLock) {
                 if (mPingPongFuture != null) {
@@ -316,7 +316,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            AptiLog.d(TAG, "onCloseFrame", code + " " + reason);
+            Log.d(TAG, "onCloseFrame", code + " " + reason);
             if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
                 sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response", false);
             }
@@ -342,14 +342,14 @@ public abstract class WebSocket {
 
         @Override
         public void onProtocolViolation() {
-            AptiLog.d(TAG, "Protocol violation detected");
+            Log.d(TAG, "Protocol violation detected");
             // TODO send error code to remote?
             closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Protocol violation detected");
         }
 
         @Override
         public void onPayloadOverflow() {
-            AptiLog.d(TAG, "Response payload size overflow");
+            Log.d(TAG, "Response payload size overflow");
             // TODO send error code to remote?
             closeAndRaiseEvent(CloseStatusCode.MESSAGE_TOO_BIG, "Response payload size overflow");
         }

@@ -19,31 +19,31 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendTextAsync(String data) {
-        AptiLog.v(TAG, "sendTextAsync", data);
+        Log.v(TAG, "sendTextAsync", data);
         sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
-        AptiLog.v(TAG, "sendBinaryAsync", data.length);
+        Log.v(TAG, "sendBinaryAsync", data.length);
         sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
     public void sendPingAsync() {
-        AptiLog.v(TAG, "sendPingAsync");
+        Log.v(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
-        AptiLog.v(TAG, "sendPongAsync", pingMessage);
+        Log.v(TAG, "sendPongAsync", pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
-        AptiLog.v(TAG, "sendCloseAsync");
+        Log.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);

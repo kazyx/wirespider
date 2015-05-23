@@ -36,12 +36,12 @@ class Rfc6455Rx implements FrameRx {
                 mSecondByteOperation.run();
             } catch (BufferUnsatisfiedException e) {
                 // No need to flush this log. Always happens at frame end.
-                // AptiLog.d(TAG, "BufferUnsatisfied");
+                // Log.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                AptiLog.d(TAG, "Protocol violation", e.getMessage());
+                Log.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             }
         }
@@ -79,15 +79,15 @@ class Rfc6455Rx implements FrameRx {
                         break;
                 }
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.v(TAG, "SecondByte BufferUnsatisfied");
+                Log.v(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
-                AptiLog.d(TAG, "Payload size overflow", e.getMessage());
+                Log.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             } catch (ProtocolViolationException e) {
-                AptiLog.d(TAG, "Protocol violation", e.getMessage());
+                Log.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             }
         }
@@ -109,12 +109,12 @@ class Rfc6455Rx implements FrameRx {
                     mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
+                Log.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
-                AptiLog.d(TAG, "Payload size overflow", e.getMessage());
+                Log.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             }
         }
@@ -129,7 +129,7 @@ class Rfc6455Rx implements FrameRx {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                AptiLog.v(TAG, "MaskKey BufferUnsatisfied");
+                Log.v(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -151,13 +151,13 @@ class Rfc6455Rx implements FrameRx {
             } catch (BufferUnsatisfiedException e) {
                 if (mSuspendedOperation != this) {
                     // Flush log only for the first time
-                    AptiLog.v(TAG, "Payload BufferUnsatisfied");
+                    Log.v(TAG, "Payload BufferUnsatisfied");
                 }
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                AptiLog.d(TAG, "Protocol violation", e.getMessage());
+                Log.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             } catch (IOException e) {
                 // Never happens.
@@ -176,7 +176,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
-        AptiLog.v(TAG, "handleFrame", opcode);
+        Log.v(TAG, "handleFrame", opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -241,7 +241,7 @@ class Rfc6455Rx implements FrameRx {
 
     @Override
     public void onDataReceived(LinkedList<byte[]> data) {
-        // AptiLog.d(TAG, "onDataReceived");
+        // Log.d(TAG, "onDataReceived");
         mReceivedBuffer.addAll(data);
         for (byte[] buff : data) {
             mBufferSize += buff.length;

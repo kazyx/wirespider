@@ -56,7 +56,7 @@ class HttpHeaderReader {
         }
 
         String version = status[0].substring(5);
-        AptiLog.v(TAG, "HTTP version", version);
+        Log.v(TAG, "HTTP version", version);
 
         if (!version.equals("1.1")) {
             throw new IOException("HTTP version not 1.1: " + version);
@@ -68,10 +68,10 @@ class HttpHeaderReader {
         } catch (NumberFormatException e) {
             throw new IOException("Failed to read status statusCode: " + line);
         }
-        AptiLog.v(TAG, "HTTP status code", statusCode);
+        Log.v(TAG, "HTTP status code", statusCode);
 
         String reason = line.substring(line.indexOf(status[1]) + status[1].length() + 1);
-        AptiLog.v(TAG, "HTTP status reason", reason);
+        Log.v(TAG, "HTTP status reason", reason);
 
         mStatusLine = new HttpStatusLine(version, statusCode, reason);
     }
@@ -99,7 +99,7 @@ class HttpHeaderReader {
                 // End of HTTP header
                 break;
             }
-            AptiLog.v(TAG, line);
+            Log.v(TAG, line);
 
             if (name != null) {
                 // Check with existence of name, because value might be empty string

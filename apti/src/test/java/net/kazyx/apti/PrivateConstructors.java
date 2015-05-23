@@ -12,7 +12,7 @@ public class PrivateConstructors {
 
     @Test
     public void aptiLog() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(AptiLog.class);
+        constructor(Log.class);
     }
 
     @Test

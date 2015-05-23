@@ -3,8 +3,8 @@ package net.kazyx.apti;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class AptiLog {
-    private AptiLog() {
+public class Log {
+    private Log() {
     }
 
     public enum Level {

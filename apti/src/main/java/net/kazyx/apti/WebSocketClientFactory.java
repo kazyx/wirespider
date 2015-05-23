@@ -33,7 +33,7 @@ public class WebSocketClientFactory {
         if (size < 1) {
             throw new IllegalArgumentException("Payload size must be positive value");
         }
-        AptiLog.d(TAG, "Max response payload size set to " + size);
+        Log.d(TAG, "Max response payload size set to " + size);
         mMaxResponsePayloadSize = size;
     }
 

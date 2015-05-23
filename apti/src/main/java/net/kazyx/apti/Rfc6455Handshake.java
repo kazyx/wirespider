@@ -61,7 +61,7 @@ class Rfc6455Handshake implements Handshake {
             byte[] ba = itr.next();
 
             String str = ByteArrayUtil.toText(ba);
-            // AptiLog.d(TAG, str);
+            // Log.d(TAG, str);
 
             int index = str.indexOf("\r\n\r\n");
             if (index == -1) {
@@ -86,7 +86,7 @@ class Rfc6455Handshake implements Handshake {
             parseHeader(mBuffer.toByteArray());
             return data;
         } else {
-            AptiLog.d(TAG, "Header unsatisfied");
+            Log.d(TAG, "Header unsatisfied");
             throw new BufferUnsatisfiedException();
         }
     }

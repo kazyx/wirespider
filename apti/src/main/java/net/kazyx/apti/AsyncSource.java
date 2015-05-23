@@ -24,7 +24,7 @@ class AsyncSource {
      * Release all of thread resources.
      */
     synchronized void destroy() {
-        AptiLog.d(TAG, "destroy");
+        Log.d(TAG, "destroy");
         mConnectionThreadPool.shutdown();
         mScheduler.shutdownNow();
         mSelectorThread.interrupt();
@@ -46,7 +46,7 @@ class AsyncSource {
         try {
             mConnectionThreadPool.submit(task);
         } catch (RejectedExecutionException e) {
-            AptiLog.d(TAG, "RejectedExecution");
+            Log.d(TAG, "RejectedExecution");
         }
     }
 
@@ -64,7 +64,7 @@ class AsyncSource {
 
         @Override
         public void run() {
-            // AptiLog.d(TAG, "SelectorThread started");
+            // Log.d(TAG, "SelectorThread started");
             try {
                 while (true) {
                     if (!select()) {
@@ -79,7 +79,7 @@ class AsyncSource {
                         }
                     }
                 }
-                AptiLog.d(TAG, "Select Loop finished");
+                Log.d(TAG, "Select Loop finished");
             } finally {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
@@ -96,7 +96,7 @@ class AsyncSource {
         private boolean select() {
             try {
                 mSelector.select();
-                //AptiLog.d(TAG, "selected: " + selected);
+                //Log.d(TAG, "selected: " + selected);
                 if (this.isInterrupted()) {
                     return false;
                 }
@@ -109,7 +109,7 @@ class AsyncSource {
                 }
                 return true;
             } catch (IOException e) {
-                AptiLog.printStackTrace(TAG, e);
+                Log.printStackTrace(TAG, e);
                 return false;
             }
         }
@@ -122,7 +122,7 @@ class AsyncSource {
                         try {
                             channel.register(mSelector, ops, handler);
                         } catch (ClosedChannelException e) {
-                            AptiLog.printStackTrace(TAG, e);
+                            Log.printStackTrace(TAG, e);
                         }
                     }
                 });

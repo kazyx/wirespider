@@ -43,19 +43,19 @@ class ClientWebSocket extends WebSocket {
 
     @Override
     void onSocketConnected() {
-        AptiLog.d(TAG, "Start opening handshake");
+        Log.d(TAG, "Start opening handshake");
         handshake().tryUpgrade(remoteUri(), mRequestHeaders);
     }
 
     @Override
     void onHandshakeFailed() {
-        AptiLog.d(TAG, "WebSocket handshake failure");
+        Log.d(TAG, "WebSocket handshake failure");
         mConnectLatch.countDown();
     }
 
     @Override
     void onHandshakeCompleted() {
-        AptiLog.d(TAG, "WebSocket handshake completed");
+        Log.d(TAG, "WebSocket handshake completed");
         mConnectLatch.countDown();
     }
 
