@@ -1,0 +1,4 @@
+include ':testapp'
+
+includeFlat 'wirespider'
+project(':wirespider').projectDir = new File(settingsDir, '../wirespider')

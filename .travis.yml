@@ -7,7 +7,7 @@ env:
 - TERM=dumb
 
 before_script:
-- cd apti
+- cd wirespider
 
 script:
 - ./gradlew assemble

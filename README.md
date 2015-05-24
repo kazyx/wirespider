@@ -1,19 +1,21 @@
-Apti WebSocket client
+WireSpider
 =====
-[![Build Status](https://travis-ci.org/kazyx/apti.svg?branch=master)](https://travis-ci.org/kazyx/apti)
-[![Coverage Status](https://coveralls.io/repos/kazyx/apti/badge.svg?branch=master)](https://coveralls.io/r/kazyx/apti)
+[![Build Status](https://travis-ci.org/kazyx/wirespider.svg?branch=master)](https://travis-ci.org/kazyx/wirespider)
+[![Coverage Status](https://coveralls.io/repos/kazyx/wirespider/badge.svg?branch=master)](https://coveralls.io/r/kazyx/wirespider)
 
-Apti is a simple and compact WebSocket([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
+WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
-- NIO based implementation.
-- Android applications compatible. (Compilation target 19 or later)
+- High performance NIO based implementation.
+- Android compatible.
+    - Minimum API level 9 or later
+    - Compilation target 19 or later
 
 ## How to build
 ```bash
-cd <apti-root>/apti
+cd <root>/wirespider
 ./gradlew assemble
 ```
-Now you can find `apti-x.y.z.jar` at `<apti-root>/apti/build/libs`
+Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/build/libs`
 
 ## Usage
 
