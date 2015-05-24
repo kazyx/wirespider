@@ -3,7 +3,6 @@ package net.kazyx.wirespider;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -150,20 +149,16 @@ public abstract class WebSocket {
                 Log.d(TAG, "Previous pong waiter is cancelled");
             }
 
-            try {
-                mPingPongFuture = mAsync.mScheduler.schedule(new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (mPingPongTaskLock) {
-                            Log.d(TAG, "No response for Ping frame");
-                            closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
-                        }
+            mPingPongFuture = mAsync.mScheduler.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (mPingPongTaskLock) {
+                        Log.d(TAG, "No response for Ping frame");
+                        closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
                     }
-                }, timeout, unit);
-                Log.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
-            } catch (IllegalStateException e) {
-                throw new RejectedExecutionException(e);
-            }
+                }
+            }, timeout, unit);
+            Log.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
         }
 
         mFrameTx.sendPingAsync();

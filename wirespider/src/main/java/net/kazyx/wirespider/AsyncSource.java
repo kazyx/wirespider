@@ -25,7 +25,7 @@ class AsyncSource {
      */
     synchronized void destroy() {
         Log.d(TAG, "destroy");
-        mConnectionThreadPool.shutdown();
+        mConnectionThreadPool.shutdownNow();
         mScheduler.shutdownNow();
         mSelectorThread.interrupt();
     }
@@ -38,7 +38,7 @@ class AsyncSource {
     final ExecutorService mConnectionThreadPool = Executors.newCachedThreadPool();
 
     /**
-     * Asynchronously invoke task on cached thread pool if it is available.
+     * Asynchronously invoke task on cached thread pool if it is available. Otherwise do nothing.
      *
      * @param task Runnable to be invoked.
      */
@@ -58,7 +58,7 @@ class AsyncSource {
         private final Selector mSelector;
 
         SelectorThread(Selector selector) {
-            super("wirespider-selector-thread");
+            super("wirespider-selector");
             mSelector = selector;
         }
 

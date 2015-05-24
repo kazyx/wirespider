@@ -15,7 +15,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.HttpCookie;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
@@ -200,6 +202,70 @@ public class WebSocketClientTest {
         }
     }
 
+    @Test
+    public void shutdownSoonAfterCloseSent() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        final CustomLatch latch = new CustomLatch(1);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            ws.closeAsync(CloseStatusCode.GOING_AWAY, "Going away");
+            factory.destroy();
+            assertThat(latch.await(200, TimeUnit.MILLISECONDS), is(true));
+            assertThat(latch.isUnlockedByCountDown(), is(true));
+            assertThat(ws.isConnected(), is(false));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void closedByAbnormalClosure() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        final CustomLatch latch = new CustomLatch(1);
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                }
+            });
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+            Field f = WebSocket.class.getDeclaredField("mRxListener");
+            f.setAccessible(true);
+            FrameRx.Listener listener = (FrameRx.Listener) f.get(ws);
+            listener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "abnormal");
+
+            assertThat(latch.await(200, TimeUnit.MILLISECONDS), is(true));
+            assertThat(latch.isUnlockedByCountDown(), is(true));
+            assertThat(ws.isConnected(), is(false));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     static void callbackAssert() {
         if (sAssertLatch != null) {
             sAssertLatch.unlockByFailure();
@@ -367,7 +433,6 @@ public class WebSocketClientTest {
             factory.destroy();
         }
     }
-
 
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
@@ -629,6 +694,59 @@ public class WebSocketClientTest {
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(IOException.class)));
         } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void connectToRawSocket() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        final CustomLatch latch = new CustomLatch(1);
+
+        Thread th = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ServerSocket sock = null;
+                Socket socket = null;
+                try {
+                    sock = new ServerSocket(10001);
+                    socket = sock.accept();
+                    socket.close();
+                } catch (IOException e) {
+                    latch.unlockByFailure();
+                } finally {
+                    try {
+                        if (sock != null) {
+                            sock.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        if (socket != null) {
+                            socket.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        th.start();
+        latch.await(500, TimeUnit.MILLISECONDS);
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
+            ws = future.get(1000, TimeUnit.MILLISECONDS);
+            fail();
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), instanceOf(IOException.class));
+        } finally {
+            th.interrupt();
             if (ws != null) {
                 ws.closeNow();
             }

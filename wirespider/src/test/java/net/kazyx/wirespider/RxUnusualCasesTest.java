@@ -406,9 +406,9 @@ public class RxUnusualCasesTest {
             int length = 5;
             final byte[] payload = TestUtil.fixedLengthByteArray(length + 1);
 
-            byte[] data = new byte[10 + length];
+            byte[] data = new byte[14 + length];
             data[0] = (byte) 0b10000010;
-            data[1] = 127;
+            data[1] = (byte) 0b11111111;
             data[2] = 0;
             data[3] = 0;
             data[4] = 0;
@@ -417,7 +417,11 @@ public class RxUnusualCasesTest {
             data[7] = 0;
             data[8] = 0;
             data[9] = 5;
-            System.arraycopy(payload, 0, data, 10, length);
+            data[10] = 0; // Zero-mask
+            data[11] = 0;
+            data[12] = 0;
+            data[13] = 0;
+            System.arraycopy(payload, 0, data, 14, length);
 
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
@@ -429,7 +433,7 @@ public class RxUnusualCasesTest {
                         latch.unlockByFailure();
                     }
                 }
-            }, 1000, true);
+            }, 1000, false);
 
             for (int i = 0; i < data.length - 1; i++) {
                 rx.onDataReceived(TestUtil.asLinkedList(new byte[]{data[i]}));

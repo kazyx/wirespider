@@ -84,19 +84,15 @@ public class WebSocketClientFactory {
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
-                ClientWebSocket ws = null;
-                SocketChannel ch = null;
-                try {
-                    ch = mProvider.openSocketChannel();
-                    ch.configureBlocking(false);
+                SocketChannel ch = mProvider.openSocketChannel();
+                ch.configureBlocking(false);
 
-                    ws = new ClientWebSocket(mAsync, uri, ch, handler, mMaxResponsePayloadSize, headers, mSocketBinder);
+                ClientWebSocket ws = new ClientWebSocket(mAsync, uri, ch, handler, mMaxResponsePayloadSize, headers, mSocketBinder);
+                try {
                     ws.connect();
                     return ws;
                 } catch (IOException e) {
-                    if (ws != null) {
-                        ws.closeNow();
-                    }
+                    ws.closeNow();
                     IOUtil.close(ch);
                     throw e;
                 }
