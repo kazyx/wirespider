@@ -211,11 +211,7 @@ public class WebSocketClientTest {
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
-                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
-                        latch.countDown();
-                    } else {
-                        latch.unlockByFailure();
-                    }
+                    latch.countDown();
                 }
             });
             ws = future.get(500, TimeUnit.MILLISECONDS);
