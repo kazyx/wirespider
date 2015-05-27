@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 
 class AsyncSource {
     private static final String TAG = AsyncSource.class.getSimpleName();
@@ -26,7 +25,6 @@ class AsyncSource {
     synchronized void destroy() {
         Log.d(TAG, "destroy");
         mConnectionThreadPool.shutdownNow();
-        mScheduler.shutdownNow();
         mSelectorThread.interrupt();
     }
 
@@ -49,8 +47,6 @@ class AsyncSource {
             Log.d(TAG, "RejectedExecution");
         }
     }
-
-    final ScheduledExecutorService mScheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 

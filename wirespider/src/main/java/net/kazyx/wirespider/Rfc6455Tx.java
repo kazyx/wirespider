@@ -30,9 +30,9 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void sendPingAsync() {
+    public void sendPingAsync(String message) {
         Log.v(TAG, "sendPingAsync");
-        sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText("ping"));
+        sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText(message));
     }
 
     @Override

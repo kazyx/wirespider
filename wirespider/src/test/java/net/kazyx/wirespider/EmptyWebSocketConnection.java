@@ -10,6 +10,10 @@ public class EmptyWebSocketConnection implements WebSocketConnection {
     }
 
     @Override
+    public void onPong(String message) {
+    }
+
+    @Override
     public void onClosed(int code, String reason) {
     }
 }

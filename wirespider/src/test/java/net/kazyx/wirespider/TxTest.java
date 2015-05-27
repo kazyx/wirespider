@@ -51,13 +51,14 @@ public class TxTest {
 
         @Test
         public void ping() {
+            final String msg = "ping";
             mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onPingFrame(String message) {
-                    // OK
+                    assertThat(message, is(msg));
                 }
             }, 100000, fromServer());
-            mTx.sendPingAsync();
+            mTx.sendPingAsync(msg);
         }
 
         @Test

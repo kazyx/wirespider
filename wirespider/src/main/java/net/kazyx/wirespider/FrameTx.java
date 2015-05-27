@@ -5,7 +5,7 @@ interface FrameTx {
 
     void sendBinaryAsync(byte[] data);
 
-    void sendPingAsync();
+    void sendPingAsync(String message);
 
     void sendPongAsync(String message);
 

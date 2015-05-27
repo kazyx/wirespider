@@ -19,6 +19,13 @@ public interface WebSocketConnection {
     void onBinaryMessage(byte[] message);
 
     /**
+     * Received Pong frame.
+     *
+     * @param message Pong message. This should be equal to what we sent with Ping frame.
+     */
+    void onPong(String message);
+
+    /**
      * WebSocket closed.
      *
      * @param code   Close status code

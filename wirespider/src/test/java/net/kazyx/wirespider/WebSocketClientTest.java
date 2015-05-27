@@ -155,6 +155,11 @@ public class WebSocketClientTest {
                 }
 
                 @Override
+                public void onPong(String message) {
+                    latch.countDown();
+                }
+
+                @Override
                 public void onClosed(int code, String reason) {
                     latch.countDown();
                 }
@@ -164,7 +169,7 @@ public class WebSocketClientTest {
             Thread.sleep(200);
             ws.sendTextMessageAsync("test");
             ws.sendBinaryMessageAsync("test".getBytes("UTF-8"));
-            ws.checkConnectionAsync(100, TimeUnit.MILLISECONDS);
+            ws.sendPingAsync("ping");
             ws.closeAsync();
             Thread.sleep(500);
             assertThat(latch.getCount(), is(1L));
@@ -297,29 +302,13 @@ public class WebSocketClientTest {
 
     private static CustomLatch sPingFrameLatch;
 
-
-    @Test(expected = IllegalArgumentException.class)
-    public void nonPositiveTimeoutForPingPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
-            ws = future.get(500, TimeUnit.MILLISECONDS);
-            ws.checkConnectionAsync(0, TimeUnit.MILLISECONDS);
-        } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            factory.destroy();
-        }
-    }
-
     @Test
     public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         WebSocketClientFactory factory = new WebSocketClientFactory();
         sPingFrameLatch = new CustomLatch(2);
         WebSocket ws = null;
         try {
+            final String msg = "ping";
             Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
                 @Override
                 public void onClosed(int code, String reason) {
@@ -327,66 +316,18 @@ public class WebSocketClientTest {
                         sPingFrameLatch.unlockByFailure();
                     }
                 }
-            });
-            ws = future.get(500, TimeUnit.MILLISECONDS);
-            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
 
-            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(false));
-            assertThat(ws.isConnected(), is(true));
-        } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            factory.destroy();
-        }
-    }
-
-    @Test
-    public void sendPingTwice() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        sPingFrameLatch = new CustomLatch(3);
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
                 @Override
-                public void onClosed(int code, String reason) {
-                    if (sPingFrameLatch != null) {
-                        sPingFrameLatch.unlockByFailure();
+                public void onPong(String message) {
+                    if (message.equals(msg)) {
+                        sPingFrameLatch.countDown();
                     }
                 }
             });
             ws = future.get(500, TimeUnit.MILLISECONDS);
-            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
-            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
 
-            assertThat(sPingFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(false));
-            assertThat(ws.isConnected(), is(true));
-        } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            factory.destroy();
-        }
-    }
-
-    @Test
-    public void disconnectIfNoPongComes() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        final CustomLatch latch = new CustomLatch(1);
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.countDown();
-                }
-            });
-            ws = future.get(500, TimeUnit.MILLISECONDS);
-            ws.sendTextMessageAsync(JettyWebSocketServlet.SLEEP_REQUEST); // Jetty thread will sleep for 2 sec.
-            Thread.sleep(200);
-            ws.checkConnectionAsync(500, TimeUnit.MILLISECONDS);
-
-            assertThat(latch.await(1000, TimeUnit.MILLISECONDS), is(true));
+            ws.sendPingAsync(msg);
+            assertThat(sPingFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();

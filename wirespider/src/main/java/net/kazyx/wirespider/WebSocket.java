@@ -3,8 +3,6 @@ package net.kazyx.wirespider;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Generic WebSocket connection.
@@ -69,9 +67,6 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    private final Object mPingPongTaskLock = new Object();
-    private ScheduledFuture<?> mPingPongFuture;
-
     WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload) {
         mURI = uri;
         mCallbackHandler = handler;
@@ -114,7 +109,7 @@ public abstract class WebSocket {
 
     /**
      * Send binary message asynchronously.<br>
-     * Note that byte array data might be changed to the masked data in case of client side.
+     * Note that byte array argument might be changed to the masked data in case of client side.
      *
      * @param message Binary message to send.
      */
@@ -128,40 +123,17 @@ public abstract class WebSocket {
     }
 
     /**
-     * Try send PING and wait for PONG.<br>
-     * If PONG frame does not come within timeout, WebSocket connection will be closed.
+     * Send ping frame asynchronously.
      *
-     * @param timeout Timeout value.
-     * @param unit    TImeUnit of timeout value.
+     * @param message Ping message to send.
      */
-    public void checkConnectionAsync(long timeout, TimeUnit unit) {
-        ArgumentCheck.rejectNull(unit);
-        if (timeout <= 0) {
-            throw new IllegalArgumentException("timeout value minus");
-        }
+    public void sendPingAsync(String message) {
+        ArgumentCheck.rejectNull(message);
         if (!isConnected()) {
             return;
         }
 
-        synchronized (mPingPongTaskLock) {
-            if (mPingPongFuture != null) {
-                mPingPongFuture.cancel(false);
-                Log.d(TAG, "Previous pong waiter is cancelled");
-            }
-
-            mPingPongFuture = mAsync.mScheduler.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (mPingPongTaskLock) {
-                        Log.d(TAG, "No response for Ping frame");
-                        closeAndRaiseEvent(CloseStatusCode.GOING_AWAY, "No response for Ping frame");
-                    }
-                }
-            }, timeout, unit);
-            Log.d(TAG, "Connection will be closed after " + unit.toMillis(timeout) + " milliseconds, unless pong frame is received.");
-        }
-
-        mFrameTx.sendPingAsync();
+        mFrameTx.sendPingAsync(message);
     }
 
     /**
@@ -297,13 +269,7 @@ public abstract class WebSocket {
                 return;
             }
             Log.d(TAG, "onPongFrame", message);
-            // TODO should check pong message is same as ping message we've sent.
-            synchronized (mPingPongTaskLock) {
-                if (mPingPongFuture != null) {
-                    mPingPongFuture.cancel(false);
-                    mPingPongFuture = null;
-                }
-            }
+            mCallbackHandler.onPong(message);
         }
 
         @Override
