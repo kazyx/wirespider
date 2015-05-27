@@ -1,16 +1,12 @@
 package net.kazyx.wirespider;
 
-public class EmptyWebSocketConnection implements WebSocketConnection {
+public class SilentEventHandler extends InterpretedEventHandler {
     @Override
     public void onTextMessage(String message) {
     }
 
     @Override
     public void onBinaryMessage(byte[] message) {
-    }
-
-    @Override
-    public void onPong(String message) {
     }
 
     @Override

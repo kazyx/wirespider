@@ -34,10 +34,10 @@ Base64.encoder(new Base64.Encoder() {
 ```java
 
 WebSocketClientFactory factory = new WebSocketClientFactory();
-// Use this WebSocketClientFactory forever while your process alive.
+// It is recommended to use this WebSocketClientFactory while your process is alive.
 
 URI uri = URI.create("ws://host:port/path");
-Future<WebSocket> future = factory.openAsync(uri, new WebSocketConnection() {
+WebSocketSeed seed = new WebSocketSeed.Builder(uri, new InterpretedEventHandler() {
     @Override
     public void onTextMessage(String message) {
         // Received text message.
@@ -52,9 +52,9 @@ Future<WebSocket> future = factory.openAsync(uri, new WebSocketConnection() {
     public void onClosed() {
         // WebSocket connection is closed.
     }
-});
+}).build();
 
-WebSocket websocket = future.get(5, TimeUnit.SECONDS);
+WebSocket websocket = factory.openAsync(seed).get(5, TimeUnit.SECONDS);
 ```
 
 ### Send message

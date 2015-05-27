@@ -105,7 +105,7 @@ public class WebSocketUnusualCasesTest {
 
         @Before
         public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
             mWs = null;
             try {

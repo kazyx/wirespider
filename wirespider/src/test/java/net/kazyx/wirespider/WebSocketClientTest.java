@@ -123,7 +123,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -142,7 +142,7 @@ public class WebSocketClientTest {
     @Test
     public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(2);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new InterpretedEventHandler() {
             @Override
             public void onTextMessage(String message) {
                 latch.countDown();
@@ -196,7 +196,7 @@ public class WebSocketClientTest {
     @Test
     public void gracefulClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sCloseFrameLatch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -216,7 +216,7 @@ public class WebSocketClientTest {
     @Test
     public void shutdownSoonAfterCloseSent() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.countDown();
@@ -244,7 +244,7 @@ public class WebSocketClientTest {
     @Test
     public void closedByAbnormalClosure() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
         final CustomLatch latch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
@@ -288,7 +288,7 @@ public class WebSocketClientTest {
     @Test
     public void requestSendAfterClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sAssertLatch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -318,7 +318,7 @@ public class WebSocketClientTest {
     public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPingFrameLatch = new CustomLatch(2);
         final String msg = "ping";
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (sPingFrameLatch != null) {
@@ -350,6 +350,36 @@ public class WebSocketClientTest {
         }
     }
 
+    @Test
+    public void nothingInvokedByDefaultOnPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        sPingFrameLatch = new CustomLatch(2);
+        final String msg = "ping";
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (sPingFrameLatch != null) {
+                    sPingFrameLatch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(seed);
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+            ws.sendPingAsync(msg);
+            assertThat(sPingFrameLatch.await(500, TimeUnit.MILLISECONDS), is(false));
+            assertThat(sPingFrameLatch.getCount(), is(1L));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     static void callbackPongFrame() {
         if (sPongFrameLatch != null) {
             sPongFrameLatch.countDown();
@@ -361,7 +391,7 @@ public class WebSocketClientTest {
     @Test
     public void receivePing() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPongFrameLatch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (sPongFrameLatch != null) {
@@ -390,10 +420,10 @@ public class WebSocketClientTest {
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
-                System.out.println("WebSocketConnection onClosed");
+                System.out.println("InterpretedEventHandler onClosed");
                 if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
                     latch.countDown();
                 } else {
@@ -434,7 +464,7 @@ public class WebSocketClientTest {
                     @Override
                     public void run() {
                         try {
-                            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection()).build();
+                            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
                             Future<WebSocket> future = factory.openAsync(seed);
                             WebSocket ws = future.get(1000, TimeUnit.MILLISECONDS);
                             set.add(ws);
@@ -462,7 +492,7 @@ public class WebSocketClientTest {
     public void x100000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onTextMessage(String message) {
                 // System.out.println("onTextMessage");
@@ -494,7 +524,7 @@ public class WebSocketClientTest {
     @Test
     public void handleCloseOpcode() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 System.out.println("onClosed: " + code);
@@ -521,7 +551,7 @@ public class WebSocketClientTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void payloadLimitNonPositive() throws IOException {
-        new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection()).maxResponsePayloadSizeInBytes(0);
+        new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).maxResponsePayloadSizeInBytes(0);
     }
 
     @Test
@@ -621,7 +651,7 @@ public class WebSocketClientTest {
     @Test
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection())
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
                 .socketBinder(new SocketBinder() {
                     @Override
                     public void bind(Socket socket) throws IOException {
@@ -644,7 +674,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -698,7 +728,7 @@ public class WebSocketClientTest {
         th.start();
         latch.await(500, TimeUnit.MILLISECONDS);
 
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10001"), new SilentEventHandler()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -720,7 +750,7 @@ public class WebSocketClientTest {
     @Test
     public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Collections.singletonList(reject)).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Collections.singletonList(reject)).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -760,7 +790,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(new ArrayList<HttpHeader>()).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(new ArrayList<HttpHeader>()).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -782,7 +812,7 @@ public class WebSocketClientTest {
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Arrays.asList(headers)).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Arrays.asList(headers)).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
@@ -807,7 +837,7 @@ public class WebSocketClientTest {
         sCookieCbLatch = new CustomLatch(1);
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Arrays.asList(headers)).build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Arrays.asList(headers)).build();
 
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;

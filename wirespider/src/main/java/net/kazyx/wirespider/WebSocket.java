@@ -38,7 +38,7 @@ public abstract class WebSocket {
         return mMaxResponsePayloadSize;
     }
 
-    private final WebSocketConnection mCallbackHandler;
+    private final InterpretedEventHandler mCallbackHandler;
 
     private final Object mCloseCallbackLock = new Object();
 

@@ -6,7 +6,7 @@ import java.util.List;
 
 public final class WebSocketSeed {
 
-    WebSocketSeed(URI uri, WebSocketConnection handler, int maxResponsePayloadSize, SocketBinder socketBinder, List<HttpHeader> headers) {
+    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder, List<HttpHeader> headers) {
         this.mUri = uri;
         this.mHandler = handler;
         this.mMaxResponsePayloadSize = maxResponsePayloadSize;
@@ -22,9 +22,9 @@ public final class WebSocketSeed {
         return mUri;
     }
 
-    private WebSocketConnection mHandler;
+    private InterpretedEventHandler mHandler;
 
-    WebSocketConnection handler() {
+    InterpretedEventHandler handler() {
         return mHandler;
     }
 
@@ -48,13 +48,13 @@ public final class WebSocketSeed {
 
     public static class Builder {
         private final URI uri;
-        private final WebSocketConnection handler;
+        private final InterpretedEventHandler handler;
 
         /**
          * @param uri     URI of the remote server.
          * @param handler WebSocket connection event handler.
          */
-        public Builder(URI uri, WebSocketConnection handler) {
+        public Builder(URI uri, InterpretedEventHandler handler) {
             ArgumentCheck.rejectNullArgs(uri, handler);
             this.uri = uri;
             this.handler = handler;
