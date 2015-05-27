@@ -32,7 +32,7 @@ public abstract class WebSocket {
 
     /**
      * @return Maximum size of response payload to accept.
-     * @see WebSocketClientFactory#maxResponsePayloadSizeInBytes(int)
+     * @see WebSocketSeed.Builder#maxResponsePayloadSizeInBytes(int)
      */
     public int maxResponsePayloadSizeInBytes() {
         return mMaxResponsePayloadSize;
@@ -67,12 +67,12 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload) {
-        mURI = uri;
-        mCallbackHandler = handler;
+    WebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
+        mURI = seed.uri();
+        mCallbackHandler = seed.handler();
+        mMaxResponsePayloadSize = seed.maxResponsePayloadSizeInBytes();
         mAsync = async;
         mSocketChannel = ch;
-        mMaxResponsePayloadSize = maxPayload;
 
         mSocketChannelProxy = new SocketChannelProxy(mAsync, mChannelProxyListener);
 

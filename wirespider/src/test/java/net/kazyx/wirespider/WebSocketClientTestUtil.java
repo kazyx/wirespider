@@ -15,28 +15,29 @@ class WebSocketClientTestUtil {
     }
 
     static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.maxResponsePayloadSizeInBytes(size);
-        WebSocket ws = null;
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
-        try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
-                        closeLatch.countDown();
-                    } else {
-                        closeLatch.unlockByFailure();
-                    }
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
+                    closeLatch.countDown();
+                } else {
+                    closeLatch.unlockByFailure();
                 }
+            }
 
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    System.out.println("onBinaryMessage" + message.length);
-                    messageLatch.countDown();
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
+            @Override
+            public void onBinaryMessage(byte[] message) {
+                System.out.println("onBinaryMessage" + message.length);
+                messageLatch.countDown();
+            }
+        }).maxResponsePayloadSizeInBytes(size).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
             ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size - 1));
             ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size));
@@ -54,30 +55,30 @@ class WebSocketClientTestUtil {
     }
 
     static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = TestUtil.fixedLengthByteArray(size);
-
         final byte[] copy = Arrays.copyOf(data, data.length);
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                latch.unlockByFailure();
+            }
+
+            @Override
+            public void onBinaryMessage(byte[] message) {
+                if (Arrays.equals(message, copy)) {
+                    latch.countDown();
+                } else {
+                    System.out.println("Binary message not matched");
                     latch.unlockByFailure();
                 }
+            }
+        }).maxResponsePayloadSizeInBytes(size).build();
 
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(message, copy)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Binary message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
             ws.sendBinaryMessageAsync(data);
             assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
             assertThat(latch.isUnlockedByFailure(), is(false));
@@ -90,29 +91,29 @@ class WebSocketClientTestUtil {
     }
 
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.maxResponsePayloadSizeInBytes(size);
         final CustomLatch latch = new CustomLatch(1);
         final String data = TestUtil.fixedLengthString(size);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                latch.unlockByFailure();
+            }
 
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
+            @Override
+            public void onTextMessage(String message) {
+                if (data.equals(message)) {
+                    latch.countDown();
+                } else {
+                    System.out.println("Text message not matched");
                     latch.unlockByFailure();
                 }
+            }
+        }).maxResponsePayloadSizeInBytes(size).build();
 
-                @Override
-                public void onTextMessage(String message) {
-                    if (data.equals(message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
             ws.sendTextMessageAsync(data);
             assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
             assertThat(latch.isUnlockedByFailure(), is(false));

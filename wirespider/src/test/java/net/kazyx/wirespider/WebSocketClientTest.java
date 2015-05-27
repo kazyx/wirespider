@@ -123,10 +123,12 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             assertThat(ws.isConnected(), is(true));
         } finally {
@@ -139,31 +141,33 @@ public class WebSocketClientTest {
 
     @Test
     public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        final CustomLatch latch = new CustomLatch(2);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketConnection() {
+            @Override
+            public void onTextMessage(String message) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onBinaryMessage(byte[] message) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onPong(String message) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onClosed(int code, String reason) {
+                latch.countDown();
+            }
+        }).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
-        final CustomLatch latch = new CustomLatch(2);
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new WebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-                    latch.countDown();
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    latch.countDown();
-                }
-
-                @Override
-                public void onPong(String message) {
-                    latch.countDown();
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.countDown();
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             ws.closeNow();
             Thread.sleep(200);
@@ -191,11 +195,13 @@ public class WebSocketClientTest {
 
     @Test
     public void gracefulClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         sCloseFrameLatch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
             ws.closeAsync();
             assertThat(sCloseFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -209,16 +215,18 @@ public class WebSocketClientTest {
 
     @Test
     public void shutdownSoonAfterCloseSent() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         final CustomLatch latch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                latch.countDown();
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.countDown();
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
             ws.closeAsync(CloseStatusCode.GOING_AWAY, "Going away");
             factory.destroy();
@@ -235,20 +243,22 @@ public class WebSocketClientTest {
 
     @Test
     public void closedByAbnormalClosure() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         final CustomLatch latch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
+                    latch.countDown();
+                } else {
+                    latch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
-                        latch.countDown();
-                    } else {
-                        latch.unlockByFailure();
-                    }
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
 
             Field f = WebSocket.class.getDeclaredField("mRxListener");
@@ -277,11 +287,13 @@ public class WebSocketClientTest {
 
     @Test
     public void requestSendAfterClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         sAssertLatch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
             ws.closeAsync();
             ws.sendTextMessageAsync(JettyWebSocketServlet.ASSERT_REQUEST);
@@ -304,26 +316,28 @@ public class WebSocketClientTest {
 
     @Test
     public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         sPingFrameLatch = new CustomLatch(2);
+        final String msg = "ping";
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (sPingFrameLatch != null) {
+                    sPingFrameLatch.unlockByFailure();
+                }
+            }
+
+            @Override
+            public void onPong(String message) {
+                if (message.equals(msg)) {
+                    sPingFrameLatch.countDown();
+                }
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            final String msg = "ping";
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    if (sPingFrameLatch != null) {
-                        sPingFrameLatch.unlockByFailure();
-                    }
-                }
-
-                @Override
-                public void onPong(String message) {
-                    if (message.equals(msg)) {
-                        sPingFrameLatch.countDown();
-                    }
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
 
             ws.sendPingAsync(msg);
@@ -346,18 +360,20 @@ public class WebSocketClientTest {
 
     @Test
     public void receivePing() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         sPongFrameLatch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (sPongFrameLatch != null) {
+                    sPongFrameLatch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    if (sPongFrameLatch != null) {
-                        sPongFrameLatch.unlockByFailure();
-                    }
-                }
-            });
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
             ws.sendTextMessageAsync(JettyWebSocketServlet.PING_REQUEST);
 
@@ -373,21 +389,23 @@ public class WebSocketClientTest {
 
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                System.out.println("WebSocketConnection onClosed");
+                if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
+                    latch.countDown();
+                } else {
+                    throw new IllegalStateException("Invalid close status code");
+                }
+            }
+        }).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
-        final CountDownLatch latch = new CountDownLatch(1);
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    System.out.println("WebSocketConnection onClosed");
-                    if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
-                        latch.countDown();
-                    } else {
-                        throw new IllegalStateException("Invalid close status code");
-                    }
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
             factory.destroy();
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -416,7 +434,8 @@ public class WebSocketClientTest {
                     @Override
                     public void run() {
                         try {
-                            Future<WebSocket> future = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection());
+                            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection()).build();
+                            Future<WebSocket> future = factory.openAsync(seed);
                             WebSocket ws = future.get(1000, TimeUnit.MILLISECONDS);
                             set.add(ws);
                         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -441,22 +460,22 @@ public class WebSocketClientTest {
 
     @Test
     public void x100000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-
         final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
-        WebSocket ws = null;
-
-        try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onTextMessage(String message) {
-                    // System.out.println("onTextMessage");
-                    if (message.equals(MESSAGE)) {
-                        latch.countDown();
-                    }
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onTextMessage(String message) {
+                // System.out.println("onTextMessage");
+                if (message.equals(MESSAGE)) {
+                    latch.countDown();
                 }
-            }).get(1000, TimeUnit.MILLISECONDS);
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
             System.out.println("Start sending messages");
             for (int i = 0; i < NUM_MESSAGES; i++) {
@@ -474,19 +493,21 @@ public class WebSocketClientTest {
 
     @Test
     public void handleCloseOpcode() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         final CountDownLatch latch = new CountDownLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
+            @Override
+            public void onClosed(int code, String reason) {
+                System.out.println("onClosed: " + code);
+                if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
+                    latch.countDown();
+                }
+            }
+        }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    System.out.println("onClosed: " + code);
-                    if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
-                        latch.countDown();
-                    }
-                }
-            }).get(1000, TimeUnit.MILLISECONDS);
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
             ws.sendTextMessageAsync(JettyWebSocketServlet.CLOSE_REQUEST);
 
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -500,8 +521,7 @@ public class WebSocketClientTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void payloadLimitNonPositive() throws IOException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        factory.maxResponsePayloadSizeInBytes(0);
+        new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection()).maxResponsePayloadSizeInBytes(0);
     }
 
     @Test
@@ -600,17 +620,19 @@ public class WebSocketClientTest {
 
     @Test
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
         final CustomLatch latch = new CustomLatch(1);
-        factory.socketBinder(new SocketBinder() {
-            @Override
-            public void bind(Socket socket) throws IOException {
-                latch.countDown();
-            }
-        });
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection())
+                .socketBinder(new SocketBinder() {
+                    @Override
+                    public void bind(Socket socket) throws IOException {
+                        latch.countDown();
+                    }
+                }).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            ws = factory.openAsync(URI.create("ws://localhost:10000"), new EmptyWebSocketConnection()).get(500, TimeUnit.MILLISECONDS);
+            ws = factory.openAsync(seed).get(500, TimeUnit.MILLISECONDS);
             assertThat(latch.isUnlockedByCountDown(), is(true));
         } finally {
             if (ws != null) {
@@ -622,10 +644,12 @@ public class WebSocketClientTest {
 
     @Test
     public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection()).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(10000, TimeUnit.MILLISECONDS);
             fail();
         } catch (ExecutionException e) {
@@ -674,10 +698,12 @@ public class WebSocketClientTest {
         th.start();
         latch.await(500, TimeUnit.MILLISECONDS);
 
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection()).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10001"), new EmptyWebSocketConnection());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             fail();
         } catch (ExecutionException e) {
@@ -693,11 +719,13 @@ public class WebSocketClientTest {
 
     @Test
     public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Collections.singletonList(reject)).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
-        HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Collections.singletonList(reject));
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(500, TimeUnit.MILLISECONDS);
             fail();
         } catch (ExecutionException e) {
@@ -732,10 +760,12 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(new ArrayList<HttpHeader>()).build();
+
         WebSocketClientFactory factory = new WebSocketClientFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), new ArrayList<HttpHeader>());
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
         } finally {
             if (ws != null) {
@@ -747,15 +777,17 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithHeaders() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        WebSocket ws = null;
+        sHeaderCbLatch = new CustomLatch(1);
         HttpHeader single = new HttpHeader.Builder("single").appendValue("value").build();
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
-        sHeaderCbLatch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Arrays.asList(headers)).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             sHeaderCbLatch.await(500, TimeUnit.MILLISECONDS);
 
@@ -772,13 +804,15 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithCookies() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketClientFactory factory = new WebSocketClientFactory();
-        WebSocket ws = null;
+        sCookieCbLatch = new CustomLatch(1);
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
-        sCookieCbLatch = new CustomLatch(1);
+        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection()).headers(Arrays.asList(headers)).build();
+
+        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(URI.create("ws://127.0.0.1:10000"), new EmptyWebSocketConnection(), Arrays.asList(headers));
+            Future<WebSocket> future = factory.openAsync(seed);
             ws = future.get(1000, TimeUnit.MILLISECONDS);
             sCookieCbLatch.await(500, TimeUnit.MILLISECONDS);
 

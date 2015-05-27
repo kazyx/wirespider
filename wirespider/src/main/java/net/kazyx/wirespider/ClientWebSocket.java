@@ -20,10 +20,10 @@ class ClientWebSocket extends WebSocket {
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(AsyncSource async, URI uri, SocketChannel ch, WebSocketConnection handler, int maxPayload, List<HttpHeader> extraHeaders, SocketBinder binder) {
-        super(async, uri, ch, handler, maxPayload);
-        mRequestHeaders = extraHeaders;
-        mSocketBinder = binder;
+    ClientWebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
+        super(seed, async, ch);
+        mRequestHeaders = seed.headers();
+        mSocketBinder = seed.socketBinder();
     }
 
     @Override
