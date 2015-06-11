@@ -24,7 +24,7 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void decompressMessages(PerMessageCompression compression) {
+    public void decompressMessagesWith(PerMessageCompression compression) {
         mCompression = compression;
     }
 

@@ -12,7 +12,7 @@ interface FrameRx {
      */
     void onDataReceived(LinkedList<byte[]> data);
 
-    void decompressMessages(PerMessageCompression compression);
+    void decompressMessagesWith(PerMessageCompression compression);
 
     interface Listener {
         /**

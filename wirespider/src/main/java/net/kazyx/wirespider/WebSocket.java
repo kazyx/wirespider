@@ -246,7 +246,7 @@ public abstract class WebSocket {
                         Log.d(TAG, "Extension accepted: " + ext.name());
                         if (ext instanceof PerMessageCompression) {
                             mFrameTx.compressMessagesWith((PerMessageCompression) ext);
-                            mFrameRx.decompressMessages((PerMessageCompression) ext);
+                            mFrameRx.decompressMessagesWith((PerMessageCompression) ext);
                         }
                     }
 
