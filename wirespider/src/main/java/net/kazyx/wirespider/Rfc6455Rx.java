@@ -1,16 +1,20 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.zip.ZipException;
 
 class Rfc6455Rx implements FrameRx {
     private static final String TAG = Rfc6455Rx.class.getSimpleName();
 
     private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
+    private PerMessageCompression mCompression;
     private final boolean mIsClient;
 
     Rfc6455Rx(FrameRx.Listener listener, int maxPayload, boolean isClient) {
@@ -19,8 +23,14 @@ class Rfc6455Rx implements FrameRx {
         mIsClient = isClient;
     }
 
+    @Override
+    public void decompressMessages(PerMessageCompression compression) {
+        mCompression = compression;
+    }
+
     private boolean isFinal;
     private byte opcode;
+    private boolean isCompressed;
 
     private final Runnable mReadOpCodeOperation = new Runnable() {
         @Override
@@ -29,8 +39,10 @@ class Rfc6455Rx implements FrameRx {
                 byte first = readBytes(1)[0];
                 isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
 
-                if ((first & BitMask.BYTE_SYM_0x70) != 0) {
-                    throw new ProtocolViolationException("RSV non-zero");
+                if (mContinuation == ContinuationMode.UNSET && mCompression != null) {
+                    isCompressed = BitMask.isMatched(first, PerMessageCompression.RESERVED_BIT_FLAGS);
+                } else if ((first & BitMask.BYTE_SYM_0x70) != 0) {
+                    throw new ProtocolViolationException("Reserved bits invalid");
                 }
                 opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
                 mSecondByteOperation.run();
@@ -156,9 +168,11 @@ class Rfc6455Rx implements FrameRx {
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (ProtocolViolationException e) {
+            } catch (ProtocolViolationException | IllegalArgumentException e) {
                 Log.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
+            } catch (ZipException e) {
+                mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Invalid compressed data");
             } catch (IOException e) {
                 // Never happens.
                 mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Unexpected IOException");
@@ -185,7 +199,11 @@ class Rfc6455Rx implements FrameRx {
                 mContinuationBuffer.write(payload);
                 if (isFinal) {
                     byte[] binary = mContinuationBuffer.toByteArray();
+                    if (isCompressed) {
+                        binary = mCompression.decompress(binary);
+                    }
                     mContinuationBuffer.reset();
+                    isCompressed = false;
                     if (mContinuation == ContinuationMode.BINARY) {
                         mListener.onBinaryMessage(binary);
                     } else {
@@ -196,7 +214,11 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.TEXT:
                 if (isFinal) {
+                    if (isCompressed) {
+                        payload = mCompression.decompress(payload);
+                    }
                     String text = ByteArrayUtil.toText(payload);
+                    isCompressed = false;
                     mListener.onTextMessage(text);
                 } else {
                     mContinuationBuffer.write(payload);
@@ -205,6 +227,10 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.BINARY:
                 if (isFinal) {
+                    if (isCompressed) {
+                        payload = mCompression.decompress(payload);
+                    }
+                    isCompressed = false;
                     mListener.onBinaryMessage(payload);
                 } else {
                     mContinuationBuffer.write(payload);

@@ -1,11 +1,14 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
+    private PerMessageCompression mCompression;
     private final boolean mIsClient;
     private final SocketChannelWriter mWriter;
 
@@ -18,15 +21,49 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
+    public void compressMessagesWith(PerMessageCompression compression) {
+        mCompression = compression;
+    }
+
+    @Override
     public void sendTextAsync(String data) {
-        Log.v(TAG, "sendTextAsync", data);
-        sendFrameAsync(OpCode.TEXT, ByteArrayUtil.fromText(data));
+        Log.v(TAG, "sendTextAsync", data.length());
+        byte[] barr = ByteArrayUtil.fromText(data);
+        if (mCompression != null) {
+            try {
+                byte[] compressed = mCompression.compress(barr);
+                if (compressed.length < barr.length) {
+                    Log.v(TAG, "Compressed to", compressed.length);
+                    sendFrameAsync(OpCode.TEXT, compressed, true);
+                    return;
+                } else {
+                    Log.v(TAG, "Deflate unfriendly data", compressed.length);
+                }
+            } catch (IOException e) {
+                Log.v(TAG, "Compression failed");
+            }
+        }
+        sendFrameAsync(OpCode.TEXT, barr, false);
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
         Log.v(TAG, "sendBinaryAsync", data.length);
-        sendFrameAsync(OpCode.BINARY, data);
+        if (mCompression != null) {
+            try {
+                byte[] compressed = mCompression.compress(data);
+                if (compressed.length < data.length) {
+                    Log.v(TAG, "Compressed to", compressed.length);
+                    sendFrameAsync(OpCode.BINARY, compressed, true);
+                    return;
+                } else {
+                    Log.v(TAG, "Deflate unfriendly data", compressed.length);
+                }
+            } catch (IOException e) {
+                Log.v(TAG, "Compression failed");
+            }
+        }
+        sendFrameAsync(OpCode.BINARY, data, false);
     }
 
     @Override
@@ -54,6 +91,10 @@ class Rfc6455Tx implements FrameTx {
     }
 
     private void sendFrameAsync(byte opcode, byte[] payload) {
+        sendFrameAsync(opcode, payload, false);
+    }
+
+    private void sendFrameAsync(byte opcode, byte[] payload, boolean compressed) {
         synchronized (mCloseFlagLock) {
             if (mIsCloseSent) {
                 return;
@@ -68,6 +109,9 @@ class Rfc6455Tx implements FrameTx {
         byte[] header = new byte[headerLength];
 
         header[0] = (byte) (BitMask.BYTE_SYM_0x80 | opcode);
+        if (compressed) {
+            header[0] = (byte) (header[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
+        }
 
         if (headerLength == 2) {
             if (mIsClient) {

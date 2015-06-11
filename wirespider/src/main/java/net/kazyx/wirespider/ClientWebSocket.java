@@ -1,5 +1,7 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.ExtensionRequest;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -16,6 +18,7 @@ class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
     private final List<HttpHeader> mRequestHeaders;
+    private final List<ExtensionRequest> mExtensionRequests;
     private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
@@ -23,6 +26,7 @@ class ClientWebSocket extends WebSocket {
     ClientWebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
         super(seed, async, ch);
         mRequestHeaders = seed.headers();
+        mExtensionRequests = seed.extensions();
         mSocketBinder = seed.socketBinder();
     }
 
@@ -44,7 +48,7 @@ class ClientWebSocket extends WebSocket {
     @Override
     void onSocketConnected() {
         Log.d(TAG, "Start opening handshake");
-        handshake().tryUpgrade(remoteUri(), mRequestHeaders);
+        handshake().tryUpgrade(remoteUri(), mExtensionRequests, mRequestHeaders);
     }
 
     @Override

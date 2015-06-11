@@ -1,5 +1,7 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+
 interface FrameTx {
     void sendTextAsync(String data);
 
@@ -10,4 +12,6 @@ interface FrameTx {
     void sendPongAsync(String message);
 
     void sendCloseAsync(CloseStatusCode code, String reason);
+
+    void compressMessagesWith(PerMessageCompression compression);
 }

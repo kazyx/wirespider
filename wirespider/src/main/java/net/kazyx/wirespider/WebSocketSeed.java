@@ -1,18 +1,23 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.ExtensionRequest;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
 public final class WebSocketSeed {
 
-    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder, List<HttpHeader> headers) {
+    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder, List<HttpHeader> headers, List<ExtensionRequest> extensions) {
         this.mUri = uri;
         this.mHandler = handler;
         this.mMaxResponsePayloadSize = maxResponsePayloadSize;
         this.mSocketBinder = socketBinder;
         if (headers != null) {
             this.mHeaders = Collections.unmodifiableList(headers);
+        }
+        if (extensions != null) {
+            this.mExtensions = Collections.unmodifiableList(extensions);
         }
     }
 
@@ -44,6 +49,12 @@ public final class WebSocketSeed {
 
     List<HttpHeader> headers() {
         return mHeaders;
+    }
+
+    private List<ExtensionRequest> mExtensions;
+
+    List<ExtensionRequest> extensions() {
+        return mExtensions;
     }
 
     public static class Builder {
@@ -101,13 +112,24 @@ public final class WebSocketSeed {
             return this;
         }
 
+        private List<ExtensionRequest> extensions;
+
+        /**
+         * @param extensions WebSocket extension request.
+         * @return This builder.
+         */
+        public Builder extensions(List<ExtensionRequest> extensions) {
+            this.extensions = extensions;
+            return this;
+        }
+
         /**
          * Create a {@link WebSocketSeed} with current configurations.
          *
          * @return Newly created {@link WebSocketSeed}
          */
         public WebSocketSeed build() {
-            return new WebSocketSeed(uri, handler, maxResponsePayloadSize, socketBinder, headers);
+            return new WebSocketSeed(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions);
         }
     }
 }

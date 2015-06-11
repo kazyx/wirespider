@@ -1,5 +1,8 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.Extension;
+import net.kazyx.wirespider.extension.ExtensionRequest;
+
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,9 +12,10 @@ interface Handshake {
      * Try to upgrade this connection as WebSocket.
      *
      * @param uri            URI of the remote server.
+     * @param extensions     WebSocket extension requests.
      * @param requestHeaders Additional request headers. Nullable.
      */
-    void tryUpgrade(URI uri, List<HttpHeader> requestHeaders);
+    void tryUpgrade(URI uri, List<ExtensionRequest> extensions, List<HttpHeader> requestHeaders);
 
     /**
      * Called when WebSocket handshake response is received.
@@ -22,4 +26,11 @@ interface Handshake {
      * @throws HandshakeFailureException  if handshake failure is detected.
      */
     LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException;
+
+    /**
+     * Provide List of accepted WebSocket extensions.
+     *
+     * @return Copy of accepted WebSocket extensions.
+     */
+    List<Extension> extensions();
 }

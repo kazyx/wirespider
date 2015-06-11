@@ -1,8 +1,12 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.Extension;
+import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Generic WebSocket connection.
@@ -236,6 +240,16 @@ public abstract class WebSocket {
                     LinkedList<byte[]> remaining = mHandshake.onHandshakeResponse(data);
                     mIsHandshakeCompleted = true;
                     mIsConnected = true;
+                    List<Extension> extensions = mHandshake.extensions();
+
+                    for (Extension ext : extensions) {
+                        Log.d(TAG, "Extension accepted: " + ext.name());
+                        if (ext instanceof PerMessageCompression) {
+                            mFrameTx.compressMessagesWith((PerMessageCompression) ext);
+                            mFrameRx.decompressMessages((PerMessageCompression) ext);
+                        }
+                    }
+
                     onHandshakeCompleted();
 
                     if (remaining.size() != 0) {

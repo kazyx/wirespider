@@ -240,7 +240,7 @@ public class HandshakeTest {
     @Test(expected = UnsupportedOperationException.class)
     public void upgradeRequestByServer() throws IOException {
         mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new AsyncSource(SelectorProvider.provider()), new SilentListener()), false);
-        mHandshake.tryUpgrade(DUMMY_URI, null);
+        mHandshake.tryUpgrade(DUMMY_URI, null, null);
     }
 
     private static String getSecret(Rfc6455Handshake handshake) {
@@ -255,7 +255,7 @@ public class HandshakeTest {
 
     private static void dummySendUpgradeReqeust(Handshake handshake) {
         try {
-            handshake.tryUpgrade(DUMMY_URI, null);
+            handshake.tryUpgrade(DUMMY_URI, null, null);
         } catch (NullPointerException e) {
             // Ignore
         }

@@ -11,6 +11,7 @@ public class HttpHeader {
     public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
     public static final String UPGRADE = "Upgrade";
     public static final String CONNECTION = "Connection";
+    public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
 
     final String key;
 

@@ -3,11 +3,11 @@ package net.kazyx.wirespider;
 import java.io.Closeable;
 import java.io.IOException;
 
-final class IOUtil {
+public final class IOUtil {
     private IOUtil() {
     }
 
-    static void close(Closeable closeable) {
+    public static void close(Closeable closeable) {
         if (closeable == null) {
             return;
         }

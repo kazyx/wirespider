@@ -3,14 +3,14 @@ package net.kazyx.wirespider;
 import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 
 public class TestUtil {
     static byte[] fixedLengthByteArray(int length) {
         System.out.println("Create random byte array: " + length);
         byte[] ba = new byte[length];
-        for (int i = 0; i < length; i++) {
-            ba[i] = 10;
-        }
+        Random rnd = new Random(20L);
+        rnd.nextBytes(ba);
         return ba;
     }
 

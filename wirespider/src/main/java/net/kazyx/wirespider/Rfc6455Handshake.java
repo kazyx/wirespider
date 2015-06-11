@@ -1,9 +1,14 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.Extension;
+import net.kazyx.wirespider.extension.ExtensionRequest;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -16,6 +21,10 @@ class Rfc6455Handshake implements Handshake {
 
     private final SocketChannelWriter mWriter;
 
+    private final List<Extension> mRequestedExtensions = new ArrayList<>();
+
+    private final List<Extension> mActiveExtensions = new ArrayList<>();
+
     private final boolean mIsClient;
 
     Rfc6455Handshake(SocketChannelWriter writer, boolean isClient) {
@@ -24,7 +33,7 @@ class Rfc6455Handshake implements Handshake {
     }
 
     @Override
-    public void tryUpgrade(URI uri, List<HttpHeader> requestHeaders) {
+    public void tryUpgrade(URI uri, List<ExtensionRequest> extensions, List<HttpHeader> requestHeaders) {
         if (!mIsClient) {
             throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
         }
@@ -39,9 +48,17 @@ class Rfc6455Handshake implements Handshake {
                 .append("Sec-WebSocket-Key: ").append(mSecret).append("\r\n")
                 .append("Sec-WebSocket-Version: 13\r\n");
 
-        if (requestHeaders != null && requestHeaders.size() != 0) {
+        if (extensions != null) {
+            for (ExtensionRequest exReq : extensions) {
+                sb.append(exReq.requestHeader().toHeaderLine()).append("\r\n");
+                mRequestedExtensions.add(exReq.extension());
+            }
+        }
+
+        if (requestHeaders != null) {
             for (HttpHeader header : requestHeaders) {
-                sb.append(header.toHeaderLine()).append("\r\n");
+                String headerLine = header.toHeaderLine();
+                sb.append(headerLine).append("\r\n");
             }
         }
 
@@ -91,6 +108,11 @@ class Rfc6455Handshake implements Handshake {
         }
     }
 
+    @Override
+    public List<Extension> extensions() {
+        return new ArrayList<>(mActiveExtensions);
+    }
+
     private void parseHeader(byte[] data) throws HandshakeFailureException {
         try {
             HttpHeaderReader headerReader = new HttpHeaderReader(data);
@@ -116,8 +138,42 @@ class Rfc6455Handshake implements Handshake {
             if (accept == null || !HandshakeSecretUtil.scrambleSecret(mSecret).equals(accept.values.get(0))) {
                 throw new HandshakeFailureException("Sec-WebSocket-Accept header error");
             }
+
+            parseExtensions(resHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toLowerCase(Locale.US)));
         } catch (IOException e) {
             throw new HandshakeFailureException(e);
+        }
+    }
+
+    private void parseExtensions(HttpHeader extensionHeader) throws HandshakeFailureException {
+        if (extensionHeader == null) {
+            Log.v(TAG, "No extensions in response");
+            return;
+        }
+
+        Log.v(TAG, "parseExtensions: " + extensionHeader.toHeaderLine());
+        for (String value : extensionHeader.values) {
+            String[] split = value.split(";");
+            if (split.length == 0) {
+                continue;
+            }
+
+            String name = split[0].trim();
+
+            Iterator<Extension> itr = mRequestedExtensions.iterator();
+            while (itr.hasNext()) {
+                Extension ext = itr.next();
+                if (ext.name().equals(name)) {
+                    if (ext.accept(split)) {
+                        mActiveExtensions.add(ext);
+                        itr.remove();
+                        break;
+                    } else {
+                        Log.d(TAG, "Unacceptable extension response", value);
+                        throw new HandshakeFailureException("Unacceptable extension response");
+                    }
+                }
+            }
         }
     }
 }
