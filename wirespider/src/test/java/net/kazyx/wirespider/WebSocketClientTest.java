@@ -1,13 +1,5 @@
 package net.kazyx.wirespider;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,70 +32,17 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.fail;
 
 public class WebSocketClientTest {
-    private static Server server = new Server(10000);
+    private static TestWebSocketServer server = new TestWebSocketServer(10000);
 
     @BeforeClass
     public static void setupClass() throws Exception {
         RandomSource.seed(0x12345678);
-        WebSocketServlet servlet = new WebSocketServlet() {
-            @Override
-            public void configure(WebSocketServletFactory factory) {
-                factory.setCreator(new WebSocketCreator() {
-                    @Override
-                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
-                        if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
-                            System.out.println("JettyWebSocket: Reject upgrade");
-                            return null;
-                        } else {
-                            return new JettyWebSocketServlet();
-                        }
-                    }
-                });
-            }
-        };
-
-        ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        handler.addServlet(new ServletHolder(servlet), "/");
-        server.setHandler(handler);
-
-        Base64.encoder(new Base64.Encoder() {
-            @Override
-            public String encode(byte[] source) {
-                return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
-            }
-        });
-
-        mStartLatch = new CountDownLatch(1);
-        mEndLatch = new CountDownLatch(1);
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.start();
-                    System.out.println("Server started");
-                    mStartLatch.countDown();
-                    server.join();
-                    System.out.println("Server finished");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    mEndLatch.countDown();
-                }
-            }
-        }).start();
-
-        mStartLatch.await();
+        server.boot();
     }
-
-    private static CountDownLatch mStartLatch;
-    private static CountDownLatch mEndLatch;
 
     @AfterClass
     public static void teardownClass() throws Exception {
-        server.stop();
-        System.out.println("Server stopped");
-        mEndLatch.await();
+        server.shutdown();
     }
 
     @Before

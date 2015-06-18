@@ -8,7 +8,9 @@ import java.util.List;
 
 public final class WebSocketSeed {
 
-    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder, List<HttpHeader> headers, List<ExtensionRequest> extensions) {
+    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder
+            , List<HttpHeader> headers, List<ExtensionRequest> extensions, List<String> protocols
+            , HandshakeResponseHandler hsHandler) {
         this.mUri = uri;
         this.mHandler = handler;
         this.mMaxResponsePayloadSize = maxResponsePayloadSize;
@@ -19,6 +21,7 @@ public final class WebSocketSeed {
         if (extensions != null) {
             this.mExtensions = Collections.unmodifiableList(extensions);
         }
+        mProtocols = protocols;
     }
 
     private URI mUri;
@@ -57,12 +60,24 @@ public final class WebSocketSeed {
         return mExtensions;
     }
 
+    private List<String> mProtocols;
+
+    List<String> protocols() {
+        return mProtocols;
+    }
+
+    private HandshakeResponseHandler mHsHandler;
+
+    HandshakeResponseHandler handshakeHandler() {
+        return mHsHandler;
+    }
+
     public static class Builder {
         private final URI uri;
         private final InterpretedEventHandler handler;
 
         /**
-         * @param uri     URI of the remote server.
+         * @param uri URI of the remote server.
          * @param handler WebSocket connection event handler.
          */
         public Builder(URI uri, InterpretedEventHandler handler) {
@@ -123,13 +138,35 @@ public final class WebSocketSeed {
             return this;
         }
 
+        private List<String> protocols;
+
+        /**
+         * @param protocols List of sub-protocol candidates.
+         * @return This builder.
+         */
+        public Builder protocols(List<String> protocols) {
+            this.protocols = protocols;
+            return this;
+        }
+
+        private HandshakeResponseHandler hsHandler;
+
+        /**
+         * @param handler Handler to check handshake response
+         * @return This builder.
+         */
+        public Builder handshakeHandler(HandshakeResponseHandler handler) {
+            this.hsHandler = handler;
+            return this;
+        }
+
         /**
          * Create a {@link WebSocketSeed} with current configurations.
          *
          * @return Newly created {@link WebSocketSeed}
          */
         public WebSocketSeed build() {
-            return new WebSocketSeed(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions);
+            return new WebSocketSeed(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions, protocols, hsHandler);
         }
     }
 }

@@ -23,9 +23,43 @@ class Rfc6455Handshake implements Handshake {
 
     private final List<Extension> mRequestedExtensions = new ArrayList<>();
 
-    private final List<Extension> mActiveExtensions = new ArrayList<>();
+    private final List<String> mProtocolCandidates = new ArrayList<>();
+
+    private HandshakeResponse mResponse;
 
     private final boolean mIsClient;
+
+    private HandshakeResponseHandler mResponseHandler;
+
+    private static class DefaultHandshakeResponseHandler implements HandshakeResponseHandler {
+        List<String> mProtocolList;
+
+        DefaultHandshakeResponseHandler(List<String> protocolCandidates) {
+            mProtocolList = protocolCandidates;
+        }
+
+        @Override
+        public boolean onReceived(HandshakeResponse response) {
+            if (mProtocolList == null || mProtocolList.size() == 0) {
+                return true;
+            }
+
+            if (response.protocol() == null) {
+                return false;
+            }
+
+            for (String candidate : mProtocolList) {
+                if (candidate.equalsIgnoreCase(response.protocol())) {
+                    Log.d(TAG, "Protocol: " + response.protocol() + " has been accepted");
+                    // OK one of the protocol candidate accepted.
+                    return true;
+                }
+            }
+
+            Log.d(TAG, "Unknown protocol received: " + response.protocol());
+            return false;
+        }
+    }
 
     Rfc6455Handshake(SocketChannelWriter writer, boolean isClient) {
         mIsClient = isClient;
@@ -33,7 +67,12 @@ class Rfc6455Handshake implements Handshake {
     }
 
     @Override
-    public void tryUpgrade(URI uri, List<ExtensionRequest> extensions, List<HttpHeader> requestHeaders) {
+    public void responseHandler(HandshakeResponseHandler handler) {
+        mResponseHandler = handler;
+    }
+
+    @Override
+    public void tryUpgrade(URI uri, WebSocketSeed seed) {
         if (!mIsClient) {
             throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
         }
@@ -47,7 +86,7 @@ class Rfc6455Handshake implements Handshake {
                 .append("Connection: Upgrade\r\n")
                 .append("Sec-WebSocket-Key: ").append(mSecret).append("\r\n")
                 .append("Sec-WebSocket-Version: 13\r\n");
-
+        List<ExtensionRequest> extensions = seed.extensions();
         if (extensions != null) {
             for (ExtensionRequest exReq : extensions) {
                 sb.append(exReq.requestHeader().toHeaderLine()).append("\r\n");
@@ -55,10 +94,18 @@ class Rfc6455Handshake implements Handshake {
             }
         }
 
+        List<HttpHeader> requestHeaders = seed.headers();
         if (requestHeaders != null) {
             for (HttpHeader header : requestHeaders) {
                 String headerLine = header.toHeaderLine();
                 sb.append(headerLine).append("\r\n");
+            }
+        }
+
+        if (seed.protocols() != null) {
+            for (String protocol : seed.protocols()) {
+                sb.append(HttpHeader.SEC_WEBSOCKET_PROTOCOL).append(": ").append(protocol).append("\r\n");
+                mProtocolCandidates.add(protocol);
             }
         }
 
@@ -110,7 +157,12 @@ class Rfc6455Handshake implements Handshake {
 
     @Override
     public List<Extension> extensions() {
-        return new ArrayList<>(mActiveExtensions);
+        return new ArrayList<>(mResponse.extensions());
+    }
+
+    @Override
+    public String protocol() {
+        return mResponse.protocol();
     }
 
     private void parseHeader(byte[] data) throws HandshakeFailureException {
@@ -139,19 +191,43 @@ class Rfc6455Handshake implements Handshake {
                 throw new HandshakeFailureException("Sec-WebSocket-Accept header error");
             }
 
-            parseExtensions(resHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toLowerCase(Locale.US)));
+            String protocol = parseProtocol(resHeaders.get(HttpHeader.SEC_WEBSOCKET_PROTOCOL.toLowerCase(Locale.US)));
+            List<Extension> extension = parseExtensions(resHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.toLowerCase(Locale.US)), mRequestedExtensions);
+
+            mResponse = new HandshakeResponse(extension, protocol);
+
+            if (mResponseHandler != null) {
+                mResponseHandler.onReceived(mResponse);
+            } else {
+                new DefaultHandshakeResponseHandler(mProtocolCandidates).onReceived(mResponse);
+            }
         } catch (IOException e) {
             throw new HandshakeFailureException(e);
         }
     }
 
-    private void parseExtensions(HttpHeader extensionHeader) throws HandshakeFailureException {
+    private static String parseProtocol(HttpHeader protocolHeader) {
+        if (protocolHeader == null) {
+            return null;
+            // throw new HandshakeFailureException("All of protocols denied");
+        }
+
+        if (protocolHeader.values.size() != 1) {
+            Log.d(TAG, "Multiple protocol header", protocolHeader.toHeaderLine());
+        }
+
+        return protocolHeader.values.get(0);
+    }
+
+    private static List<Extension> parseExtensions(HttpHeader extensionHeader, List<Extension> candidates) throws HandshakeFailureException {
         if (extensionHeader == null) {
             Log.v(TAG, "No extensions in response");
-            return;
+            return null;
         }
 
         Log.v(TAG, "parseExtensions: " + extensionHeader.toHeaderLine());
+        List<Extension> acceptedExtensions = new ArrayList<>();
+
         for (String value : extensionHeader.values) {
             String[] split = value.split(";");
             if (split.length == 0) {
@@ -160,12 +236,12 @@ class Rfc6455Handshake implements Handshake {
 
             String name = split[0].trim();
 
-            Iterator<Extension> itr = mRequestedExtensions.iterator();
+            Iterator<Extension> itr = candidates.iterator();
             while (itr.hasNext()) {
                 Extension ext = itr.next();
                 if (ext.name().equals(name)) {
                     if (ext.accept(split)) {
-                        mActiveExtensions.add(ext);
+                        acceptedExtensions.add(ext);
                         itr.remove();
                         break;
                     } else {
@@ -175,5 +251,7 @@ class Rfc6455Handshake implements Handshake {
                 }
             }
         }
+
+        return acceptedExtensions;
     }
 }

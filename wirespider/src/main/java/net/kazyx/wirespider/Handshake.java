@@ -1,7 +1,6 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.Extension;
-import net.kazyx.wirespider.extension.ExtensionRequest;
 
 import java.net.URI;
 import java.util.LinkedList;
@@ -11,11 +10,10 @@ interface Handshake {
     /**
      * Try to upgrade this connection as WebSocket.
      *
-     * @param uri            URI of the remote server.
-     * @param extensions     WebSocket extension requests.
-     * @param requestHeaders Additional request headers. Nullable.
+     * @param uri URI of the remote server.
+     * @param seed Seed to be used for opening handshake.
      */
-    void tryUpgrade(URI uri, List<ExtensionRequest> extensions, List<HttpHeader> requestHeaders);
+    void tryUpgrade(URI uri, WebSocketSeed seed);
 
     /**
      * Called when WebSocket handshake response is received.
@@ -23,7 +21,7 @@ interface Handshake {
      * @param data List of received data.
      * @return Remaining (non-header) data.
      * @throws BufferUnsatisfiedException if received data does not contain CRLF. Waiting for the next data.
-     * @throws HandshakeFailureException  if handshake failure is detected.
+     * @throws HandshakeFailureException if handshake failure is detected.
      */
     LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException;
 
@@ -33,4 +31,14 @@ interface Handshake {
      * @return Copy of accepted WebSocket extensions.
      */
     List<Extension> extensions();
+
+    /**
+     * @return Active protocol of this session, or {@code null} if no protocol is defined.
+     */
+    String protocol();
+
+    /**
+     * @param handler Handler to judge handshake response manually.
+     */
+    void responseHandler(HandshakeResponseHandler handler);
 }

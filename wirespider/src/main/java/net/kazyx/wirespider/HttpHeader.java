@@ -12,6 +12,7 @@ public class HttpHeader {
     public static final String UPGRADE = "Upgrade";
     public static final String CONNECTION = "Connection";
     public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
+    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
 
     final String key;
 
@@ -40,7 +41,7 @@ public class HttpHeader {
     /**
      * Create an HTTP header with multiple values.
      *
-     * @param key    Header key
+     * @param key Header key
      * @param values List of header values.
      */
     private HttpHeader(String key, List<String> values) {

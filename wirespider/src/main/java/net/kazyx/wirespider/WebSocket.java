@@ -83,6 +83,7 @@ public abstract class WebSocket {
         mFrameTx = newFrameTx();
         mFrameRx = newFrameRx(mRxListener);
         mHandshake = newHandshake();
+        mHandshake.responseHandler(seed.handshakeHandler());
     }
 
     abstract FrameTx newFrameTx();
@@ -96,6 +97,20 @@ public abstract class WebSocket {
     abstract void onHandshakeFailed();
 
     abstract void onHandshakeCompleted();
+
+    /**
+     * @return Active WebSocket extensions on this session.
+     */
+    public List<Extension> extensions() {
+        return mHandshake.extensions();
+    }
+
+    /**
+     * @return Active protocol of this session, or {@code null} if no protocol is defined.
+     */
+    public String protocol() {
+        return mHandshake.protocol();
+    }
 
     /**
      * Send text message asynchronously.
@@ -154,7 +169,7 @@ public abstract class WebSocket {
      * Close WebSocket connection gracefully.<br>
      * If it is already closed, nothing happens.
      *
-     * @param code   Close status code to send.
+     * @param code Close status code to send.
      * @param reason Close reason phrase to send.
      */
     public void closeAsync(final CloseStatusCode code, final String reason) {

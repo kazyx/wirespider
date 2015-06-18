@@ -1,14 +1,11 @@
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.ExtensionRequest;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -17,16 +14,14 @@ import java.util.concurrent.CountDownLatch;
 class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
-    private final List<HttpHeader> mRequestHeaders;
-    private final List<ExtensionRequest> mExtensionRequests;
+    private final WebSocketSeed mSeed;
     private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
     ClientWebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
         super(seed, async, ch);
-        mRequestHeaders = seed.headers();
-        mExtensionRequests = seed.extensions();
+        mSeed = seed;
         mSocketBinder = seed.socketBinder();
     }
 
@@ -48,7 +43,7 @@ class ClientWebSocket extends WebSocket {
     @Override
     void onSocketConnected() {
         Log.d(TAG, "Start opening handshake");
-        handshake().tryUpgrade(remoteUri(), mExtensionRequests, mRequestHeaders);
+        handshake().tryUpgrade(remoteUri(), mSeed);
     }
 
     @Override
@@ -66,7 +61,7 @@ class ClientWebSocket extends WebSocket {
     /**
      * Synchronously open WebSocket connection.
      *
-     * @throws IOException          Failed to open connection.
+     * @throws IOException Failed to open connection.
      * @throws InterruptedException Awaiting thread interrupted.
      */
     void connect() throws IOException, InterruptedException {
