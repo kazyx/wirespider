@@ -24,6 +24,13 @@ public class HttpHeaderTest {
     }
 
     @Test
+    public void appendAfter() {
+        HttpHeader header = new HttpHeader.Builder("name").appendValue("value1").build();
+        header.append("value2");
+        assertThat(header.toHeaderLine(), is("name: value1,value2"));
+    }
+
+    @Test
     public void multipleValue() {
         HttpHeader header = new HttpHeader.Builder("name").appendValue("value1").appendValue("value2").build();
         assertThat(header.toHeaderLine(), is("name: value1,value2"));

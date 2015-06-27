@@ -180,8 +180,8 @@ public class ExtensionDeflateTest {
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
                 ws = future.get(1000, TimeUnit.MILLISECONDS);
-                assertThat(ws.handshake().extensions().size(), is(1));
-                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                assertThat(ws.extensions().size(), is(1));
+                assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendTextMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
@@ -235,8 +235,8 @@ public class ExtensionDeflateTest {
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
                 ws = future.get(1000, TimeUnit.MILLISECONDS);
-                assertThat(ws.handshake().extensions().size(), is(1));
-                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                assertThat(ws.extensions().size(), is(1));
+                assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendTextMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));

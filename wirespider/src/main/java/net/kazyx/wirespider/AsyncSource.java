@@ -132,7 +132,7 @@ class AsyncSource {
     /**
      * Register new WebSocket to the Selector.
      *
-     * @param ws WebSocket to e registered.
+     * @param ws WebSocket to be registered.
      * @param ops Selector operations.
      */
     void register(WebSocket ws, int ops) {
