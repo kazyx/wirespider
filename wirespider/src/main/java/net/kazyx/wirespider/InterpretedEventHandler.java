@@ -31,7 +31,7 @@ public abstract class InterpretedEventHandler {
     /**
      * WebSocket closed.
      *
-     * @param code   Close status code
+     * @param code Close status code
      * @param reason Reason phrase.
      */
     public abstract void onClosed(int code, String reason);

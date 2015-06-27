@@ -32,7 +32,7 @@ interface FrameRx {
         /**
          * Called when received close control frame or Connection is closed abnormally..
          *
-         * @param code   Close status code.
+         * @param code Close status code.
          * @param reason Close reason phrase.
          */
         void onCloseFrame(int code, String reason);

@@ -130,7 +130,7 @@ public class ExtensionDeflateTest {
         public static void setupClass() throws Exception {
             RandomSource.seed(0x12345678);
             Log.logLevel(Log.Level.VERBOSE);
-            server.registerProtocol("permessage-deflate", PerMessageDeflateExtension.class);
+            server.registerExtension("permessage-deflate", PerMessageDeflateExtension.class);
             server.boot();
         }
 

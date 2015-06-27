@@ -41,10 +41,12 @@ class Rfc6455Handshake implements Handshake {
         @Override
         public boolean onReceived(HandshakeResponse response) {
             if (mProtocolList == null || mProtocolList.size() == 0) {
+                Log.d(TAG, "No protocol requested");
                 return true;
             }
 
             if (response.protocol() == null) {
+                Log.d(TAG, "No accepted protocol");
                 return false;
             }
 
@@ -175,6 +177,7 @@ class Rfc6455Handshake implements Handshake {
             }
 
             Map<String, HttpHeader> resHeaders = headerReader.headerFields();
+            Log.v(TAG, "ResponseHeaders", resHeaders.toString());
 
             HttpHeader upgrade = resHeaders.get(HttpHeader.UPGRADE.toLowerCase(Locale.US));
             if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade.values.get(0))) {
@@ -196,10 +199,14 @@ class Rfc6455Handshake implements Handshake {
 
             mResponse = new HandshakeResponse(extension, protocol);
 
+            HandshakeResponseHandler handler;
             if (mResponseHandler != null) {
-                mResponseHandler.onReceived(mResponse);
+                handler = mResponseHandler;
             } else {
-                new DefaultHandshakeResponseHandler(mProtocolCandidates).onReceived(mResponse);
+                handler = new DefaultHandshakeResponseHandler(mProtocolCandidates);
+            }
+            if (!handler.onReceived(mResponse)) {
+                throw new HandshakeFailureException("Handshake response rejected by handshake response handler");
             }
         } catch (IOException e) {
             throw new HandshakeFailureException(e);
@@ -209,7 +216,6 @@ class Rfc6455Handshake implements Handshake {
     private static String parseProtocol(HttpHeader protocolHeader) {
         if (protocolHeader == null) {
             return null;
-            // throw new HandshakeFailureException("All of protocols denied");
         }
 
         if (protocolHeader.values.size() != 1) {

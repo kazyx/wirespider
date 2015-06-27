@@ -84,4 +84,9 @@ public class HttpHeader {
 
         return sb.toString();
     }
+
+    @Override
+    public String toString() {
+        return toHeaderLine();
+    }
 }

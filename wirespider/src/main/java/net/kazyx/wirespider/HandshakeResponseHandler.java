@@ -3,8 +3,8 @@ package net.kazyx.wirespider;
 public interface HandshakeResponseHandler {
 
     /**
-     * Called when basic WebSocket handshake is completed.<br>
-     * Check Handshake response to judge whether to accept the response or not.
+     * Called when fundamental WebSocket handshake is completed.<br>
+     * Delegates evaluation of extension and protocol in response header.
      *
      * @param response Response of the handshake.
      * @return Accept this {@link HandshakeResponse} or not.

@@ -24,7 +24,7 @@ public class Log {
         /**
          * Flush verbose logs.
          *
-         * @param tag     Tag of the message.
+         * @param tag Tag of the message.
          * @param message Log message.
          */
         void v(String tag, String message);
@@ -32,7 +32,7 @@ public class Log {
         /**
          * Flush normal logs.
          *
-         * @param tag     Tag of the message.
+         * @param tag Tag of the message.
          * @param message Log message.
          */
         void d(String tag, String message);
@@ -40,7 +40,7 @@ public class Log {
         /**
          * Flush error logs.
          *
-         * @param tag     Tag of the message.
+         * @param tag Tag of the message.
          * @param message Log message.
          */
         void e(String tag, String message);
@@ -49,7 +49,7 @@ public class Log {
          * Flush caught exception logs.
          *
          * @param tag Tag of the message.
-         * @param th  Caught exception.
+         * @param th Caught exception.
          */
         void printStackTrace(String tag, Throwable th);
     }

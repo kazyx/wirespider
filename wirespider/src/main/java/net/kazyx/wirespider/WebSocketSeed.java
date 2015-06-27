@@ -22,6 +22,7 @@ public final class WebSocketSeed {
             this.mExtensions = Collections.unmodifiableList(extensions);
         }
         mProtocols = protocols;
+        mHsHandler = hsHandler;
     }
 
     private URI mUri;

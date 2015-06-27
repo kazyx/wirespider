@@ -61,7 +61,7 @@ final class ByteArrayUtil {
      *
      * @param bytes Source byte array.
      * @return The unsigned integer value.
-     * @throws IllegalArgumentException     Length of the byte array is larger than 8.
+     * @throws IllegalArgumentException Length of the byte array is larger than 8.
      * @throws PayloadSizeOverflowException if the size exceeds 32 bit signed integer range.
      */
     static int toUnsignedInteger(byte[] bytes) throws PayloadSizeOverflowException {

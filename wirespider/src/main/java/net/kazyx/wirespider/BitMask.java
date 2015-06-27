@@ -8,7 +8,7 @@ final class BitMask {
      * Check bit flags
      *
      * @param source Source byte.
-     * @param flag   Flags byte.
+     * @param flag Flags byte.
      * @return {@code true} if all flags are active.
      */
     static boolean isMatched(byte source, byte flag) {
@@ -18,7 +18,7 @@ final class BitMask {
     /**
      * Mask payload to send data from client.
      *
-     * @param payload    Source raw payload.
+     * @param payload Source raw payload.
      * @param maskingKey Masking key
      * @return Masked payload.
      */

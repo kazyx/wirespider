@@ -10,7 +10,9 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -24,10 +26,16 @@ public class TestWebSocketServer {
         server = new Server(port);
     }
 
-    Map<String, Class<? extends Extension>> mExtensions = new HashMap<>();
+    private final Map<String, Class<? extends Extension>> mExtensions = new HashMap<>();
 
-    public void registerProtocol(String name, Class<? extends Extension> clazz) {
+    public void registerExtension(String name, Class<? extends Extension> clazz) {
         mExtensions.put(name, clazz);
+    }
+
+    private final List<String> mProtocols = new ArrayList<>();
+
+    public void registerSubProtocol(String name) {
+        mProtocols.add(name);
     }
 
     public void boot() throws InterruptedException {
@@ -41,7 +49,19 @@ public class TestWebSocketServer {
                             System.out.println("JettyWebSocket: Reject upgrade");
                             return null;
                         } else {
-                            return new JettyWebSocketServlet();
+                            List<String> reqProtocols = req.getSubProtocols();
+                            if (reqProtocols.size() == 0) {
+                                return new JettyWebSocketServlet();
+                            } else {
+                                System.out.println("JettyWebSocket: subprotocol request: " + reqProtocols);
+                                for (String protocol : reqProtocols) {
+                                    if (mProtocols.contains(protocol)) {
+                                        resp.setAcceptedSubProtocol(protocol);
+                                        return new JettyWebSocketServlet();
+                                    }
+                                }
+                                return new JettyWebSocketServlet();
+                            }
                         }
                     }
                 });
