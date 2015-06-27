@@ -139,19 +139,19 @@ public class ExtensionDeflateTest {
         }
 
         @Test
-        public void textCompressionWindow15() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-            textCompressionByWindowSize(15);
+        public void fixedTextCompressionWindow15() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            fixedTextCompressionByWindowSize(15);
         }
 
         @Test
-        public void textCompressionWindow8() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-            textCompressionByWindowSize(8);
+        public void fixedTextCompressionWindow8() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            fixedTextCompressionByWindowSize(8);
         }
 
-        private void textCompressionByWindowSize(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        private void fixedTextCompressionByWindowSize(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
             final int MESSAGE_SIZE = 4096;
             final CustomLatch latch = new CustomLatch(1);
-            final String data = TestUtil.fixedLengthString(MESSAGE_SIZE);
+            final String data = TestUtil.fixedLengthFixedString(MESSAGE_SIZE);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .maxClientWindowBits(size)
                     .maxServerWindowBits(size)
@@ -194,19 +194,74 @@ public class ExtensionDeflateTest {
         }
 
         @Test
-        public void binaryCompressionWindow8() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-            binaryCompressionByWindowSize(8);
+        public void randomTextCompressionWindow15() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            randomTextCompressionByWindowSize(15);
         }
 
         @Test
-        public void binaryCompressionWindow15() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-            binaryCompressionByWindowSize(15);
+        public void randomTextCompressionWindow8() throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            randomTextCompressionByWindowSize(8);
         }
 
-        private void binaryCompressionByWindowSize(int size) throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        private void randomTextCompressionByWindowSize(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
             final int MESSAGE_SIZE = 4096;
             final CustomLatch latch = new CustomLatch(1);
-            final byte[] data = TestUtil.fixedLengthByteArray(MESSAGE_SIZE);
+            final String data = TestUtil.fixedLengthRandomString(MESSAGE_SIZE);
+            DeflateRequest extReq = new DeflateRequest.Builder()
+                    .maxClientWindowBits(size)
+                    .maxServerWindowBits(size)
+                    .build();
+            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    latch.unlockByFailure();
+                }
+
+                @Override
+                public void onTextMessage(String message) {
+                    if (data.equals(message)) {
+                        latch.countDown();
+                    } else {
+                        System.out.println("Text message not matched");
+                        latch.unlockByFailure();
+                    }
+                }
+            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
+                    .build();
+
+            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocket ws = null;
+            try {
+                Future<WebSocket> future = factory.openAsync(seed);
+                ws = future.get(1000, TimeUnit.MILLISECONDS);
+                assertThat(ws.handshake().extensions().size(), is(1));
+                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                ws.sendTextMessageAsync(data);
+                assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
+                assertThat(latch.isUnlockedByFailure(), is(false));
+            } finally {
+                if (ws != null) {
+                    ws.closeNow();
+                }
+                factory.destroy();
+            }
+        }
+
+        @Test
+        public void fixedBinaryCompressionWindow8() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            fixedBinaryCompressionByWindowSize(8);
+        }
+
+        @Test
+        public void fixedBinaryCompressionWindow15() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            fixedBinaryCompressionByWindowSize(15);
+        }
+
+        private void fixedBinaryCompressionByWindowSize(int size) throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            final int MESSAGE_SIZE = 4096;
+            final CustomLatch latch = new CustomLatch(1);
+            final byte[] data = TestUtil.fixedLengthFixedByteArray(MESSAGE_SIZE);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .maxClientWindowBits(size)
@@ -228,7 +283,7 @@ public class ExtensionDeflateTest {
                     }
                 }
             }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 2)
+                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
                     .build();
 
             WebSocketClientFactory factory = new WebSocketClientFactory();
@@ -249,5 +304,60 @@ public class ExtensionDeflateTest {
             }
         }
 
+        @Test
+        public void randomBinaryCompressionWindow8() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            randomBinaryCompressionByWindowSize(8);
+        }
+
+        @Test
+        public void randomBinaryCompressionWindow15() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            randomBinaryCompressionByWindowSize(15);
+        }
+
+        private void randomBinaryCompressionByWindowSize(int size) throws ExecutionException, InterruptedException, TimeoutException, IOException {
+            final int MESSAGE_SIZE = 4096;
+            final CustomLatch latch = new CustomLatch(1);
+            final byte[] data = TestUtil.fixedLengthRandomByteArray(MESSAGE_SIZE);
+            final byte[] copy = Arrays.copyOf(data, data.length);
+            DeflateRequest extReq = new DeflateRequest.Builder()
+                    .maxClientWindowBits(size)
+                    .maxServerWindowBits(size)
+                    .build();
+            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+                @Override
+                public void onClosed(int code, String reason) {
+                    latch.unlockByFailure();
+                }
+
+                @Override
+                public void onBinaryMessage(byte[] message) {
+                    if (Arrays.equals(copy, message)) {
+                        latch.countDown();
+                    } else {
+                        System.out.println("Text message not matched");
+                        latch.unlockByFailure();
+                    }
+                }
+            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
+                    .build();
+
+            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocket ws = null;
+            try {
+                Future<WebSocket> future = factory.openAsync(seed);
+                ws = future.get(1000, TimeUnit.MILLISECONDS);
+                assertThat(ws.handshake().extensions().size(), is(1));
+                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                ws.sendBinaryMessageAsync(data);
+                assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
+                assertThat(latch.isUnlockedByFailure(), is(false));
+            } finally {
+                if (ws != null) {
+                    ws.closeNow();
+                }
+                factory.destroy();
+            }
+        }
     }
 }

@@ -117,7 +117,7 @@ public class TxTest {
         }
 
         private void text(int length) {
-            final String msg = TestUtil.fixedLengthString(length);
+            final String msg = TestUtil.fixedLengthFixedString(length);
             mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onTextMessage(String text) {
@@ -128,7 +128,7 @@ public class TxTest {
         }
 
         private void binary(int length) {
-            final byte[] msg = TestUtil.fixedLengthByteArray(length);
+            final byte[] msg = TestUtil.fixedLengthRandomByteArray(length);
             mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onBinaryMessage(byte[] data) {

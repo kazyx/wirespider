@@ -39,11 +39,11 @@ class WebSocketClientTestUtil {
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size - 1));
-            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthRandomByteArray(size - 1));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthRandomByteArray(size));
             assertThat(messageLatch.await(500, TimeUnit.MILLISECONDS), is(true));
 
-            ws.sendBinaryMessageAsync(TestUtil.fixedLengthByteArray(size + 1));
+            ws.sendBinaryMessageAsync(TestUtil.fixedLengthRandomByteArray(size + 1));
             assertThat(closeLatch.await(500, TimeUnit.MILLISECONDS), is(true));
             assertThat(closeLatch.isUnlockedByFailure(), is(false));
         } finally {
@@ -56,7 +56,7 @@ class WebSocketClientTestUtil {
 
     static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        byte[] data = TestUtil.fixedLengthByteArray(size);
+        byte[] data = TestUtil.fixedLengthRandomByteArray(size);
         final byte[] copy = Arrays.copyOf(data, data.length);
         WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
@@ -92,7 +92,7 @@ class WebSocketClientTestUtil {
 
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        final String data = TestUtil.fixedLengthString(size);
+        final String data = TestUtil.fixedLengthFixedString(size);
         WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {

@@ -29,6 +29,7 @@ class Rfc6455Tx implements FrameTx {
     public void sendTextAsync(String data) {
         Log.v(TAG, "sendTextAsync", data.length());
         byte[] barr = ByteArrayUtil.fromText(data);
+        Log.v(TAG, "sendTextAsync byte length", barr.length);
         if (mCompression != null) {
             try {
                 byte[] compressed = mCompression.compress(barr);

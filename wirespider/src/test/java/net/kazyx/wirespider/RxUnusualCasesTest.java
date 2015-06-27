@@ -170,7 +170,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowAtNonExtended() {
             int limit = 124;
-            byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(limit + 1);
 
             byte[] data = new byte[2 + limit];
             data[0] = (byte) 0b10000010;
@@ -187,7 +187,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowAtNonExtendedEnd() {
             int limit = 125;
-            byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(limit + 1);
 
             byte[] data = new byte[2 + limit];
             data[0] = (byte) 0b10000010;
@@ -207,7 +207,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowAtFirstExtensionBeginning() {
             int limit = 126;
-            byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(limit + 1);
 
             byte[] data = new byte[4 + limit];
             data[0] = (byte) 0b10000010;
@@ -229,7 +229,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowAtFirstExtensionEnd() {
             int limit = 0x00ffff;
-            byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(limit + 1);
 
             byte[] data = new byte[4 + limit];
             data[0] = (byte) 0b10000010;
@@ -257,7 +257,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowAtSecondExtensionBeginning() {
             int limit = 0x010000;
-            byte[] payload = TestUtil.fixedLengthByteArray(limit + 1);
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(limit + 1);
 
             byte[] data = new byte[10 + limit];
             data[0] = (byte) 0b10000010;
@@ -291,7 +291,7 @@ public class RxUnusualCasesTest {
         @Test
         public void payloadOverflowMaxInt() {
             int payloadSize = 10;
-            byte[] payload = TestUtil.fixedLengthByteArray(payloadSize); // dummy payload. process will end before this data is read.
+            byte[] payload = TestUtil.fixedLengthRandomByteArray(payloadSize); // dummy payload. process will end before this data is read.
 
             byte[] overflowData = new byte[10 + payloadSize];
             overflowData[0] = (byte) 0b10000010;
@@ -321,7 +321,7 @@ public class RxUnusualCasesTest {
         @Test
         public void pingPayloadMaximum() throws UnsupportedEncodingException {
             int payloadSize = 125;
-            byte[] payload = TestUtil.fixedLengthString(payloadSize).getBytes("UTF-8");
+            byte[] payload = TestUtil.fixedLengthFixedString(payloadSize).getBytes("UTF-8");
             byte[] data = new byte[2 + payloadSize];
             data[0] = (byte) 0b10001001;
             data[1] = (byte) payloadSize;
@@ -341,7 +341,7 @@ public class RxUnusualCasesTest {
         @Test
         public void pingPayloadTooLarge() throws UnsupportedEncodingException {
             int payloadSize = 126;
-            byte[] payload = TestUtil.fixedLengthString(payloadSize).getBytes("UTF-8");
+            byte[] payload = TestUtil.fixedLengthFixedString(payloadSize).getBytes("UTF-8");
             byte[] data = new byte[4 + payloadSize];
             data[0] = (byte) 0b10001001;
             data[1] = 126;
@@ -404,7 +404,7 @@ public class RxUnusualCasesTest {
         @Test
         public void separatedPacket() {
             int length = 5;
-            final byte[] payload = TestUtil.fixedLengthByteArray(length + 1);
+            final byte[] payload = TestUtil.fixedLengthRandomByteArray(length + 1);
 
             byte[] data = new byte[14 + length];
             data[0] = (byte) 0b10000010;
@@ -450,7 +450,7 @@ public class RxUnusualCasesTest {
         @Test
         public void binaryContinuation() {
             int payloadSize = 5;
-            final byte[] payload = TestUtil.fixedLengthByteArray(payloadSize);
+            final byte[] payload = TestUtil.fixedLengthRandomByteArray(payloadSize);
 
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
@@ -487,7 +487,7 @@ public class RxUnusualCasesTest {
         @Test
         public void textContinuation() throws UnsupportedEncodingException {
             int payloadSize = 5;
-            final String source = TestUtil.fixedLengthString(payloadSize);
+            final String source = TestUtil.fixedLengthFixedString(payloadSize);
             byte[] payload = source.getBytes("UTF-8");
 
             final CustomLatch latch = new CustomLatch(1);
