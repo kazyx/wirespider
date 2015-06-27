@@ -33,11 +33,11 @@ Base64.encoder(new Base64.Encoder() {
 ### Open WebSocket connection
 ```java
 
-WebSocketClientFactory factory = new WebSocketClientFactory();
-// It is recommended to use this WebSocketClientFactory while your process is alive.
+WebSocketFactory factory = new WebSocketFactory();
+// It is recommended to use this WebSocketFactory while your process is alive.
 
 URI uri = URI.create("ws://host:port/path");
-WebSocketSeed seed = new WebSocketSeed.Builder(uri, new InterpretedEventHandler() {
+SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
     @Override
     public void onTextMessage(String message) {
         // Received text message.
@@ -54,10 +54,10 @@ WebSocketSeed seed = new WebSocketSeed.Builder(uri, new InterpretedEventHandler(
     }
 }).build();
 
-WebSocket websocket = factory.openAsync(seed).get(5, TimeUnit.SECONDS);
+WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS);
 ```
 
-### Send message
+### Send messages
 ```java
 websocket.sendTextMessageAsync("Hello");
 ```
@@ -65,7 +65,7 @@ websocket.sendTextMessageAsync("Hello");
 websocket.sendBinaryMessageAsync(new byte[]{0x01, 0x02, 0x03, 0x04});
 ```
 
-### Close connection
+### Gracefully close connection
 ```java
 websocket.closeAsync();
 // WebSocketConnection.onClosed() will be called soon.

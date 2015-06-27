@@ -1,6 +1,6 @@
 package net.kazyx.wirespider;
 
-public class SilentEventHandler extends InterpretedEventHandler {
+public class SilentEventHandler extends WebSocketHandler {
     @Override
     public void onTextMessage(String message) {
     }

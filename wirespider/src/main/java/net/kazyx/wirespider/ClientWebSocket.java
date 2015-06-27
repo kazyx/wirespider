@@ -1,5 +1,7 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.delegate.SocketBinder;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -14,12 +16,12 @@ import java.util.concurrent.CountDownLatch;
 class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
-    private final WebSocketSeed mSeed;
+    private final SessionRequest mSeed;
     private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
+    ClientWebSocket(SessionRequest seed, AsyncSource async, SocketChannel ch) {
         super(seed, async, ch);
         mSeed = seed;
         mSocketBinder = seed.socketBinder();

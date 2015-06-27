@@ -1,5 +1,6 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import net.kazyx.wirespider.extension.Extension;
 
 import java.net.URI;
@@ -13,7 +14,7 @@ interface Handshake {
      * @param uri URI of the remote server.
      * @param seed Seed to be used for opening handshake.
      */
-    void tryUpgrade(URI uri, WebSocketSeed seed);
+    void tryUpgrade(URI uri, SessionRequest seed);
 
     /**
      * Called when WebSocket handshake response is received.

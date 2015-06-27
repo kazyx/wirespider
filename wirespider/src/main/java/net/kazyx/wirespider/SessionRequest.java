@@ -1,14 +1,18 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
+import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.http.HttpHeader;
+import net.kazyx.wirespider.util.ArgumentCheck;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
-public final class WebSocketSeed {
+public final class SessionRequest {
 
-    WebSocketSeed(URI uri, InterpretedEventHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder
+    private SessionRequest(URI uri, WebSocketHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder
             , List<HttpHeader> headers, List<ExtensionRequest> extensions, List<String> protocols
             , HandshakeResponseHandler hsHandler) {
         this.mUri = uri;
@@ -27,61 +31,61 @@ public final class WebSocketSeed {
 
     private URI mUri;
 
-    URI uri() {
+    public URI uri() {
         return mUri;
     }
 
-    private InterpretedEventHandler mHandler;
+    private WebSocketHandler mHandler;
 
-    InterpretedEventHandler handler() {
+    public WebSocketHandler handler() {
         return mHandler;
     }
 
     private int mMaxResponsePayloadSize;
 
-    int maxResponsePayloadSizeInBytes() {
+    public int maxResponsePayloadSizeInBytes() {
         return mMaxResponsePayloadSize;
     }
 
     private SocketBinder mSocketBinder;
 
-    SocketBinder socketBinder() {
+    public SocketBinder socketBinder() {
         return mSocketBinder;
     }
 
     private List<HttpHeader> mHeaders;
 
-    List<HttpHeader> headers() {
+    public List<HttpHeader> headers() {
         return mHeaders;
     }
 
     private List<ExtensionRequest> mExtensions;
 
-    List<ExtensionRequest> extensions() {
+    public List<ExtensionRequest> extensions() {
         return mExtensions;
     }
 
     private List<String> mProtocols;
 
-    List<String> protocols() {
+    public List<String> protocols() {
         return mProtocols;
     }
 
     private HandshakeResponseHandler mHsHandler;
 
-    HandshakeResponseHandler handshakeHandler() {
+    public HandshakeResponseHandler handshakeHandler() {
         return mHsHandler;
     }
 
     public static class Builder {
         private final URI uri;
-        private final InterpretedEventHandler handler;
+        private final WebSocketHandler handler;
 
         /**
          * @param uri URI of the remote server.
          * @param handler WebSocket connection event handler.
          */
-        public Builder(URI uri, InterpretedEventHandler handler) {
+        public Builder(URI uri, WebSocketHandler handler) {
             ArgumentCheck.rejectNullArgs(uri, handler);
             this.uri = uri;
             this.handler = handler;
@@ -162,12 +166,12 @@ public final class WebSocketSeed {
         }
 
         /**
-         * Create a {@link WebSocketSeed} with current configurations.
+         * Create a {@link SessionRequest} with current configurations.
          *
-         * @return Newly created {@link WebSocketSeed}
+         * @return Newly created {@link SessionRequest}
          */
-        public WebSocketSeed build() {
-            return new WebSocketSeed(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions, protocols, hsHandler);
+        public SessionRequest build() {
+            return new SessionRequest(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions, protocols, hsHandler);
         }
     }
 }

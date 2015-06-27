@@ -156,7 +156,7 @@ public class ExtensionDeflateTest {
                     .maxClientWindowBits(size)
                     .maxServerWindowBits(size)
                     .build();
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -175,7 +175,7 @@ public class ExtensionDeflateTest {
                     .maxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
                     .build();
 
-            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocketFactory factory = new WebSocketFactory();
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
@@ -211,7 +211,7 @@ public class ExtensionDeflateTest {
                     .maxClientWindowBits(size)
                     .maxServerWindowBits(size)
                     .build();
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -230,7 +230,7 @@ public class ExtensionDeflateTest {
                     .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 
-            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocketFactory factory = new WebSocketFactory();
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
@@ -267,7 +267,7 @@ public class ExtensionDeflateTest {
                     .maxClientWindowBits(size)
                     .maxServerWindowBits(size)
                     .build();
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -286,7 +286,7 @@ public class ExtensionDeflateTest {
                     .maxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
                     .build();
 
-            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocketFactory factory = new WebSocketFactory();
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
@@ -323,7 +323,7 @@ public class ExtensionDeflateTest {
                     .maxClientWindowBits(size)
                     .maxServerWindowBits(size)
                     .build();
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -342,7 +342,7 @@ public class ExtensionDeflateTest {
                     .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 
-            WebSocketClientFactory factory = new WebSocketClientFactory();
+            WebSocketFactory factory = new WebSocketFactory();
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);

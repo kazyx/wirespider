@@ -1,6 +1,8 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.util.BitMask;
+import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,14 +39,14 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 byte first = readBytes(1)[0];
-                isFinal = BitMask.isMatched(first, BitMask.BYTE_SYM_0x80);
+                isFinal = BitMask.isMatched(first, (byte) 0x80);
 
                 if (mContinuation == ContinuationMode.UNSET && mCompression != null) {
                     isCompressed = BitMask.isMatched(first, PerMessageCompression.RESERVED_BIT_FLAGS);
-                } else if ((first & BitMask.BYTE_SYM_0x70) != 0) {
+                } else if ((first & 0x70) != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
                 }
-                opcode = (byte) (first & BitMask.BYTE_SYM_0x0F);
+                opcode = (byte) (first & 0x0f);
                 mSecondByteOperation.run();
             } catch (BufferUnsatisfiedException e) {
                 // No need to flush this log. Always happens at frame end.
@@ -67,13 +69,13 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 byte second = readBytes(1)[0];
-                isMasked = BitMask.isMatched(second, BitMask.BYTE_SYM_0x80);
+                isMasked = BitMask.isMatched(second, (byte) 0x80);
 
                 if (!(mIsClient ^ isMasked)) {
                     throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");
                 }
 
-                payloadLength = second & BitMask.BYTE_SYM_0x7F;
+                payloadLength = second & 0x7f;
                 if (payloadLength > mMaxPayloadSize) {
                     throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
@@ -125,7 +127,7 @@ class Rfc6455Rx implements FrameRx {
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (PayloadSizeOverflowException e) {
+            } catch (PayloadSizeOverflowException | IllegalArgumentException e) {
                 Log.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             }
@@ -257,7 +259,7 @@ class Rfc6455Rx implements FrameRx {
                     throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
                 int code = (payload.length >= 2) ? payload[1] & 0xFF + (payload[0] << 8) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
-                String reason = (payload.length > 2) ? ByteArrayUtil.toText(ByteArrayUtil.toSubArray(payload, 2)) : "";
+                String reason = (payload.length > 2) ? ByteArrayUtil.toText(payload, 2, payload.length - 2) : "";
                 mListener.onCloseFrame(code, reason);
                 break;
             default:

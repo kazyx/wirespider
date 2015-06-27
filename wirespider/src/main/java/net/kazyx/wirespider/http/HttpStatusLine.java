@@ -1,6 +1,6 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.http;
 
-class HttpStatusLine {
+public class HttpStatusLine {
     private final String mVersion;
     private final int mStatusCode;
     private final String mReason;
@@ -11,15 +11,15 @@ class HttpStatusLine {
         this.mReason = reason;
     }
 
-    String version() {
+    public String version() {
         return mVersion;
     }
 
-    int statusCode() {
+    public int statusCode() {
         return mStatusCode;
     }
 
-    String reason() {
+    public String reason() {
         return mReason;
     }
 }

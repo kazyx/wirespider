@@ -3,7 +3,7 @@ package net.kazyx.wirespider;
 /**
  * WebSocket event handler.
  */
-public abstract class InterpretedEventHandler {
+public abstract class WebSocketHandler {
     /**
      * Received text message.
      *

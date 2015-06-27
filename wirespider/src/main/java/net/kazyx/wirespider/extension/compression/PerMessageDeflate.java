@@ -1,6 +1,6 @@
 package net.kazyx.wirespider.extension.compression;
 
-import net.kazyx.wirespider.IOUtil;
+import net.kazyx.wirespider.util.IOUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;

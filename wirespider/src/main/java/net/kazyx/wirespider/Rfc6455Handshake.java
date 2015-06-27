@@ -1,7 +1,12 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.http.HttpHeader;
+import net.kazyx.wirespider.http.HttpHeaderReader;
+import net.kazyx.wirespider.http.HttpStatusLine;
+import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -74,15 +79,19 @@ class Rfc6455Handshake implements Handshake {
     }
 
     @Override
-    public void tryUpgrade(URI uri, WebSocketSeed seed) {
+    public void tryUpgrade(URI uri, SessionRequest seed) {
         if (!mIsClient) {
             throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
         }
         mSecret = HandshakeSecretUtil.newSecretKey();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("GET ").append(TextUtil.isNullOrEmpty(uri.getPath()) ? "/" : uri.getPath())
-                .append(" HTTP/1.1\r\n")
+
+        String path = uri.getPath();
+        if (path == null || path.length() == 0) {
+            path = "/";
+        }
+        sb.append("GET ").append(path).append(" HTTP/1.1\r\n")
                 .append("Host: ").append(uri.getHost()).append("\r\n")
                 .append("Upgrade: websocket\r\n")
                 .append("Connection: Upgrade\r\n")
@@ -180,17 +189,17 @@ class Rfc6455Handshake implements Handshake {
             Log.v(TAG, "ResponseHeaders", resHeaders.toString());
 
             HttpHeader upgrade = resHeaders.get(HttpHeader.UPGRADE.toLowerCase(Locale.US));
-            if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade.values.get(0))) {
+            if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade.values().get(0))) {
                 throw new HandshakeFailureException("Upgrade header error");
             }
 
             HttpHeader connection = resHeaders.get(HttpHeader.CONNECTION.toLowerCase(Locale.US));
-            if (connection == null || !"Upgrade".equalsIgnoreCase(connection.values.get(0))) {
+            if (connection == null || !"Upgrade".equalsIgnoreCase(connection.values().get(0))) {
                 throw new HandshakeFailureException("Connection header error");
             }
 
             HttpHeader accept = resHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.toLowerCase(Locale.US));
-            if (accept == null || !HandshakeSecretUtil.scrambleSecret(mSecret).equals(accept.values.get(0))) {
+            if (accept == null || !HandshakeSecretUtil.scrambleSecret(mSecret).equals(accept.values().get(0))) {
                 throw new HandshakeFailureException("Sec-WebSocket-Accept header error");
             }
 
@@ -218,11 +227,11 @@ class Rfc6455Handshake implements Handshake {
             return null;
         }
 
-        if (protocolHeader.values.size() != 1) {
+        if (protocolHeader.values().size() != 1) {
             Log.d(TAG, "Multiple protocol header", protocolHeader.toHeaderLine());
         }
 
-        return protocolHeader.values.get(0);
+        return protocolHeader.values().get(0);
     }
 
     private static List<Extension> parseExtensions(HttpHeader extensionHeader, List<Extension> candidates) throws HandshakeFailureException {
@@ -234,7 +243,7 @@ class Rfc6455Handshake implements Handshake {
         Log.v(TAG, "parseExtensions: " + extensionHeader.toHeaderLine());
         List<Extension> acceptedExtensions = new ArrayList<>();
 
-        for (String value : extensionHeader.values) {
+        for (String value : extensionHeader.values()) {
             String[] split = value.split(";");
             if (split.length == 0) {
                 continue;

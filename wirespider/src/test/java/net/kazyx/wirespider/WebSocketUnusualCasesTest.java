@@ -85,10 +85,10 @@ public class WebSocketUnusualCasesTest {
             }).start();
 
             mStartLatch.await();
-            factory = new WebSocketClientFactory();
+            factory = new WebSocketFactory();
         }
 
-        private static WebSocketClientFactory factory;
+        private static WebSocketFactory factory;
         private static CountDownLatch mStartLatch;
         private static CountDownLatch mEndLatch;
 
@@ -105,7 +105,7 @@ public class WebSocketUnusualCasesTest {
 
         @Before
         public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
-            WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
             mWs = null;
             try {

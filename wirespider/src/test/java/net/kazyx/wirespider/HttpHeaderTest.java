@@ -1,5 +1,8 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.http.HttpHeader;
+import net.kazyx.wirespider.http.HttpHeaderReader;
+import net.kazyx.wirespider.http.HttpStatusLine;
 import org.junit.Test;
 
 import java.io.IOException;

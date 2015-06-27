@@ -1,5 +1,7 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ArgumentCheck;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 

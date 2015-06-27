@@ -1,4 +1,6 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.http;
+
+import net.kazyx.wirespider.util.ArgumentCheck;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,15 @@ public class HttpHeader {
 
     final String key;
 
-    final List<String> values = new ArrayList<>();
+    public String key() {
+        return key;
+    }
+
+    private final List<String> values = new ArrayList<>();
+
+    public List<String> values() {
+        return values;
+    }
 
     public static class Builder {
         private final String name;

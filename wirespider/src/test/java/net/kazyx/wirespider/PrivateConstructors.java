@@ -1,5 +1,9 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.BitMask;
+import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.IOUtil;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -11,7 +15,7 @@ import static org.junit.Assert.assertThat;
 public class PrivateConstructors {
 
     @Test
-    public void aptiLog() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    public void log() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         constructor(Log.class);
     }
 
@@ -53,11 +57,6 @@ public class PrivateConstructors {
     @Test
     public void randomSource() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         constructor(RandomSource.class);
-    }
-
-    @Test
-    public void textUtil() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(TextUtil.class);
     }
 
     private void constructor(Class<?> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {

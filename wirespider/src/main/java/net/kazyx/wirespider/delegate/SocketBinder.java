@@ -1,4 +1,4 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.delegate;
 
 import java.io.IOException;
 import java.net.Socket;

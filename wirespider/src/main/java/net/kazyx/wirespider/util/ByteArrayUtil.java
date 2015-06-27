@@ -1,9 +1,8 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.util;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 
-final class ByteArrayUtil {
+public final class ByteArrayUtil {
     private ByteArrayUtil() {
     }
 
@@ -13,9 +12,25 @@ final class ByteArrayUtil {
      * @param bytes Source byte array.
      * @return String expression of the byte array.
      */
-    static String toText(byte[] bytes) {
+    public static String toText(byte[] bytes) {
         try {
             return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new UnsupportedOperationException(e);
+        }
+    }
+
+    /**
+     * Convert byte array to UTF-8 String.
+     *
+     * @param bytes Source byte array.
+     * @param offset The index of the first byte to decode
+     * @param length The number of bytes to decode
+     * @return String expression of the byte array.
+     */
+    public static String toText(byte[] bytes, int offset, int length) {
+        try {
+            return new String(bytes, offset, length, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new UnsupportedOperationException(e);
         }
@@ -27,7 +42,7 @@ final class ByteArrayUtil {
      * @param text Source String.
      * @return Byte array expression of the String.
      */
-    static byte[] fromText(String text) {
+    public static byte[] fromText(String text) {
         try {
             return text.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -40,9 +55,9 @@ final class ByteArrayUtil {
      *
      * @param bytes Source byte array.
      * @return The long value
-     * @throws IllegalArgumentException Length of the byte array is larger than 8.
+     * @throws IllegalArgumentException Value exceeds int 64.
      */
-    static long toUnsignedLong(byte[] bytes) throws PayloadSizeOverflowException {
+    public static long toUnsignedLong(byte[] bytes) {
         if (8 < bytes.length) {
             throw new IllegalArgumentException("bit length overflow: " + bytes.length);
         }
@@ -51,7 +66,7 @@ final class ByteArrayUtil {
             value = (value << 8) + (b & 0xFF);
         }
         if (value < 0) {
-            throw new PayloadSizeOverflowException("Exceeds int64 range: " + value);
+            throw new IllegalArgumentException("Exceeds int64 range: " + value);
         }
         return value;
     }
@@ -61,19 +76,14 @@ final class ByteArrayUtil {
      *
      * @param bytes Source byte array.
      * @return The unsigned integer value.
-     * @throws IllegalArgumentException Length of the byte array is larger than 8.
-     * @throws PayloadSizeOverflowException if the size exceeds 32 bit signed integer range.
+     * @throws IllegalArgumentException Value exceeds int 32.
      */
-    static int toUnsignedInteger(byte[] bytes) throws PayloadSizeOverflowException {
+    public static int toUnsignedInteger(byte[] bytes) {
         long l = toUnsignedLong(bytes);
         if (Integer.MAX_VALUE < l) {
             // TODO support large payload over 2GB
-            throw new PayloadSizeOverflowException("Exceeds int32 range: " + l);
+            throw new IllegalArgumentException("Exceeds int32 range: " + l);
         }
         return (int) l;
-    }
-
-    static byte[] toSubArray(byte[] array, int start) {
-        return Arrays.copyOfRange(array, start, array.length);
     }
 }

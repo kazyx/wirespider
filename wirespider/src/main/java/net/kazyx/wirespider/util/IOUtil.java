@@ -1,4 +1,4 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.util;
 
 import java.io.Closeable;
 import java.io.IOException;

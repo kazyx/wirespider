@@ -2,6 +2,8 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.IOUtil;
 
 import java.net.URI;
 import java.nio.channels.SocketChannel;
@@ -36,13 +38,13 @@ public abstract class WebSocket {
 
     /**
      * @return Maximum size of response payload to accept.
-     * @see WebSocketSeed.Builder#maxResponsePayloadSizeInBytes(int)
+     * @see SessionRequest.Builder#maxResponsePayloadSizeInBytes(int)
      */
     public int maxResponsePayloadSizeInBytes() {
         return mMaxResponsePayloadSize;
     }
 
-    private final InterpretedEventHandler mCallbackHandler;
+    private final WebSocketHandler mCallbackHandler;
 
     private final Object mCloseCallbackLock = new Object();
 
@@ -71,7 +73,7 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(WebSocketSeed seed, AsyncSource async, SocketChannel ch) {
+    WebSocket(SessionRequest seed, AsyncSource async, SocketChannel ch) {
         mURI = seed.uri();
         mCallbackHandler = seed.handler();
         mMaxResponsePayloadSize = seed.maxResponsePayloadSizeInBytes();

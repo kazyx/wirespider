@@ -1,5 +1,6 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ArgumentCheck;
 import org.junit.Test;
 
 public class ArgumentCheckTest {

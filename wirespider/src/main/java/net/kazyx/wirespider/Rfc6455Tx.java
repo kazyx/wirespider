@@ -1,6 +1,9 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.util.BitMask;
+import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.IOUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -109,30 +112,30 @@ class Rfc6455Tx implements FrameTx {
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
 
-        header[0] = (byte) (BitMask.BYTE_SYM_0x80 | opcode);
+        header[0] = (byte) (0x80 | opcode);
         if (compressed) {
             header[0] = (byte) (header[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
         }
 
         if (headerLength == 2) {
             if (mIsClient) {
-                header[1] = (byte) (BitMask.BYTE_SYM_0x80 | payloadLength);
+                header[1] = (byte) (0x80 | payloadLength);
             } else {
                 header[1] = (byte) (payloadLength);
             }
         } else if (headerLength == 4) {
             if (mIsClient) {
-                header[1] = BitMask.BYTE_SYM_0xFE;
+                header[1] = (byte) 0xfe;
             } else {
-                header[1] = BitMask.BYTE_SYM_0x7E;
+                header[1] = 0x7e;
             }
             header[2] = (byte) (payloadLength >>> 8);
             header[3] = (byte) (payloadLength);
         } else {
             if (mIsClient) {
-                header[1] = BitMask.BYTE_SYM_0xFF;
+                header[1] = (byte) 0xff;
             } else {
-                header[1] = BitMask.BYTE_SYM_0x7F;
+                header[1] = (byte) 0x7f;
             }
             header[2] = (byte) (payloadLength >>> 56);
             header[3] = (byte) (payloadLength >>> 48);

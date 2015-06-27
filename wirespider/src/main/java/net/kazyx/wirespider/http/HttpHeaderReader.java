@@ -1,4 +1,4 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.http;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-class HttpHeaderReader {
-    private static final String TAG = HttpHeaderReader.class.getSimpleName();
+public class HttpHeaderReader {
+    // private static final String TAG = HttpHeaderReader.class.getSimpleName();
 
     private HttpStatusLine mStatusLine;
     private Map<String, HttpHeader> mHeaders;
@@ -20,7 +20,7 @@ class HttpHeaderReader {
      * @param data HTTP header data as byte array.
      * @throws IOException Failed to parse status line or header fields.
      */
-    HttpHeaderReader(byte[] data) throws IOException {
+    public HttpHeaderReader(byte[] data) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), "UTF-8"));
         readStatusLine(reader);
         readHeader(reader);
@@ -29,14 +29,14 @@ class HttpHeaderReader {
     /**
      * @return Status line of HTTP response.
      */
-    HttpStatusLine statusLine() {
+    public HttpStatusLine statusLine() {
         return mStatusLine;
     }
 
     /**
      * @return List of HTTP header fields.
      */
-    Map<String, HttpHeader> headerFields() {
+    public Map<String, HttpHeader> headerFields() {
         return mHeaders;
     }
 
@@ -56,7 +56,7 @@ class HttpHeaderReader {
         }
 
         String version = status[0].substring(5);
-        Log.v(TAG, "HTTP version", version);
+        // Log.v(TAG, "HTTP version", version);
 
         if (!version.equals("1.1")) {
             throw new IOException("HTTP version not 1.1: " + version);
@@ -68,10 +68,10 @@ class HttpHeaderReader {
         } catch (NumberFormatException e) {
             throw new IOException("Failed to read status statusCode: " + line);
         }
-        Log.v(TAG, "HTTP status code", statusCode);
+        // Log.v(TAG, "HTTP status code", statusCode);
 
         String reason = line.substring(line.indexOf(status[1]) + status[1].length() + 1);
-        Log.v(TAG, "HTTP status reason", reason);
+        // Log.v(TAG, "HTTP status reason", reason);
 
         mStatusLine = new HttpStatusLine(version, statusCode, reason);
     }
@@ -99,7 +99,7 @@ class HttpHeaderReader {
                 // End of HTTP header
                 break;
             }
-            Log.v(TAG, line);
+            // Log.v(TAG, line);
 
             if (name != null) {
                 // Check with existence of name, because value might be empty string

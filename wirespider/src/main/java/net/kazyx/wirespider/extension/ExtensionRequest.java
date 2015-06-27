@@ -1,6 +1,6 @@
 package net.kazyx.wirespider.extension;
 
-import net.kazyx.wirespider.HttpHeader;
+import net.kazyx.wirespider.http.HttpHeader;
 
 public interface ExtensionRequest {
     /**

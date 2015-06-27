@@ -1,8 +1,8 @@
 package net.kazyx.wirespider.extension.compression;
 
-import net.kazyx.wirespider.HttpHeader;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.http.HttpHeader;
 
 public class DeflateRequest implements ExtensionRequest {
     private final int mMaxClientWindowBits;

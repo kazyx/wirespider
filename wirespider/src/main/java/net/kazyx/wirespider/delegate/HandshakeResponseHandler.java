@@ -1,4 +1,6 @@
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.delegate;
+
+import net.kazyx.wirespider.HandshakeResponse;
 
 public interface HandshakeResponseHandler {
 

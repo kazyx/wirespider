@@ -1,5 +1,6 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,11 +39,11 @@ public class SubProtocolTest {
 
     @Test
     public void accepted() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .protocols(Collections.singletonList(SUBPROTOCOL))
                 .build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(seed);
@@ -59,11 +60,11 @@ public class SubProtocolTest {
 
     @Test(expected = IOException.class)
     public void rejected() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .protocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(seed);
@@ -82,11 +83,11 @@ public class SubProtocolTest {
 
     @Test
     public void multiple() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .protocols(Arrays.asList(SUBPROTOCOL, INVALID_SUBPROTOCOL))
                 .build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(seed);
@@ -102,7 +103,7 @@ public class SubProtocolTest {
 
     @Test
     public void customHandlerAccept() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .protocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .handshakeHandler(new HandshakeResponseHandler() {
                     @Override
@@ -115,7 +116,7 @@ public class SubProtocolTest {
                 })
                 .build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(seed);
@@ -132,7 +133,7 @@ public class SubProtocolTest {
 
     @Test(expected = IOException.class)
     public void customHandlerReject() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .protocols(Collections.singletonList(SUBPROTOCOL))
                 .handshakeHandler(new HandshakeResponseHandler() {
                     @Override
@@ -142,7 +143,7 @@ public class SubProtocolTest {
                 })
                 .build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             Future<WebSocket> future = factory.openAsync(seed);

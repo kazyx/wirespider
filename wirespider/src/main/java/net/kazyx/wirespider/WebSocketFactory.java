@@ -1,5 +1,8 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.IOUtil;
+
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
@@ -9,17 +12,17 @@ import java.util.concurrent.Future;
 /**
  * Factory of the WebSocket client connections.
  */
-public class WebSocketClientFactory {
+public class WebSocketFactory {
     private final AsyncSource mAsync;
     private final SelectorProvider mProvider;
 
-    public WebSocketClientFactory() throws IOException {
+    public WebSocketFactory() throws IOException {
         mProvider = SelectorProvider.provider();
         mAsync = new AsyncSource(mProvider);
     }
 
     /**
-     * Destroy this {@link WebSocketClientFactory}.<br>
+     * Destroy this {@link WebSocketFactory}.<br>
      * Note that any connections created by this instance will be released.
      */
     public synchronized void destroy() {
@@ -33,7 +36,7 @@ public class WebSocketClientFactory {
      * @return Future of WebSocket instance.
      * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
-    public synchronized Future<WebSocket> openAsync(final WebSocketSeed seed) {
+    public synchronized Future<WebSocket> openAsync(final SessionRequest seed) {
         ArgumentCheck.rejectNullArgs(seed);
 
         return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {

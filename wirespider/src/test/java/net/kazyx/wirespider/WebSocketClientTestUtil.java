@@ -17,7 +17,7 @@ class WebSocketClientTestUtil {
     static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
@@ -34,7 +34,7 @@ class WebSocketClientTestUtil {
             }
         }).maxResponsePayloadSizeInBytes(size).build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
@@ -58,7 +58,7 @@ class WebSocketClientTestUtil {
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = TestUtil.fixedLengthRandomByteArray(size);
         final byte[] copy = Arrays.copyOf(data, data.length);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.unlockByFailure();
@@ -75,7 +75,7 @@ class WebSocketClientTestUtil {
             }
         }).maxResponsePayloadSizeInBytes(size).build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
@@ -93,7 +93,7 @@ class WebSocketClientTestUtil {
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         final String data = TestUtil.fixedLengthFixedString(size);
-        WebSocketSeed seed = new WebSocketSeed.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.unlockByFailure();
@@ -110,7 +110,7 @@ class WebSocketClientTestUtil {
             }
         }).maxResponsePayloadSizeInBytes(size).build();
 
-        WebSocketClientFactory factory = new WebSocketClientFactory();
+        WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
