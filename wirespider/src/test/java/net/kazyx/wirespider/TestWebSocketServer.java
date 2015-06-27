@@ -3,7 +3,7 @@ package net.kazyx.wirespider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
+import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -11,9 +11,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class TestWebSocketServer {
@@ -26,10 +24,22 @@ public class TestWebSocketServer {
         server = new Server(port);
     }
 
-    private final Map<String, Class<? extends Extension>> mExtensions = new HashMap<>();
+    public enum Extension {
+        DEFLATE("permessage-deflate", PerMessageDeflateExtension.class);
 
-    public void registerExtension(String name, Class<? extends Extension> clazz) {
-        mExtensions.put(name, clazz);
+        String name;
+        Class<? extends org.eclipse.jetty.websocket.api.extensions.Extension> clazz;
+
+        Extension(String name, Class<? extends org.eclipse.jetty.websocket.api.extensions.Extension> clazz) {
+            this.name = name;
+            this.clazz = clazz;
+        }
+    }
+
+    private final List<Extension> mExtensions = new ArrayList<>();
+
+    public void registerExtension(Extension extension) {
+        mExtensions.add(extension);
     }
 
     private final List<String> mProtocols = new ArrayList<>();
@@ -65,8 +75,8 @@ public class TestWebSocketServer {
                         }
                     }
                 });
-                for (Map.Entry<String, Class<? extends Extension>> entry : mExtensions.entrySet()) {
-                    factory.getExtensionFactory().register(entry.getKey(), entry.getValue());
+                for (Extension extension : mExtensions) {
+                    factory.getExtensionFactory().register(extension.name, extension.clazz);
                 }
             }
         };

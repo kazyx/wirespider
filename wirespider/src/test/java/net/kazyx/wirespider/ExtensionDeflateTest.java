@@ -3,7 +3,6 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
-import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -130,7 +129,7 @@ public class ExtensionDeflateTest {
         public static void setupClass() throws Exception {
             RandomSource.seed(0x12345678);
             Log.logLevel(Log.Level.VERBOSE);
-            server.registerExtension("permessage-deflate", PerMessageDeflateExtension.class);
+            server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();
         }
 
