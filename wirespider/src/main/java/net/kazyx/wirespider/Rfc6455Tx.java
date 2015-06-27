@@ -149,7 +149,7 @@ class Rfc6455Tx implements FrameTx {
 
         ByteArrayOutputStream mStream = new ByteArrayOutputStream();
         try {
-            mStream.write(header);
+            mStream.write(header, 0, header.length);
 
             if (mIsClient) {
                 int mask = RandomSource.random().nextInt();
@@ -159,16 +159,14 @@ class Rfc6455Tx implements FrameTx {
                         (byte) (mask >>> 16),
                         (byte) (mask >>> 24)
                 };
-                mStream.write(maskingKey);
-                mStream.write(BitMask.maskAll(payload, maskingKey));
+                mStream.write(maskingKey, 0, maskingKey.length);
+                byte[] masked = BitMask.maskAll(payload, maskingKey);
+                mStream.write(masked, 0, masked.length);
             } else {
-                mStream.write(payload);
+                mStream.write(payload, 0, payload.length);
             }
 
             mWriter.writeAsync(mStream.toByteArray());
-        } catch (IOException e) {
-            // ByteArrayOutputStream never throws IOException
-            throw new IllegalStateException(e);
         } finally {
             IOUtil.close(mStream);
         }

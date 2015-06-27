@@ -158,7 +158,9 @@ class Rfc6455Handshake implements Handshake {
         }
 
         if (isHeaderEnd) {
-            parseHeader(mBuffer.toByteArray());
+            byte[] header = mBuffer.toByteArray();
+            mBuffer.reset();
+            parseHeader(header);
             return data;
         } else {
             Log.d(TAG, "Header unsatisfied");

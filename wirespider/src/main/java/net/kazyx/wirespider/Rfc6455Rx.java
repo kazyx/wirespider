@@ -198,7 +198,7 @@ class Rfc6455Rx implements FrameRx {
                 if (mContinuation == ContinuationMode.UNSET) {
                     throw new ProtocolViolationException("Sudden continuation opcode");
                 }
-                mContinuationBuffer.write(payload);
+                mContinuationBuffer.write(payload, 0, payload.length);
                 if (isFinal) {
                     byte[] binary = mContinuationBuffer.toByteArray();
                     if (isCompressed) {
@@ -223,7 +223,7 @@ class Rfc6455Rx implements FrameRx {
                     isCompressed = false;
                     mListener.onTextMessage(text);
                 } else {
-                    mContinuationBuffer.write(payload);
+                    mContinuationBuffer.write(payload, 0, payload.length);
                     mContinuation = ContinuationMode.TEXT;
                 }
                 break;
@@ -235,7 +235,7 @@ class Rfc6455Rx implements FrameRx {
                     isCompressed = false;
                     mListener.onBinaryMessage(payload);
                 } else {
-                    mContinuationBuffer.write(payload);
+                    mContinuationBuffer.write(payload, 0, payload.length);
                     mContinuation = ContinuationMode.BINARY;
                 }
                 break;
