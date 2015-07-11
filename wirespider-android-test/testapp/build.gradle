@@ -40,8 +40,7 @@ android {
 
     sourceSets {
         androidTest {
-            java.srcDirs = ['src/androidTest/java', '../../wirespider/src/test/java']
-            // setRoot('src/androidTest/java')
+            java.srcDirs = ['../../wirespider/src/test/java']
         }
     }
 
