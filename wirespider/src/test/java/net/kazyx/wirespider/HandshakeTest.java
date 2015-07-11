@@ -16,12 +16,7 @@ public class HandshakeTest {
 
     @BeforeClass
     public static void setupClass() {
-        Base64.encoder(new Base64.Encoder() {
-            @Override
-            public String encode(byte[] source) {
-                return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
-            }
-        });
+        Base64.encoder(new Base64Encoder());
     }
 
     @Before

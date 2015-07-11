@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.2.0'
+        classpath 'com.android.tools.build:gradle:1.2.3'
     }
 }
 apply plugin: 'com.android.application'
@@ -38,22 +38,33 @@ android {
         }
     }
 
+    sourceSets {
+        androidTest {
+            java.srcDirs = ['src/androidTest/java', '../../wirespider/src/test/java']
+            // setRoot('src/androidTest/java')
+        }
+    }
+
     packagingOptions {
         exclude 'LICENSE.txt'
         exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
     }
 }
 
 dependencies {
     androidTestCompile project(':wirespider')
-    androidTestCompile 'com.android.support:support-annotations:22.0.0'
 
-    androidTestCompile ('com.android.support.test:rules:0.2') {
+    androidTestCompile ('com.android.support.test.espresso:espresso-core:2.2') {
         exclude group: 'org.hamcrest'
     }
-    androidTestCompile ('com.android.support.test.espresso:espresso-core:2.1') {
+    androidTestCompile ('com.android.support.test:runner:0.3') {
         exclude group: 'org.hamcrest'
     }
+
     androidTestCompile 'org.hamcrest:hamcrest-all:1.3'
+
     androidTestCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.10.v20150310'
+    androidTestCompile 'commons-codec:commons-codec:1.10'
+    androidTestCompile 'org.apache.commons:commons-lang3:3.4'
 }

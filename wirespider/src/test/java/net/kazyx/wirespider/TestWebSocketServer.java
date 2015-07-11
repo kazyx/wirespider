@@ -1,5 +1,6 @@
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ByteArrayUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -85,12 +86,7 @@ public class TestWebSocketServer {
         handler.addServlet(new ServletHolder(servlet), "/");
         server.setHandler(handler);
 
-        Base64.encoder(new Base64.Encoder() {
-            @Override
-            public String encode(byte[] source) {
-                return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
-            }
-        });
+        Base64.encoder(new Base64Encoder());
 
         mStartLatch = new CountDownLatch(1);
         mEndLatch = new CountDownLatch(1);
