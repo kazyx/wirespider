@@ -453,7 +453,7 @@ public class WebSocketClientTest {
                 ws.sendTextMessageAsync(MESSAGE);
             }
 
-            assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
+            assertThat(latch.await(40000, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();
