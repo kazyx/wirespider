@@ -63,6 +63,7 @@ public class ExtensionDeflateTest {
             byte[] decompressed = mCompression.decompress(compressed);
 
             System.out.println("Decompressed: " + decompressed.length);
+            assertThat(Arrays.equals(source, decompressed), is(true));
 
             compressed = mCompression.compress(source);
             System.out.println("Compressed: " + source.length + " to " + compressed.length);
@@ -70,6 +71,7 @@ public class ExtensionDeflateTest {
             decompressed = mCompression.decompress(compressed);
 
             System.out.println("Decompressed: " + decompressed.length);
+            assertThat(Arrays.equals(source, decompressed), is(true));
         }
     }
 
