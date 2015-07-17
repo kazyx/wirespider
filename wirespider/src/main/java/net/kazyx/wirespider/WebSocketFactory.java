@@ -7,18 +7,21 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
  * Factory of the WebSocket client connections.
  */
 public class WebSocketFactory {
-    private final AsyncSource mAsync;
     private final SelectorProvider mProvider;
+    private final SocketEngine mSocketEngine;
+    private final ExecutorService mExecutor = Executors.newCachedThreadPool();
 
     public WebSocketFactory() throws IOException {
         mProvider = SelectorProvider.provider();
-        mAsync = new AsyncSource(mProvider);
+        mSocketEngine = new SocketEngine(mProvider);
     }
 
     /**
@@ -26,7 +29,7 @@ public class WebSocketFactory {
      * Note that any connections created by this instance will be released.
      */
     public synchronized void destroy() {
-        mAsync.destroy();
+        mSocketEngine.destroy();
     }
 
     /**
@@ -39,13 +42,13 @@ public class WebSocketFactory {
     public synchronized Future<WebSocket> openAsync(final SessionRequest seed) {
         ArgumentCheck.rejectNullArgs(seed);
 
-        return mAsync.mConnectionThreadPool.submit(new Callable<WebSocket>() {
+        return mExecutor.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = new ClientWebSocket(seed, mAsync, ch);
+                ClientWebSocket ws = new ClientWebSocket(seed, mSocketEngine, ch);
                 try {
                     ws.connect();
                     return ws;

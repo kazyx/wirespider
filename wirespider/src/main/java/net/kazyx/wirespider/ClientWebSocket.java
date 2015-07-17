@@ -21,8 +21,8 @@ class ClientWebSocket extends WebSocket {
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(SessionRequest seed, AsyncSource async, SocketChannel ch) {
-        super(seed, async, ch);
+    ClientWebSocket(SessionRequest seed, SocketEngine engine, SocketChannel ch) {
+        super(seed, engine, ch);
         mSeed = seed;
         mSocketBinder = seed.socketBinder();
     }
@@ -75,7 +75,7 @@ class ClientWebSocket extends WebSocket {
 
         URI uri = remoteUri();
         socketChannel().connect(new InetSocketAddress(uri.getHost(), (uri.getPort() != -1) ? uri.getPort() : 80));
-        asyncSource().register(this, SelectionKey.OP_CONNECT);
+        socketEngine().register(this, SelectionKey.OP_CONNECT);
 
         mConnectLatch.await();
 

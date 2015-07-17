@@ -16,10 +16,10 @@ import java.util.List;
 public abstract class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
 
-    private final AsyncSource mAsync;
+    private final SocketEngine mEngine;
 
-    final AsyncSource asyncSource() {
-        return mAsync;
+    SocketEngine socketEngine() {
+        return mEngine;
     }
 
     private final URI mURI;
@@ -73,14 +73,14 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(SessionRequest seed, AsyncSource async, SocketChannel ch) {
+    WebSocket(SessionRequest seed, SocketEngine engine, SocketChannel ch) {
         mURI = seed.uri();
         mCallbackHandler = seed.handler();
         mMaxResponsePayloadSize = seed.maxResponsePayloadSizeInBytes();
-        mAsync = async;
+        mEngine = engine;
         mSocketChannel = ch;
 
-        mSocketChannelProxy = new SocketChannelProxy(mAsync, mChannelProxyListener);
+        mSocketChannelProxy = new SocketChannelProxy(engine, mChannelProxyListener);
 
         mFrameTx = newFrameTx();
         mFrameRx = newFrameRx(mRxListener);
@@ -186,7 +186,7 @@ public abstract class WebSocket {
     private void sendCloseFrame(CloseStatusCode code, String reason, final boolean waitForResponse) {
         mFrameTx.sendCloseAsync(code, reason);
 
-        mAsync.safeAsync(new Runnable() {
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 if (waitForResponse) {
@@ -198,7 +198,7 @@ public abstract class WebSocket {
                 }
                 closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
             }
-        });
+        }).start();
     }
 
     /**

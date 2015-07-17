@@ -12,45 +12,22 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 
-class AsyncSource {
-    private static final String TAG = AsyncSource.class.getSimpleName();
+class SocketEngine {
+    private static final String TAG = SocketEngine.class.getSimpleName();
 
     private static final int DIRECT_BUFFER_SIZE = 4096;
 
-    /**
-     * Release all of thread resources.
-     */
-    synchronized void destroy() {
-        Log.d(TAG, "destroy");
-        mConnectionThreadPool.shutdownNow();
-        mSelectorThread.interrupt();
-    }
+    private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 
-    AsyncSource(SelectorProvider provider) throws IOException {
+    SocketEngine(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
         mSelectorThread.start();
     }
 
-    final ExecutorService mConnectionThreadPool = Executors.newCachedThreadPool();
-
-    /**
-     * Asynchronously invoke task on cached thread pool if it is available. Otherwise do nothing.
-     *
-     * @param task Runnable to be invoked.
-     */
-    void safeAsync(Runnable task) {
-        try {
-            mConnectionThreadPool.submit(task);
-        } catch (RejectedExecutionException e) {
-            Log.d(TAG, "RejectedExecution");
-        }
+    void destroy() {
+        mSelectorThread.interrupt();
     }
-
-    private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 
     static class SelectorThread extends Thread {
         private final Selector mSelector;

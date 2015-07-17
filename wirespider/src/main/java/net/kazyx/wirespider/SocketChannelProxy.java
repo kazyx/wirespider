@@ -13,7 +13,7 @@ import java.util.LinkedList;
 class SocketChannelProxy implements SocketChannelWriter {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
-    private final AsyncSource mAsync;
+    private final SocketEngine mEngine;
     private final Listener mListener;
 
     private SelectionKey mKey;
@@ -22,8 +22,8 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
-    SocketChannelProxy(AsyncSource async, Listener listener) {
-        mAsync = async;
+    SocketChannelProxy(SocketEngine engine, Listener listener) {
+        mEngine = engine;
         this.mListener = listener;
     }
 
@@ -81,7 +81,7 @@ class SocketChannelProxy implements SocketChannelWriter {
 
 
         while (true) {
-            byte[] buff = mAsync.read(ch);
+            byte[] buff = mEngine.read(ch);
             if (buff == null) {
                 break;
             }

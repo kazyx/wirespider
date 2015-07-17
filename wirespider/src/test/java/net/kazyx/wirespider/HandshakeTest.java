@@ -21,7 +21,7 @@ public class HandshakeTest {
 
     @Before
     public void setup() throws IOException {
-        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new AsyncSource(SelectorProvider.provider()), new SilentListener()), true);
+        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), true);
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -234,7 +234,7 @@ public class HandshakeTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void upgradeRequestByServer() throws IOException {
-        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new AsyncSource(SelectorProvider.provider()), new SilentListener()), false);
+        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
         mHandshake.tryUpgrade(DUMMY_URI, null);
     }
 

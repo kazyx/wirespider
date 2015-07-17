@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -146,28 +145,6 @@ public class WebSocketUnusualCasesTest {
         @Test
         public void onProtocolViolation() {
             mListener.onProtocolViolation();
-        }
-    }
-
-    public static class UseDestroyedAsyncSource {
-        private static AsyncSource sAsync;
-
-        @BeforeClass
-        public static void setup() throws IOException {
-            sAsync = new AsyncSource(SelectorProvider.provider());
-            sAsync.destroy();
-        }
-
-        @Test
-        public void safeAsync() throws InterruptedException {
-            final CustomLatch latch = new CustomLatch(1);
-            sAsync.safeAsync(new Runnable() {
-                @Override
-                public void run() {
-                    latch.unlockByFailure();
-                }
-            });
-            assertThat(latch.await(200, TimeUnit.MILLISECONDS), is(false));
         }
     }
 }
