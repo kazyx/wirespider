@@ -22,7 +22,7 @@ def utf8 = 'UTF-8'
 sourceCompatibility = 7
 targetCompatibility = 7
 
-version = '1.0.0-SNAPSHOT'
+version = '1.0.0'
 
 dependencies {
     testCompile ('junit:junit:4.12') {
