@@ -12,21 +12,19 @@ import java.util.List;
 
 public final class SessionRequest {
 
-    private SessionRequest(URI uri, WebSocketHandler handler, int maxResponsePayloadSize, SocketBinder socketBinder
-            , List<HttpHeader> headers, List<ExtensionRequest> extensions, List<String> protocols
-            , HandshakeResponseHandler hsHandler) {
-        this.mUri = uri;
-        this.mHandler = handler;
-        this.mMaxResponsePayloadSize = maxResponsePayloadSize;
-        this.mSocketBinder = socketBinder;
-        if (headers != null) {
-            this.mHeaders = Collections.unmodifiableList(headers);
+    private SessionRequest(Builder builder) {
+        this.mUri = builder.uri;
+        this.mHandler = builder.handler;
+        this.mMaxResponsePayloadSize = builder.maxResponsePayloadSize;
+        this.mSocketBinder = builder.socketBinder;
+        if (builder.headers != null) {
+            this.mHeaders = Collections.unmodifiableList(builder.headers);
         }
-        if (extensions != null) {
-            this.mExtensions = Collections.unmodifiableList(extensions);
+        if (builder.extensions != null) {
+            this.mExtensions = Collections.unmodifiableList(builder.extensions);
         }
-        mProtocols = protocols;
-        mHsHandler = hsHandler;
+        mProtocols = builder.protocols;
+        mHsHandler = builder.hsHandler;
     }
 
     private URI mUri;
@@ -171,7 +169,7 @@ public final class SessionRequest {
          * @return Newly created {@link SessionRequest}
          */
         public SessionRequest build() {
-            return new SessionRequest(uri, handler, maxResponsePayloadSize, socketBinder, headers, extensions, protocols, hsHandler);
+            return new SessionRequest(this);
         }
     }
 }
