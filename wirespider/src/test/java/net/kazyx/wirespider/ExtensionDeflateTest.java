@@ -1,6 +1,7 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.extension.compression.CompressionStrategy;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
 import org.junit.AfterClass;
@@ -31,7 +32,7 @@ public class ExtensionDeflateTest {
 
         @Before
         public void setup() {
-            mCompression = new PerMessageDeflate();
+            mCompression = new PerMessageDeflate(null);
         }
 
         @Test
@@ -360,6 +361,46 @@ public class ExtensionDeflateTest {
                 }
                 factory.destroy();
             }
+        }
+    }
+
+    public static class CompressionStrategyTest {
+        private static final int SIZE_BASE = 200;
+
+        private PerMessageDeflate mCompression;
+
+        @Before
+        public void setup() {
+            mCompression = new PerMessageDeflate(new CompressionStrategy() {
+                @Override
+                public int minSizeInBytes() {
+                    return SIZE_BASE;
+                }
+            });
+        }
+
+        @Test
+        public void dataSizeSmallerThanCompressionMinRange() throws IOException {
+            final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE - 1);
+            final byte[] copy = Arrays.copyOf(original, original.length);
+            byte[] compressed = mCompression.compress(original);
+            assertThat(Arrays.equals(copy, compressed), is(true)); // If data size is smaller than min, it should not be compressed.
+        }
+
+        @Test
+        public void dataSizeEqualsCompressionMinRange() throws IOException {
+            final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE);
+            final byte[] copy = Arrays.copyOf(original, original.length);
+            byte[] compressed = mCompression.compress(original);
+            assertThat(Arrays.equals(copy, compressed), is(false));
+        }
+
+        @Test
+        public void dataSizeLargerThanCompressionMinRange() throws IOException {
+            final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE + 1);
+            final byte[] copy = Arrays.copyOf(original, original.length);
+            byte[] compressed = mCompression.compress(original);
+            assertThat(Arrays.equals(copy, compressed), is(false));
         }
     }
 }

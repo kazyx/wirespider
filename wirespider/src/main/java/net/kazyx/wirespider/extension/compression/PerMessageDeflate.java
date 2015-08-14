@@ -11,6 +11,9 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
 
+/**
+ * permessage-deflate extension
+ */
 public class PerMessageDeflate extends PerMessageCompression {
     /**
      * 8. permessage-deflate extension
@@ -36,6 +39,25 @@ public class PerMessageDeflate extends PerMessageCompression {
      */
     public static final String CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
 
+    private static final CompressionStrategy ALL_COMPRESSION_STRATEGY = new CompressionStrategy() {
+        @Override
+        public int minSizeInBytes() {
+            return 0; // Try compression for any data
+        }
+    };
+
+    private final CompressionStrategy mStrategy;
+
+    /**
+     * @param strategy Strategy to be applied for this instance. If {@code null} is set, {@link #ALL_COMPRESSION_STRATEGY} is applied by default.
+     */
+    public PerMessageDeflate(CompressionStrategy strategy) {
+        if (strategy == null) {
+            strategy = ALL_COMPRESSION_STRATEGY;
+        }
+        mStrategy = strategy;
+    }
+
     @Override
     public String name() {
         return NAME;
@@ -53,6 +75,10 @@ public class PerMessageDeflate extends PerMessageCompression {
 
     @Override
     public byte[] compress(byte[] source) throws IOException {
+        if (source.length < mStrategy.minSizeInBytes()) {
+            return source;
+        }
+
         synchronized (mCompressor) {
             mCompressor.reset();
             mCompressionBuffer.reset();

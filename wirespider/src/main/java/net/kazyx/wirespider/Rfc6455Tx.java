@@ -41,7 +41,7 @@ class Rfc6455Tx implements FrameTx {
                     sendFrameAsync(OpCode.TEXT, compressed, true);
                     return;
                 } else {
-                    Log.v(TAG, "Deflate unfriendly data", compressed.length);
+                    Log.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
                 }
             } catch (IOException e) {
                 Log.v(TAG, "Compression failed");
@@ -61,7 +61,7 @@ class Rfc6455Tx implements FrameTx {
                     sendFrameAsync(OpCode.BINARY, compressed, true);
                     return;
                 } else {
-                    Log.v(TAG, "Deflate unfriendly data", compressed.length);
+                    Log.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
                 }
             } catch (IOException e) {
                 Log.v(TAG, "Compression failed");
