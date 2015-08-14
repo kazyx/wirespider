@@ -6,11 +6,27 @@ WireSpider
 WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
 - High performance NIO based implementation.
-- Android compatible.
-    - Minimum API level 9 or later
-    - Compilation target 19 or later
+- Incredibly compact binary size.
+- Android compatible. (Minimum API level 9 and Compilation target 19)
 
-## How to build
+## Download
+
+Download [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider) from Bintray,
+or add the following dependencies in your `build.gradle`.
+
+```groovy
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+dependencies {
+    compile 'net.kazyx:wirespider:1.0.1'
+}
+```
+
+## How to build from source code
 ```bash
 cd <root>/wirespider
 ./gradlew assemble
@@ -32,7 +48,6 @@ Base64.encoder(new Base64.Encoder() {
 
 ### Open WebSocket connection
 ```java
-
 WebSocketFactory factory = new WebSocketFactory();
 // It is recommended to use this WebSocketFactory while your process is alive.
 
