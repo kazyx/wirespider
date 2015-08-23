@@ -17,16 +17,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         debug {
-            minifyEnabled false
             applicationIdSuffix '.debug'
             versionNameSuffix '.debug'
         }
     }
+
     lintOptions {
-        disable 'InvalidPackage'
+        disable 'InvalidPackage' // butter knife
     }
     packagingOptions {
-        exclude 'META-INF/services/javax.annotation.processing.Processor'
+        exclude 'META-INF/services/javax.annotation.processing.Processor' // butter knife
+        exclude 'about.html' // jetty
     }
 }
 

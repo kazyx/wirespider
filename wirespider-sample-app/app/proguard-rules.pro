@@ -29,3 +29,9 @@
     @butterknife.* <methods>;
 }
 ## end of Butter Knife
+
+## beginning of Jetty for sample local server
+-keep class org.eclipse.jetty.** { *; }
+-dontwarn org.eclipse.jetty.**
+-keep class net.kazyx.wirespider.sampleapp.echoserver.** { *; }
+## end of Jetty
