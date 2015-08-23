@@ -97,4 +97,4 @@ No additional prevension required.
 
 ## License
 
-This software is published under the [MIT License](LICENSE).
+This software is released under the [MIT License](LICENSE).
