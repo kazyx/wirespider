@@ -5,9 +5,9 @@ WireSpider
 
 WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
-- High performance NIO based implementation.
-- Incredibly compact binary size.
-- Android compatible. (Minimum API level 9 and Compilation target 19)
+- High performance `java.nio` based implementation.
+- Incredibly compact binary size.(Only 70KB!!)
+- Android compatible. (Note that Java 7 language features must be enabled.)
 
 ## Download
 
@@ -26,7 +26,7 @@ dependencies {
 }
 ```
 
-## How to build from source code
+## Build from source code
 ```bash
 cd <root>/wirespider
 ./gradlew assemble
@@ -64,8 +64,8 @@ SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
     }
 
     @Override
-    public void onClosed() {
-        // WebSocket connection is closed.
+    public void onClosed(int code, String reason) {
+        // Connection is closed.
     }
 }).build();
 
@@ -80,14 +80,21 @@ websocket.sendTextMessageAsync("Hello");
 websocket.sendBinaryMessageAsync(new byte[]{0x01, 0x02, 0x03, 0x04});
 ```
 
-### Gracefully close connection
+### Close connection
 ```java
 websocket.closeAsync();
-// WebSocketConnection.onClosed() will be called soon.
+// WebSocketHandler.onClosed() will be called soon.
 ```
 
 ### Release resources
 ```java
 factory.destroy();
-// Any async operations will do nothing since now.
 ```
+
+## ProGuard
+
+No additional prevension required.
+
+## License
+
+This software is published under the [MIT License](LICENSE).
