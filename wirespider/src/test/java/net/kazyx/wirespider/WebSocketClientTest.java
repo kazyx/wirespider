@@ -47,7 +47,7 @@ public class WebSocketClientTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        RandomSource.seed(0x12345678);
+        RandomSource.setSeed(0x12345678);
         server.boot();
     }
 
@@ -501,7 +501,7 @@ public class WebSocketClientTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void payloadLimitNonPositive() throws IOException {
-        new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).maxResponsePayloadSizeInBytes(0);
+        new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).setMaxResponsePayloadSizeInBytes(0);
     }
 
     @Test
@@ -602,7 +602,7 @@ public class WebSocketClientTest {
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
-                .socketBinder(new SocketBinder() {
+                .setSocketBinder(new SocketBinder() {
                     @Override
                     public void bind(Socket socket) throws IOException {
                         latch.countDown();
@@ -700,7 +700,7 @@ public class WebSocketClientTest {
     @Test
     public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Collections.singletonList(reject)).build();
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Collections.singletonList(reject)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -740,7 +740,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(new ArrayList<HttpHeader>()).build();
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(new ArrayList<HttpHeader>()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -762,7 +762,7 @@ public class WebSocketClientTest {
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Arrays.asList(headers)).build();
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -787,7 +787,7 @@ public class WebSocketClientTest {
         sCookieCbLatch = new CustomLatch(1);
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).headers(Arrays.asList(headers)).build();
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;

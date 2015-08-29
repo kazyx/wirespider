@@ -47,7 +47,7 @@ public abstract class WebSocket {
 
     /**
      * @return Maximum size of response payload to accept.
-     * @see SessionRequest.Builder#maxResponsePayloadSizeInBytes(int)
+     * @see SessionRequest.Builder#setMaxResponsePayloadSizeInBytes(int)
      */
     public int maxResponsePayloadSizeInBytes() {
         return mMaxResponsePayloadSize;
@@ -278,7 +278,7 @@ public abstract class WebSocket {
 
                     onHandshakeCompleted();
 
-                    if (remaining.size() != 0) {
+                    if (!remaining.isEmpty()) {
                         mFrameRx.onDataReceived(remaining);
                     }
                 } catch (BufferUnsatisfiedException e) {

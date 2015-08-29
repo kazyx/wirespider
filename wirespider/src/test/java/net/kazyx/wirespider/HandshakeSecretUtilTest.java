@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.is;
 public class HandshakeSecretUtilTest {
     @BeforeClass
     public static void setupClass() throws Exception {
-        Base64.encoder(new Base64Encoder());
+        Base64.setEncoder(new Base64Encoder());
     }
 
     @Test

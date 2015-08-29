@@ -43,7 +43,7 @@ public class WebSocketUnusualCasesTest {
 
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.seed(0x12345678);
+            RandomSource.setSeed(0x12345678);
             WebSocketServlet servlet = new WebSocketServlet() {
                 @Override
                 public void configure(WebSocketServletFactory factory) {
@@ -65,7 +65,7 @@ public class WebSocketUnusualCasesTest {
             handler.addServlet(new ServletHolder(servlet), "/");
             server.setHandler(handler);
 
-            Base64.encoder(new Base64Encoder());
+            Base64.setEncoder(new Base64Encoder());
 
             mStartLatch = new CountDownLatch(1);
             mEndLatch = new CountDownLatch(1);

@@ -21,6 +21,9 @@ import java.util.LinkedList;
 class SocketChannelProxy implements SocketChannelWriter {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
 
+    private static final int WRITE_BUFFER_SIZE = 1024;
+    private final ByteBuffer mWriteBuffer = ByteBuffer.allocateDirect(WRITE_BUFFER_SIZE);
+
     private final SocketEngine mEngine;
     private final Listener mListener;
 
@@ -28,7 +31,7 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     private boolean mIsClosed = false;
 
-    private final LinkedList<ByteBuffer> mWriteQueue = new LinkedList<>();
+    private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
 
     SocketChannelProxy(SocketEngine engine, Listener listener) {
         mEngine = engine;
@@ -118,7 +121,7 @@ class SocketChannelProxy implements SocketChannelWriter {
                 return;
             }
             try {
-                mWriteQueue.addLast(ByteBuffer.wrap(data));
+                mWriteQueue.addLast(data);
                 if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
                     mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                     if (!calledOnSelectorThread) {
@@ -142,28 +145,56 @@ class SocketChannelProxy implements SocketChannelWriter {
         }
     }
 
-    private void onWriteReady() throws IOException {
-        // Log.d(TAG, "onWriteReady");
-        ByteBuffer data;
-        synchronized (mWriteQueue) {
-            data = mWriteQueue.removeFirst();
-        }
-        ((SocketChannel) mKey.channel()).write(data);
-        // Log.d(TAG, "Expected: " + data.length + ", Written: " + written);
+    private int mOffset = 0;
+    private byte[] mRemaining = null;
 
-        if (data.hasRemaining()) {
-            mWriteQueue.addFirst(data);
+    private void onWriteReady() throws IOException {
+        byte[] data;
+        if (mRemaining != null) {
+            data = mRemaining;
+            mRemaining = null;
+        } else {
+            synchronized (mWriteQueue) {
+                data = mWriteQueue.pollFirst();
+            }
         }
+
+        if (data != null) {
+            int written = writeBuffer(data, mOffset);
+            if (mOffset + written == data.length) {
+                mRemaining = null;
+                mOffset = 0;
+            } else {
+                mRemaining = data;
+                mOffset = mOffset + written;
+            }
+        }
+
+        boolean completed = flushBuffer();
 
         synchronized (mWriteQueue) {
             try {
-                if (mWriteQueue.size() == 0) {
+                if (completed && mRemaining == null && mWriteQueue.isEmpty()) {
                     mKey.interestOps(SelectionKey.OP_READ);
                 }
             } catch (CancelledKeyException e) {
                 onClosed();
             }
         }
+    }
+
+    private boolean flushBuffer() throws IOException {
+        mWriteBuffer.flip();
+        ((SocketChannel) mKey.channel()).write(mWriteBuffer);
+        boolean completed = !mWriteBuffer.hasRemaining();
+        mWriteBuffer.compact();
+        return completed;
+    }
+
+    private int writeBuffer(byte[] data, int offset) throws IOException {
+        int written = Math.min(data.length - offset, mWriteBuffer.capacity() - mWriteBuffer.position());
+        mWriteBuffer.put(data, offset, written);
+        return written;
     }
 
     interface Listener {

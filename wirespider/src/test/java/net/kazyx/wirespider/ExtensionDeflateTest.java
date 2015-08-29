@@ -139,7 +139,7 @@ public class ExtensionDeflateTest {
 
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.seed(0x12345678);
+            RandomSource.setSeed(0x12345678);
             Log.logLevel(Log.Level.VERBOSE);
             server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();
@@ -183,8 +183,8 @@ public class ExtensionDeflateTest {
                         latch.unlockByFailure();
                     }
                 }
-            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
+            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
@@ -238,8 +238,8 @@ public class ExtensionDeflateTest {
                         latch.unlockByFailure();
                     }
                 }
-            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
+            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
@@ -294,8 +294,8 @@ public class ExtensionDeflateTest {
                         latch.unlockByFailure();
                     }
                 }
-            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
+            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
@@ -350,8 +350,8 @@ public class ExtensionDeflateTest {
                         latch.unlockByFailure();
                     }
                 }
-            }).extensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .maxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
+            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();

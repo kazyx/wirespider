@@ -98,7 +98,6 @@ public final class SessionRequest {
             this.handler = handler;
         }
 
-
         private int maxResponsePayloadSize = 65536;
 
         /**
@@ -107,7 +106,7 @@ public final class SessionRequest {
          * @param size Maximum size in bytes.
          * @return This builder.
          */
-        public Builder maxResponsePayloadSizeInBytes(int size) {
+        public Builder setMaxResponsePayloadSizeInBytes(int size) {
             if (size < 1) {
                 throw new IllegalArgumentException("Payload size must be positive value");
             }
@@ -123,7 +122,7 @@ public final class SessionRequest {
          * @param binder SocketBinder.
          * @return This builder.
          */
-        public Builder socketBinder(SocketBinder binder) {
+        public Builder setSocketBinder(SocketBinder binder) {
             socketBinder = binder;
             return this;
         }
@@ -134,7 +133,7 @@ public final class SessionRequest {
          * @param cookies Additional HTTP header to be inserted to opening request.
          * @return This builder.
          */
-        public Builder headers(List<HttpHeader> cookies) {
+        public Builder setHeaders(List<HttpHeader> cookies) {
             this.headers = cookies;
             return this;
         }
@@ -145,7 +144,7 @@ public final class SessionRequest {
          * @param extensions WebSocket extension request.
          * @return This builder.
          */
-        public Builder extensions(List<ExtensionRequest> extensions) {
+        public Builder setExtensions(List<ExtensionRequest> extensions) {
             this.extensions = extensions;
             return this;
         }
@@ -156,7 +155,7 @@ public final class SessionRequest {
          * @param protocols List of sub-protocol candidates.
          * @return This builder.
          */
-        public Builder protocols(List<String> protocols) {
+        public Builder setProtocols(List<String> protocols) {
             this.protocols = protocols;
             return this;
         }
@@ -167,7 +166,7 @@ public final class SessionRequest {
          * @param handler Handler to check handshake response
          * @return This builder.
          */
-        public Builder handshakeHandler(HandshakeResponseHandler handler) {
+        public Builder setHandshakeHandler(HandshakeResponseHandler handler) {
             this.hsHandler = handler;
             return this;
         }

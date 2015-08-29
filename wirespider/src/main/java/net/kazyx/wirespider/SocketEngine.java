@@ -25,9 +25,9 @@ import java.util.List;
 class SocketEngine {
     private static final String TAG = SocketEngine.class.getSimpleName();
 
-    private static final int DIRECT_BUFFER_SIZE = 4096;
+    private static final int DIRECT_BUFFER_SIZE = 1024 * 4;
 
-    private final ByteBuffer mByteBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
+    private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 
     SocketEngine(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
@@ -38,11 +38,11 @@ class SocketEngine {
         mSelectorThread.interrupt();
     }
 
-    static class SelectorThread extends Thread {
+    private static class SelectorThread extends Thread {
         private final Selector mSelector;
 
         SelectorThread(Selector selector) {
-            super("wirespider-selector");
+            super("ws-selector");
             mSelector = selector;
         }
 
@@ -129,19 +129,19 @@ class SocketEngine {
 
     byte[] read(SocketChannel ch) throws IOException {
         try {
-            int length = ch.read(mByteBuffer);
+            int length = ch.read(mReadBuffer);
             if (length == -1) {
                 throw new IOException("EOF");
             } else if (length == 0) {
                 return null;
             } else {
-                mByteBuffer.flip();
+                mReadBuffer.flip();
                 byte[] ret = new byte[length];
-                mByteBuffer.get(ret);
+                mReadBuffer.get(ret);
                 return ret;
             }
         } finally {
-            mByteBuffer.clear();
+            mReadBuffer.clear();
         }
     }
 }

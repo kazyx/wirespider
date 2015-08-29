@@ -25,11 +25,7 @@ public class HttpHeader {
     public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
     public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
 
-    final String key;
-
-    public String key() {
-        return key;
-    }
+    private final String key;
 
     private final List<String> values = new ArrayList<>();
 

@@ -41,7 +41,7 @@ class WebSocketClientTestUtil {
                 System.out.println("onBinaryMessage" + message.length);
                 messageLatch.countDown();
             }
-        }).maxResponsePayloadSizeInBytes(size).build();
+        }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -82,7 +82,7 @@ class WebSocketClientTestUtil {
                     latch.unlockByFailure();
                 }
             }
-        }).maxResponsePayloadSizeInBytes(size).build();
+        }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -117,7 +117,7 @@ class WebSocketClientTestUtil {
                     latch.unlockByFailure();
                 }
             }
-        }).maxResponsePayloadSizeInBytes(size).build();
+        }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;

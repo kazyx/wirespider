@@ -25,7 +25,7 @@ public class HandshakeTest {
 
     @BeforeClass
     public static void setupClass() {
-        Base64.encoder(new Base64Encoder());
+        Base64.setEncoder(new Base64Encoder());
     }
 
     @Before

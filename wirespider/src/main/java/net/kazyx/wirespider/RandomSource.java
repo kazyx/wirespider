@@ -20,7 +20,7 @@ public class RandomSource {
      *
      * @param seed Initial seed.
      */
-    public static void seed(long seed) {
+    public static void setSeed(long seed) {
         sRandom.setSeed(seed);
     }
 

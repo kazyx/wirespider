@@ -35,7 +35,7 @@ public class SubProtocolTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        RandomSource.seed(0x12345678);
+        RandomSource.setSeed(0x12345678);
         Log.logLevel(Log.Level.VERBOSE);
         server.registerSubProtocol(SUBPROTOCOL);
         server.boot();
@@ -49,7 +49,7 @@ public class SubProtocolTest {
     @Test
     public void accepted() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
-                .protocols(Collections.singletonList(SUBPROTOCOL))
+                .setProtocols(Collections.singletonList(SUBPROTOCOL))
                 .build();
 
         WebSocketFactory factory = new WebSocketFactory();
@@ -70,7 +70,7 @@ public class SubProtocolTest {
     @Test(expected = IOException.class)
     public void rejected() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
-                .protocols(Collections.singletonList(INVALID_SUBPROTOCOL))
+                .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .build();
 
         WebSocketFactory factory = new WebSocketFactory();
@@ -93,7 +93,7 @@ public class SubProtocolTest {
     @Test
     public void multiple() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
-                .protocols(Arrays.asList(SUBPROTOCOL, INVALID_SUBPROTOCOL))
+                .setProtocols(Arrays.asList(SUBPROTOCOL, INVALID_SUBPROTOCOL))
                 .build();
 
         WebSocketFactory factory = new WebSocketFactory();
@@ -113,8 +113,8 @@ public class SubProtocolTest {
     @Test
     public void customHandlerAccept() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
-                .protocols(Collections.singletonList(INVALID_SUBPROTOCOL))
-                .handshakeHandler(new HandshakeResponseHandler() {
+                .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
+                .setHandshakeHandler(new HandshakeResponseHandler() {
                     @Override
                     public boolean onReceived(HandshakeResponse response) {
                         if (!INVALID_SUBPROTOCOL.equals(response.protocol())) {
@@ -143,8 +143,8 @@ public class SubProtocolTest {
     @Test(expected = IOException.class)
     public void customHandlerReject() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
-                .protocols(Collections.singletonList(SUBPROTOCOL))
-                .handshakeHandler(new HandshakeResponseHandler() {
+                .setProtocols(Collections.singletonList(SUBPROTOCOL))
+                .setHandshakeHandler(new HandshakeResponseHandler() {
                     @Override
                     public boolean onReceived(HandshakeResponse response) {
                         return false;
