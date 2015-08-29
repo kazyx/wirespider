@@ -87,7 +87,6 @@ class SocketChannelProxy implements SocketChannelWriter {
         SocketChannel ch = (SocketChannel) mKey.channel();
         LinkedList<byte[]> list = new LinkedList<>();
 
-
         while (true) {
             byte[] buff = mEngine.read(ch);
             if (buff == null) {
