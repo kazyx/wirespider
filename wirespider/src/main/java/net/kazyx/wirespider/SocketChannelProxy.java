@@ -16,7 +16,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.LinkedList;
 
 class SocketChannelProxy implements SocketChannelWriter {
@@ -29,7 +28,7 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     private boolean mIsClosed = false;
 
-    private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
+    private final LinkedList<ByteBuffer> mWriteQueue = new LinkedList<>();
 
     SocketChannelProxy(SocketEngine engine, Listener listener) {
         mEngine = engine;
@@ -120,7 +119,7 @@ class SocketChannelProxy implements SocketChannelWriter {
                 return;
             }
             try {
-                mWriteQueue.addLast(data);
+                mWriteQueue.addLast(ByteBuffer.wrap(data));
                 if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
                     mKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                     if (!calledOnSelectorThread) {
@@ -146,17 +145,15 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     private void onWriteReady() throws IOException {
         // Log.d(TAG, "onWriteReady");
-        byte[] data;
+        ByteBuffer data;
         synchronized (mWriteQueue) {
             data = mWriteQueue.removeFirst();
         }
-        ByteBuffer buff = ByteBuffer.wrap(data);
-        SocketChannel ch = (SocketChannel) mKey.channel();
-        int written = ch.write(buff);
+        ((SocketChannel) mKey.channel()).write(data);
         // Log.d(TAG, "Expected: " + data.length + ", Written: " + written);
 
-        if (written != data.length) {
-            mWriteQueue.addFirst(Arrays.copyOfRange(data, written, data.length));
+        if (data.hasRemaining()) {
+            mWriteQueue.addFirst(data);
         }
 
         synchronized (mWriteQueue) {
