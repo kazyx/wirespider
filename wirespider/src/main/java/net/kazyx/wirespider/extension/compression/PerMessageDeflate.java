@@ -79,7 +79,6 @@ public class PerMessageDeflate extends PerMessageCompression {
     }
 
     private final Deflater mCompressor = new Deflater(Deflater.BEST_COMPRESSION, true);
-    private final ByteArrayOutputStream mCompressionBuffer = new ByteArrayOutputStream();
     private static final int DEFLATE_BUFFER = 512;
 
     @Override
@@ -88,37 +87,38 @@ public class PerMessageDeflate extends PerMessageCompression {
             return source;
         }
 
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.length);
+
         synchronized (mCompressor) {
             mCompressor.reset();
-            mCompressionBuffer.reset();
 
-            DeflaterOutputStream dos = new DeflaterOutputStream(mCompressionBuffer, mCompressor, DEFLATE_BUFFER);
+            DeflaterOutputStream dos = new DeflaterOutputStream(buffer, mCompressor, DEFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(dos);
             os.write(source);
             os.flush();
             dos.finish();
 
-            return mCompressionBuffer.toByteArray();
+            return buffer.toByteArray();
         }
     }
 
     private final Inflater mDecompressor = new Inflater(true);
-    private final ByteArrayOutputStream mDecompressionBuffer = new ByteArrayOutputStream();
     private static final int INFLATE_BUFFER = 512;
 
     @Override
     public byte[] decompress(byte[] source) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.length);
+
         synchronized (mDecompressor) {
             mDecompressor.reset();
-            mDecompressionBuffer.reset();
 
-            InflaterOutputStream ios = new InflaterOutputStream(mDecompressionBuffer, mDecompressor, INFLATE_BUFFER);
+            InflaterOutputStream ios = new InflaterOutputStream(buffer, mDecompressor, INFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(ios);
             os.write(source, 0, source.length);
             os.flush();
             ios.finish();
 
-            return mDecompressionBuffer.toByteArray();
+            return buffer.toByteArray();
         }
     }
 }

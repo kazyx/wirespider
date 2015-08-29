@@ -20,6 +20,8 @@ import java.io.IOException;
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
 
+    private static final int MAX_CLIENT_HEADER_LENGTH = 14; // Max server header length is 10
+
     private PerMessageCompression mCompression;
     private final boolean mIsClient;
     private final SocketChannelWriter mWriter;
@@ -156,9 +158,9 @@ class Rfc6455Tx implements FrameTx {
             header[9] = (byte) (payloadLength);
         }
 
-        ByteArrayOutputStream mStream = new ByteArrayOutputStream();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(MAX_CLIENT_HEADER_LENGTH + payload.length);
         try {
-            mStream.write(header, 0, header.length);
+            buffer.write(header, 0, header.length);
 
             if (mIsClient) {
                 int mask = RandomSource.random().nextInt();
@@ -168,16 +170,16 @@ class Rfc6455Tx implements FrameTx {
                         (byte) (mask >>> 16),
                         (byte) (mask >>> 24)
                 };
-                mStream.write(maskingKey, 0, maskingKey.length);
+                buffer.write(maskingKey, 0, maskingKey.length);
                 byte[] masked = BitMask.maskAll(payload, maskingKey);
-                mStream.write(masked, 0, masked.length);
+                buffer.write(masked, 0, masked.length);
             } else {
-                mStream.write(payload, 0, payload.length);
+                buffer.write(payload, 0, payload.length);
             }
 
-            mWriter.writeAsync(mStream.toByteArray());
+            mWriter.writeAsync(buffer.toByteArray());
         } finally {
-            IOUtil.close(mStream);
+            IOUtil.close(buffer);
         }
     }
 }
