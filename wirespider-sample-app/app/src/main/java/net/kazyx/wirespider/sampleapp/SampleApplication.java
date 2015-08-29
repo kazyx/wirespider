@@ -38,6 +38,6 @@ public class SampleApplication extends Application {
                 Log.wtf(tag, th);
             }
         });
-        net.kazyx.wirespider.Log.logLevel(net.kazyx.wirespider.Log.Level.VERBOSE);
+        net.kazyx.wirespider.Log.logLevel(net.kazyx.wirespider.Log.Level.DEBUG);
     }
 }
