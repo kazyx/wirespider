@@ -1,6 +1,4 @@
 archivesBaseName = 'wirespider'
-group = 'net.kazyx'
-version = '1.1.0-SNAPSHOT'
 
 dependencies {
     testCompile ('junit:junit:4.12') {
@@ -10,21 +8,15 @@ dependencies {
     testCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.13.v20150730'
     testCompile 'commons-codec:commons-codec:1.10'
     testCompile 'org.apache.commons:commons-lang3:3.4'
-    testCompile project(':permessage-deflate')
+    testCompile project(':permessage-deflate') // For test coverage...
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'src/java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test/java'
-        }
-    }
+bintray {
+    pkg.name = 'net.kazyx:wirespider'
 }
+
+
+apply plugin: 'com.jfrog.bintray'
 
 bintray {
     user = project.hasProperty('bintray_user') ? bintray_user : ''

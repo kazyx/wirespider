@@ -16,6 +16,9 @@ subprojects {
     apply plugin: 'maven-publish'
     apply plugin: 'com.jfrog.bintray'
 
+    group = 'net.kazyx'
+    version = '1.1.0-SNAPSHOT'
+
     repositories {
         jcenter()
     }
@@ -73,4 +76,31 @@ subprojects {
             }
         }
     }
+
+    bintray {
+        user = project.hasProperty('bintray_user') ? bintray_user : ''
+        key = project.hasProperty('bintray_apikey') ? bintray_apikey : ''
+
+        pkg {
+            repo = 'maven'
+            // name is set by each subproject
+            licenses = ['MIT']
+            websiteUrl = 'https://github.com/kazyx/wirespider'
+            issueTrackerUrl = 'https://github.com/kazyx/wirespider/issues'
+            vcsUrl = 'https://github.com/kazyx/wirespider.git'
+            version {
+                name = project.version
+                released = new Date()
+                gpg {
+                    sign = true
+                    passphrase = project.hasProperty('bintray_gpg_password') ? bintray_gpg_password : ''
+                }
+            }
+        }
+        publications = ['mavenPublication']
+        configurations = ['archives']
+
+        dryRun = true
+    }
+
 }

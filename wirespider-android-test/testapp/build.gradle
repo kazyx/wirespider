@@ -28,7 +28,8 @@ android {
 
     sourceSets {
         androidTest {
-            java.srcDirs = ['../../wirespider/src/test/java']
+            java.srcDirs = ['../../wirespider/core/src/test/java'
+                            , '../../wirespider/permessage-deflate/src/test/java']
         }
     }
 
@@ -40,7 +41,8 @@ android {
 }
 
 dependencies {
-    androidTestCompile project(':wirespider')
+    androidTestCompile project(':core')
+    androidTestCompile project(':permessage-deflate')
 
     androidTestCompile ('com.android.support.test.espresso:espresso-core:2.2') {
         exclude group: 'org.hamcrest'

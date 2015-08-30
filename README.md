@@ -31,7 +31,7 @@ dependencies {
 cd <root>/wirespider
 ./gradlew assemble
 ```
-Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/build/libs`
+Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/core/build/libs`
 
 ## Usage
 

@@ -1,4 +1,7 @@
 include ':testapp'
 
-includeFlat 'wirespider'
-project(':wirespider').projectDir = new File(settingsDir, '../wirespider')
+includeFlat 'core'
+project(':core').projectDir = new File(settingsDir, '../wirespider/core')
+
+includeFlat 'permessage-deflate'
+project(':permessage-deflate').projectDir = new File(settingsDir, '../wirespider/permessage-deflate')
