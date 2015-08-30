@@ -8,38 +8,9 @@ dependencies {
     testCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.13.v20150730'
     testCompile 'commons-codec:commons-codec:1.10'
     testCompile 'org.apache.commons:commons-lang3:3.4'
-    testCompile project(':permessage-deflate') // For test coverage...
+    testCompile project(':wirespider-permessage-deflate') // For test coverage...
 }
 
 bintray {
     pkg.name = 'net.kazyx:wirespider'
-}
-
-
-apply plugin: 'com.jfrog.bintray'
-
-bintray {
-    user = project.hasProperty('bintray_user') ? bintray_user : ''
-    key = project.hasProperty('bintray_apikey') ? bintray_apikey : ''
-
-    pkg {
-        repo = 'maven'
-        name = 'net.kazyx:wirespider'
-        licenses = ['MIT']
-        websiteUrl = 'https://github.com/kazyx/wirespider'
-        issueTrackerUrl = 'https://github.com/kazyx/wirespider/issues'
-        vcsUrl = 'https://github.com/kazyx/wirespider.git'
-        version {
-            name = project.version
-            released = new Date()
-            gpg {
-                sign = true
-                passphrase = project.hasProperty('bintray_gpg_password') ? bintray_gpg_password : ''
-            }
-        }
-    }
-    publications = ['mavenPublication']
-    configurations = ['archives']
-
-    dryRun = true
 }
