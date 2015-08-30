@@ -77,7 +77,7 @@ public class DeflateRequest implements ExtensionRequest {
          * @param strategy Strategy to define which message to be compressed.
          * @return This builder.
          */
-        public Builder strategy(CompressionStrategy strategy) {
+        public Builder setStrategy(CompressionStrategy strategy) {
             mStrategy = strategy;
             return this;
         }

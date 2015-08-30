@@ -138,13 +138,13 @@ public final class SessionRequest {
             return this;
         }
 
-        private List<ExtensionRequest> extensions;
+        private List<? extends ExtensionRequest> extensions;
 
         /**
          * @param extensions WebSocket extension request.
          * @return This builder.
          */
-        public Builder setExtensions(List<ExtensionRequest> extensions) {
+        public Builder setExtensions(List<? extends ExtensionRequest> extensions) {
             this.extensions = extensions;
             return this;
         }
