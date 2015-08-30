@@ -55,24 +55,24 @@ class Rfc6455Handshake implements Handshake {
         @Override
         public boolean onReceived(HandshakeResponse response) {
             if (mProtocolList == null || mProtocolList.size() == 0) {
-                Log.d(TAG, "No protocol requested");
+                WsLog.d(TAG, "No protocol requested");
                 return true;
             }
 
             if (response.protocol() == null) {
-                Log.d(TAG, "No accepted protocol");
+                WsLog.d(TAG, "No accepted protocol");
                 return false;
             }
 
             for (String candidate : mProtocolList) {
                 if (candidate.equalsIgnoreCase(response.protocol())) {
-                    Log.d(TAG, "Protocol: " + response.protocol() + " has been accepted");
+                    WsLog.d(TAG, "Protocol: " + response.protocol() + " has been accepted");
                     // OK one of the protocol candidate accepted.
                     return true;
                 }
             }
 
-            Log.d(TAG, "Unknown protocol received: " + response.protocol());
+            WsLog.d(TAG, "Unknown protocol received: " + response.protocol());
             return false;
         }
     }
@@ -172,7 +172,7 @@ class Rfc6455Handshake implements Handshake {
             parseHeader(header);
             return data;
         } else {
-            Log.d(TAG, "Header unsatisfied");
+            WsLog.d(TAG, "Header unsatisfied");
             throw new BufferUnsatisfiedException();
         }
     }
@@ -197,7 +197,7 @@ class Rfc6455Handshake implements Handshake {
             }
 
             Map<String, HttpHeader> resHeaders = headerReader.headerFields();
-            Log.v(TAG, "ResponseHeaders", resHeaders.toString());
+            WsLog.v(TAG, "ResponseHeaders", resHeaders.toString());
 
             HttpHeader upgrade = resHeaders.get(HttpHeader.UPGRADE.toLowerCase(Locale.US));
             if (upgrade == null || !"websocket".equalsIgnoreCase(upgrade.values().get(0))) {
@@ -239,7 +239,7 @@ class Rfc6455Handshake implements Handshake {
         }
 
         if (protocolHeader.values().size() != 1) {
-            Log.d(TAG, "Multiple protocol header", protocolHeader.toHeaderLine());
+            WsLog.d(TAG, "Multiple protocol header", protocolHeader.toHeaderLine());
         }
 
         return protocolHeader.values().get(0);
@@ -247,11 +247,11 @@ class Rfc6455Handshake implements Handshake {
 
     private static List<Extension> parseExtensions(HttpHeader extensionHeader, List<Extension> candidates) throws HandshakeFailureException {
         if (extensionHeader == null) {
-            Log.v(TAG, "No extensions in response");
+            WsLog.v(TAG, "No extensions in response");
             return null;
         }
 
-        Log.v(TAG, "parseExtensions: " + extensionHeader.toHeaderLine());
+        WsLog.v(TAG, "parseExtensions: " + extensionHeader.toHeaderLine());
         List<Extension> acceptedExtensions = new ArrayList<>();
 
         for (String value : extensionHeader.values()) {
@@ -271,7 +271,7 @@ class Rfc6455Handshake implements Handshake {
                         itr.remove();
                         break;
                     } else {
-                        Log.d(TAG, "Unacceptable extension response", value);
+                        WsLog.d(TAG, "Unacceptable extension response", value);
                         throw new HandshakeFailureException("Unacceptable extension response");
                     }
                 }

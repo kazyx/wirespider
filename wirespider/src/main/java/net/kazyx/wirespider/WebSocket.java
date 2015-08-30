@@ -202,7 +202,7 @@ public abstract class WebSocket {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
-                        Log.e(TAG, "Close frame response waiter interrupted");
+                        WsLog.e(TAG, "Close frame response waiter interrupted");
                     }
                 }
                 closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
@@ -234,7 +234,7 @@ public abstract class WebSocket {
     private void invokeOnClosed(int code, String reason) {
         synchronized (mCloseCallbackLock) {
             if (isConnected()) {
-                Log.d(TAG, "Invoke onClosed", code);
+                WsLog.d(TAG, "Invoke onClosed", code);
                 mIsConnected = false;
                 mCallbackHandler.onClosed(code, reason);
             }
@@ -250,10 +250,10 @@ public abstract class WebSocket {
         @Override
         public void onClosed() {
             if (mIsHandshakeCompleted) {
-                Log.d(TAG, "Socket error detected");
+                WsLog.d(TAG, "Socket error detected");
                 closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
             } else {
-                Log.d(TAG, "Socket error detected while opening handshake");
+                WsLog.d(TAG, "Socket error detected while opening handshake");
                 onHandshakeFailed();
             }
         }
@@ -269,7 +269,7 @@ public abstract class WebSocket {
                     List<Extension> extensions = mHandshake.extensions();
 
                     for (Extension ext : extensions) {
-                        Log.d(TAG, "Extension accepted: " + ext.name());
+                        WsLog.d(TAG, "Extension accepted: " + ext.name());
                         if (ext instanceof PerMessageCompression) {
                             mFrameTx.compressMessagesWith((PerMessageCompression) ext);
                             mFrameRx.decompressMessagesWith((PerMessageCompression) ext);
@@ -284,7 +284,7 @@ public abstract class WebSocket {
                 } catch (BufferUnsatisfiedException e) {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
-                    Log.d(TAG, "HandshakeFailureException: " + e.getMessage());
+                    WsLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
                     onHandshakeFailed();
                 }
             } else {
@@ -299,7 +299,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            Log.d(TAG, "onPingFrame", message);
+            WsLog.d(TAG, "onPingFrame", message);
             mFrameTx.sendPongAsync(message);
         }
 
@@ -308,7 +308,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            Log.d(TAG, "onPongFrame", message);
+            WsLog.d(TAG, "onPongFrame", message);
             mCallbackHandler.onPong(message);
         }
 
@@ -317,7 +317,7 @@ public abstract class WebSocket {
             if (!isConnected()) {
                 return;
             }
-            Log.d(TAG, "onCloseFrame", code + " " + reason);
+            WsLog.d(TAG, "onCloseFrame", code + " " + reason);
             if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
                 sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response", false);
             }
@@ -343,14 +343,14 @@ public abstract class WebSocket {
 
         @Override
         public void onProtocolViolation() {
-            Log.d(TAG, "Protocol violation detected");
+            WsLog.d(TAG, "Protocol violation detected");
             // TODO send error code to remote?
             closeAndRaiseEvent(CloseStatusCode.PROTOCOL_ERROR, "Protocol violation detected");
         }
 
         @Override
         public void onPayloadOverflow() {
-            Log.d(TAG, "Response payload size overflow");
+            WsLog.d(TAG, "Response payload size overflow");
             // TODO send error code to remote?
             closeAndRaiseEvent(CloseStatusCode.MESSAGE_TOO_BIG, "Response payload size overflow");
         }

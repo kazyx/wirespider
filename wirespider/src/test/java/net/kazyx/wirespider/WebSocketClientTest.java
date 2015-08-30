@@ -64,7 +64,7 @@ public class WebSocketClientTest {
         sCloseFrameLatch = null;
         sCookieCbLatch = null;
         sHeaderCbLatch = null;
-        Log.logLevel(Log.Level.DEBUG);
+        WsLog.logLevel(WsLog.Level.DEBUG);
     }
 
     @After
@@ -405,7 +405,7 @@ public class WebSocketClientTest {
         final Set<WebSocket> set = new HashSet<>();
         int NUM_CONNECTIONS = 100;
 
-        Log.logLevel(Log.Level.ERROR);
+        WsLog.logLevel(WsLog.Level.ERROR);
 
         final CountDownLatch latch = new CountDownLatch(NUM_CONNECTIONS);
         try {

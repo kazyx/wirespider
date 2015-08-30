@@ -25,7 +25,7 @@ public class PrivateConstructors {
 
     @Test
     public void log() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(Log.class);
+        constructor(WsLog.class);
     }
 
     @Test

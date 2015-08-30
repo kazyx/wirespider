@@ -41,21 +41,21 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendTextAsync(String data) {
-        Log.v(TAG, "sendTextAsync", data.length());
+        WsLog.v(TAG, "sendTextAsync", data.length());
         byte[] barr = ByteArrayUtil.fromText(data);
-        Log.v(TAG, "sendTextAsync byte length", barr.length);
+        WsLog.v(TAG, "sendTextAsync byte length", barr.length);
         if (mCompression != null) {
             try {
                 byte[] compressed = mCompression.compress(barr);
                 if (compressed.length < barr.length) {
-                    Log.v(TAG, "Compressed to", compressed.length);
+                    WsLog.v(TAG, "Compressed to", compressed.length);
                     sendFrameAsync(OpCode.TEXT, compressed, true);
                     return;
                 } else {
-                    Log.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
+                    WsLog.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
                 }
             } catch (IOException e) {
-                Log.v(TAG, "Compression failed");
+                WsLog.v(TAG, "Compression failed");
             }
         }
         sendFrameAsync(OpCode.TEXT, barr, false);
@@ -63,19 +63,19 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendBinaryAsync(byte[] data) {
-        Log.v(TAG, "sendBinaryAsync", data.length);
+        WsLog.v(TAG, "sendBinaryAsync", data.length);
         if (mCompression != null) {
             try {
                 byte[] compressed = mCompression.compress(data);
                 if (compressed.length < data.length) {
-                    Log.v(TAG, "Compressed to", compressed.length);
+                    WsLog.v(TAG, "Compressed to", compressed.length);
                     sendFrameAsync(OpCode.BINARY, compressed, true);
                     return;
                 } else {
-                    Log.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
+                    WsLog.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
                 }
             } catch (IOException e) {
-                Log.v(TAG, "Compression failed");
+                WsLog.v(TAG, "Compression failed");
             }
         }
         sendFrameAsync(OpCode.BINARY, data, false);
@@ -83,19 +83,19 @@ class Rfc6455Tx implements FrameTx {
 
     @Override
     public void sendPingAsync(String message) {
-        Log.v(TAG, "sendPingAsync");
+        WsLog.v(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText(message));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
-        Log.v(TAG, "sendPongAsync", pingMessage);
+        WsLog.v(TAG, "sendPongAsync", pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
-        Log.v(TAG, "sendCloseAsync");
+        WsLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);

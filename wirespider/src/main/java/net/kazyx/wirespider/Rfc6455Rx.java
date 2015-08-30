@@ -64,7 +64,7 @@ class Rfc6455Rx implements FrameRx {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException e) {
-                Log.d(TAG, "Protocol violation", e.getMessage());
+                WsLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             }
         }
@@ -102,15 +102,15 @@ class Rfc6455Rx implements FrameRx {
                         break;
                 }
             } catch (BufferUnsatisfiedException e) {
-                Log.v(TAG, "SecondByte BufferUnsatisfied");
+                WsLog.v(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException e) {
-                Log.d(TAG, "Payload size overflow", e.getMessage());
+                WsLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             } catch (ProtocolViolationException e) {
-                Log.d(TAG, "Protocol violation", e.getMessage());
+                WsLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             }
         }
@@ -132,12 +132,12 @@ class Rfc6455Rx implements FrameRx {
                     mPayloadOperation.run();
                 }
             } catch (BufferUnsatisfiedException e) {
-                Log.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
+                WsLog.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (PayloadSizeOverflowException | IllegalArgumentException e) {
-                Log.d(TAG, "Payload size overflow", e.getMessage());
+                WsLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             }
         }
@@ -152,7 +152,7 @@ class Rfc6455Rx implements FrameRx {
                 mask = readBytes(4);
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
-                Log.v(TAG, "MaskKey BufferUnsatisfied");
+                WsLog.v(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
@@ -174,13 +174,13 @@ class Rfc6455Rx implements FrameRx {
             } catch (BufferUnsatisfiedException e) {
                 if (mSuspendedOperation != this) {
                     // Flush log only for the first time
-                    Log.v(TAG, "Payload BufferUnsatisfied");
+                    WsLog.v(TAG, "Payload BufferUnsatisfied");
                 }
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
             } catch (ProtocolViolationException | IllegalArgumentException e) {
-                Log.d(TAG, "Protocol violation", e.getMessage());
+                WsLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
             } catch (ZipException e) {
                 mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Invalid compressed data");
@@ -201,7 +201,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
-        Log.v(TAG, "handleFrame", opcode);
+        WsLog.v(TAG, "handleFrame", opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {

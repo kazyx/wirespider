@@ -14,8 +14,8 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class Log {
-    private Log() {
+public class WsLog {
+    private WsLog() {
     }
 
     public enum Level {

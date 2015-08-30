@@ -21,13 +21,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 @RunWith(Enclosed.class)
-public class LogTest {
-    private static final String TAG = LogTest.class.getSimpleName();
+public class WsLogTest {
+    private static final String TAG = WsLogTest.class.getSimpleName();
 
     public static class CustomWriterTest {
         @BeforeClass
         public static void setupClass() {
-            Log.writer(new Log.Writer() {
+            WsLog.writer(new WsLog.Writer() {
                 @Override
                 public void v(String tag, String message) {
                     if (sLatch != null) {
@@ -62,7 +62,7 @@ public class LogTest {
 
         @Test
         public void logLevelVerbose() throws InterruptedException {
-            Log.logLevel(Log.Level.VERBOSE);
+            WsLog.logLevel(WsLog.Level.VERBOSE);
             sLatch = new CountDownLatch(4);
 
             callAllLogLevelsOnNewThread();
@@ -72,7 +72,7 @@ public class LogTest {
 
         @Test
         public void logLevelDebug() throws InterruptedException {
-            Log.logLevel(Log.Level.DEBUG);
+            WsLog.logLevel(WsLog.Level.DEBUG);
             sLatch = new CountDownLatch(4);
 
             callAllLogLevelsOnNewThread();
@@ -83,7 +83,7 @@ public class LogTest {
 
         @Test
         public void logLevelError() throws InterruptedException {
-            Log.logLevel(Log.Level.ERROR);
+            WsLog.logLevel(WsLog.Level.ERROR);
             sLatch = new CountDownLatch(4);
 
             callAllLogLevelsOnNewThread();
@@ -94,7 +94,7 @@ public class LogTest {
 
         @Test
         public void logLevelSilent() throws InterruptedException {
-            Log.logLevel(Log.Level.SILENT);
+            WsLog.logLevel(WsLog.Level.SILENT);
             sLatch = new CountDownLatch(4);
 
             callAllLogLevelsOnNewThread();
@@ -105,55 +105,55 @@ public class LogTest {
 
         @Test(expected = NullPointerException.class)
         public void nullLogLevel() {
-            Log.logLevel(null);
+            WsLog.logLevel(null);
         }
 
         private void callAllLogLevelsOnNewThread() {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Log.v(TAG, "verbose");
-                    Log.d(TAG, "debug");
-                    Log.e(TAG, "error");
-                    Log.printStackTrace(TAG, new Exception("exception"));
+                    WsLog.v(TAG, "verbose");
+                    WsLog.d(TAG, "debug");
+                    WsLog.e(TAG, "error");
+                    WsLog.printStackTrace(TAG, new Exception("exception"));
                 }
             }).start();
         }
 
         @Test(expected = NullPointerException.class)
         public void nullWriter() {
-            Log.writer(null);
+            WsLog.writer(null);
         }
     }
 
     public static class DefaultWriterTest {
         @BeforeClass
         public static void setupClass() {
-            Log.writer(new Log.DefaultWriter());
+            WsLog.writer(new WsLog.DefaultWriter());
         }
 
         @Test
         public void invokeDefaultWriterMethodsVerbose() {
-            Log.logLevel(Log.Level.VERBOSE);
-            Log.v(TAG, "verbose", "detail");
-            Log.v(TAG, "verbose", 1);
-            Log.d(TAG, "debug", "detail");
-            Log.d(TAG, "debug", 1);
-            Log.e(TAG, "error", "detail");
-            Log.e(TAG, "error", 1);
-            Log.printStackTrace(TAG, new Exception());
+            WsLog.logLevel(WsLog.Level.VERBOSE);
+            WsLog.v(TAG, "verbose", "detail");
+            WsLog.v(TAG, "verbose", 1);
+            WsLog.d(TAG, "debug", "detail");
+            WsLog.d(TAG, "debug", 1);
+            WsLog.e(TAG, "error", "detail");
+            WsLog.e(TAG, "error", 1);
+            WsLog.printStackTrace(TAG, new Exception());
         }
 
         @Test
         public void invokeDefaultWriterMethodsSilent() {
-            Log.logLevel(Log.Level.SILENT);
-            Log.v(TAG, "verbose", "detail");
-            Log.v(TAG, "verbose", 1);
-            Log.d(TAG, "debug", "detail");
-            Log.d(TAG, "debug", 1);
-            Log.e(TAG, "error", "detail");
-            Log.e(TAG, "error", 1);
-            Log.printStackTrace(TAG, new Exception());
+            WsLog.logLevel(WsLog.Level.SILENT);
+            WsLog.v(TAG, "verbose", "detail");
+            WsLog.v(TAG, "verbose", 1);
+            WsLog.d(TAG, "debug", "detail");
+            WsLog.d(TAG, "debug", 1);
+            WsLog.e(TAG, "error", "detail");
+            WsLog.e(TAG, "error", 1);
+            WsLog.printStackTrace(TAG, new Exception());
         }
     }
 }

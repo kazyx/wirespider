@@ -140,7 +140,7 @@ public class ExtensionDeflateTest {
         @BeforeClass
         public static void setupClass() throws Exception {
             RandomSource.setSeed(0x12345678);
-            Log.logLevel(Log.Level.VERBOSE);
+            WsLog.logLevel(WsLog.Level.VERBOSE);
             server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();
         }

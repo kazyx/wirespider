@@ -42,7 +42,7 @@ class SocketChannelProxy implements SocketChannelWriter {
         mKey = key;
         try {
             if (!key.isValid()) {
-                Log.d(TAG, "Skip invalid key");
+                WsLog.d(TAG, "Skip invalid key");
                 return;
             }
             if (key.isConnectable()) {
@@ -60,12 +60,12 @@ class SocketChannelProxy implements SocketChannelWriter {
     }
 
     void onCancelled() {
-        Log.d(TAG, "onCancelled");
+        WsLog.d(TAG, "onCancelled");
         onClosed();
     }
 
     private void onClosed() {
-        Log.d(TAG, "onClosed");
+        WsLog.d(TAG, "onClosed");
         close();
         mListener.onClosed();
     }
@@ -81,7 +81,7 @@ class SocketChannelProxy implements SocketChannelWriter {
         } catch (CancelledKeyException e) {
             // Connected but SelectionKey is cancelled. Fall through to failure
         }
-        Log.d(TAG, "Failed to connect");
+        WsLog.d(TAG, "Failed to connect");
         onClosed();
     }
 
@@ -112,7 +112,7 @@ class SocketChannelProxy implements SocketChannelWriter {
     public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
         // Log.d(TAG, "writeAsync");
         if (mIsClosed) {
-            Log.d(TAG, "Quit writeAsync due to closed state");
+            WsLog.d(TAG, "Quit writeAsync due to closed state");
             return;
         }
         synchronized (mWriteQueue) {

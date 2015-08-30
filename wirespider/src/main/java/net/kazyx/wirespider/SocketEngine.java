@@ -63,7 +63,7 @@ class SocketEngine {
                         }
                     }
                 }
-                Log.d(TAG, "Select Loop finished");
+                WsLog.d(TAG, "Select Loop finished");
             } finally {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
@@ -93,7 +93,7 @@ class SocketEngine {
                 }
                 return true;
             } catch (IOException e) {
-                Log.printStackTrace(TAG, e);
+                WsLog.printStackTrace(TAG, e);
                 return false;
             }
         }
@@ -106,7 +106,7 @@ class SocketEngine {
                         try {
                             channel.register(mSelector, ops, handler);
                         } catch (ClosedChannelException e) {
-                            Log.printStackTrace(TAG, e);
+                            WsLog.printStackTrace(TAG, e);
                         }
                     }
                 });
