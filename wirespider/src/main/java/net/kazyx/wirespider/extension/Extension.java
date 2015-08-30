@@ -23,4 +23,9 @@ public interface Extension {
      * @return Accept the response or not.
      */
     boolean accept(String[] parameters);
+
+    /**
+     * @return Payload filter of this extension.
+     */
+    PayloadFilter filter();
 }

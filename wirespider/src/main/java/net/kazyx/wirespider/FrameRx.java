@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.extension.PayloadFilter;
 
 import java.util.LinkedList;
 
@@ -21,7 +21,7 @@ interface FrameRx {
      */
     void onDataReceived(LinkedList<byte[]> data);
 
-    void decompressMessagesWith(PerMessageCompression compression);
+    void setPayloadFilter(PayloadFilter filter);
 
     interface Listener {
         /**

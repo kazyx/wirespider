@@ -89,48 +89,48 @@ public class ExtensionDeflateTest {
 
         @Test(expected = IllegalArgumentException.class)
         public void maxClientWindowBitsLow() {
-            new DeflateRequest.Builder().maxClientWindowBits(7);
+            new DeflateRequest.Builder().setMaxClientWindowBits(7);
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void maxClientWindowBitsHigh() {
-            new DeflateRequest.Builder().maxClientWindowBits(16);
+            new DeflateRequest.Builder().setMaxClientWindowBits(16);
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void maxServerWindowBitsLow() {
-            new DeflateRequest.Builder().maxServerWindowBits(7);
+            new DeflateRequest.Builder().setMaxServerWindowBits(7);
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void maxServerWindowBitsHigh() {
-            new DeflateRequest.Builder().maxServerWindowBits(16);
+            new DeflateRequest.Builder().setMaxServerWindowBits(16);
         }
 
         @Test
         public void maxClientWindowBitsInRange() {
             new DeflateRequest.Builder()
-                    .maxClientWindowBits(8)
-                    .maxClientWindowBits(9)
-                    .maxClientWindowBits(10)
-                    .maxClientWindowBits(11)
-                    .maxClientWindowBits(12)
-                    .maxClientWindowBits(13)
-                    .maxClientWindowBits(14)
-                    .maxClientWindowBits(15);
+                    .setMaxClientWindowBits(8)
+                    .setMaxClientWindowBits(9)
+                    .setMaxClientWindowBits(10)
+                    .setMaxClientWindowBits(11)
+                    .setMaxClientWindowBits(12)
+                    .setMaxClientWindowBits(13)
+                    .setMaxClientWindowBits(14)
+                    .setMaxClientWindowBits(15);
         }
 
         @Test
         public void maxServerWindowBitsInRange() {
             new DeflateRequest.Builder()
-                    .maxServerWindowBits(8)
-                    .maxServerWindowBits(9)
-                    .maxServerWindowBits(10)
-                    .maxServerWindowBits(11)
-                    .maxServerWindowBits(12)
-                    .maxServerWindowBits(13)
-                    .maxServerWindowBits(14)
-                    .maxServerWindowBits(15);
+                    .setMaxServerWindowBits(8)
+                    .setMaxServerWindowBits(9)
+                    .setMaxServerWindowBits(10)
+                    .setMaxServerWindowBits(11)
+                    .setMaxServerWindowBits(12)
+                    .setMaxServerWindowBits(13)
+                    .setMaxServerWindowBits(14)
+                    .setMaxServerWindowBits(15);
         }
     }
 
@@ -165,8 +165,8 @@ public class ExtensionDeflateTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthFixedString(MESSAGE_SIZE);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .maxClientWindowBits(size)
-                    .maxServerWindowBits(size)
+                    .setMaxClientWindowBits(size)
+                    .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -220,8 +220,8 @@ public class ExtensionDeflateTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthRandomString(MESSAGE_SIZE);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .maxClientWindowBits(size)
-                    .maxServerWindowBits(size)
+                    .setMaxClientWindowBits(size)
+                    .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -276,8 +276,8 @@ public class ExtensionDeflateTest {
             final byte[] data = TestUtil.fixedLengthFixedByteArray(MESSAGE_SIZE);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .maxClientWindowBits(size)
-                    .maxServerWindowBits(size)
+                    .setMaxClientWindowBits(size)
+                    .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -332,8 +332,8 @@ public class ExtensionDeflateTest {
             final byte[] data = TestUtil.fixedLengthRandomByteArray(MESSAGE_SIZE);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .maxClientWindowBits(size)
-                    .maxServerWindowBits(size)
+                    .setMaxClientWindowBits(size)
+                    .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override

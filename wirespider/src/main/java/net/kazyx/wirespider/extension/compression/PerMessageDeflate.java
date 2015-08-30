@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider.extension.compression;
 
+import net.kazyx.wirespider.extension.PayloadFilter;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +59,8 @@ public class PerMessageDeflate extends PerMessageCompression {
 
     private final CompressionStrategy mStrategy;
 
+    private final DeflateFilter mFilter;
+
     /**
      * @param strategy Strategy to be applied for this instance. If {@code null} is set, {@link #ALL_COMPRESSION_STRATEGY} is applied by default.
      */
@@ -65,6 +69,7 @@ public class PerMessageDeflate extends PerMessageCompression {
             strategy = ALL_COMPRESSION_STRATEGY;
         }
         mStrategy = strategy;
+        mFilter = new DeflateFilter(this);
     }
 
     @Override
@@ -76,6 +81,11 @@ public class PerMessageDeflate extends PerMessageCompression {
     public boolean accept(String[] parameters) {
         List<String> list = Arrays.asList(parameters);
         return list.containsAll(Arrays.asList(CLIENT_NO_CONTEXT_TAKEOVER, SERVER_NO_CONTEXT_TAKEOVER));
+    }
+
+    @Override
+    public PayloadFilter filter() {
+        return mFilter;
     }
 
     private final Deflater mCompressor = new Deflater(Deflater.BEST_COMPRESSION, true);

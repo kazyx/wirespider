@@ -55,7 +55,7 @@ public class DeflateRequest implements ExtensionRequest {
 
         private int mMaxServerWindowBits = 8;
 
-        public Builder maxClientWindowBits(int bits) {
+        public Builder setMaxClientWindowBits(int bits) {
             if (bits < 8 || 15 < bits) {
                 throw new IllegalArgumentException("Windows bits must be between 8 to 15.");
             }
@@ -63,7 +63,7 @@ public class DeflateRequest implements ExtensionRequest {
             return this;
         }
 
-        public Builder maxServerWindowBits(int bits) {
+        public Builder setMaxServerWindowBits(int bits) {
             if (bits < 8 || 15 < bits) {
                 throw new IllegalArgumentException("Windows bits must be between 8 to 15.");
             }

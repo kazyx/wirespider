@@ -55,7 +55,6 @@ class Rfc6455Handshake implements Handshake {
         @Override
         public boolean onReceived(HandshakeResponse response) {
             if (mProtocolList == null || mProtocolList.size() == 0) {
-                WsLog.d(TAG, "No protocol requested");
                 return true;
             }
 

@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
 
@@ -25,7 +25,7 @@ class Rfc6455Rx implements FrameRx {
 
     private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
-    private PerMessageCompression mCompression;
+    private PayloadFilter mFilter;
     private final boolean mIsClient;
 
     Rfc6455Rx(FrameRx.Listener listener, int maxPayload, boolean isClient) {
@@ -35,24 +35,22 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void decompressMessagesWith(PerMessageCompression compression) {
-        mCompression = compression;
+    public void setPayloadFilter(PayloadFilter compression) {
+        mFilter = compression;
     }
 
     private boolean isFinal;
     private byte opcode;
-    private boolean isCompressed;
+    private byte first;
 
     private final Runnable mReadOpCodeOperation = new Runnable() {
         @Override
         public void run() {
             try {
-                byte first = readBytes(1)[0];
+                first = readBytes(1)[0];
                 isFinal = BitMask.isMatched(first, (byte) 0x80);
 
-                if (mContinuation == ContinuationMode.UNSET && mCompression != null) {
-                    isCompressed = BitMask.isMatched(first, PerMessageCompression.RESERVED_BIT_FLAGS);
-                } else if ((first & 0x70) != 0) {
+                if (mFilter == null && (first & 0x70) != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
                 }
                 opcode = (byte) (first & 0x0f);
@@ -201,7 +199,7 @@ class Rfc6455Rx implements FrameRx {
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
-        WsLog.v(TAG, "handleFrame", opcode);
+        // WsLog.v(TAG, "handleFrame", opcode);
         switch (opcode) {
             case OpCode.CONTINUATION:
                 if (mContinuation == ContinuationMode.UNSET) {
@@ -210,14 +208,16 @@ class Rfc6455Rx implements FrameRx {
                 mContinuationBuffer.write(payload, 0, payload.length);
                 if (isFinal) {
                     byte[] binary = mContinuationBuffer.toByteArray();
-                    if (isCompressed) {
-                        binary = mCompression.decompress(binary);
-                    }
                     mContinuationBuffer.reset();
-                    isCompressed = false;
                     if (mContinuation == ContinuationMode.BINARY) {
+                        if (mFilter != null) {
+                            binary = mFilter.onReceivingBinary(binary, first);
+                        }
                         mListener.onBinaryMessage(binary);
                     } else {
+                        if (mFilter != null) {
+                            binary = mFilter.onReceivingText(binary, first);
+                        }
                         mListener.onTextMessage(ByteArrayUtil.toText(binary));
                     }
                     mContinuation = ContinuationMode.UNSET;
@@ -225,11 +225,10 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.TEXT:
                 if (isFinal) {
-                    if (isCompressed) {
-                        payload = mCompression.decompress(payload);
+                    if (mFilter != null) {
+                        payload = mFilter.onReceivingText(payload, first);
                     }
                     String text = ByteArrayUtil.toText(payload);
-                    isCompressed = false;
                     mListener.onTextMessage(text);
                 } else {
                     mContinuationBuffer.write(payload, 0, payload.length);
@@ -238,10 +237,9 @@ class Rfc6455Rx implements FrameRx {
                 break;
             case OpCode.BINARY:
                 if (isFinal) {
-                    if (isCompressed) {
-                        payload = mCompression.decompress(payload);
+                    if (mFilter != null) {
+                        payload = mFilter.onReceivingBinary(payload, first);
                     }
-                    isCompressed = false;
                     mListener.onBinaryMessage(payload);
                 } else {
                     mContinuationBuffer.write(payload, 0, payload.length);

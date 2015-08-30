@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.extension.PayloadFilter;
 
 interface FrameTx {
     void sendTextAsync(String data);
@@ -22,5 +22,5 @@ interface FrameTx {
 
     void sendCloseAsync(CloseStatusCode code, String reason);
 
-    void compressMessagesWith(PerMessageCompression compression);
+    void setPayloadFilter(PayloadFilter filter);
 }

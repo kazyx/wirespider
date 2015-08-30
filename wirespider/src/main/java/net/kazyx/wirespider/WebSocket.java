@@ -10,7 +10,6 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.Extension;
-import net.kazyx.wirespider.extension.compression.PerMessageCompression;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 
@@ -270,10 +269,9 @@ public abstract class WebSocket {
 
                     for (Extension ext : extensions) {
                         WsLog.d(TAG, "Extension accepted: " + ext.name());
-                        if (ext instanceof PerMessageCompression) {
-                            mFrameTx.compressMessagesWith((PerMessageCompression) ext);
-                            mFrameRx.decompressMessagesWith((PerMessageCompression) ext);
-                        }
+                        mFrameTx.setPayloadFilter(ext.filter());
+                        mFrameRx.setPayloadFilter(ext.filter());
+                        // TODO multiple extensions
                     }
 
                     onHandshakeCompleted();

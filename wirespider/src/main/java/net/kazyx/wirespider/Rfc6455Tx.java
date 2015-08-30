@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.compression.PerMessageCompression;
+import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
 import net.kazyx.wirespider.util.IOUtil;
@@ -22,7 +22,7 @@ class Rfc6455Tx implements FrameTx {
 
     private static final int MAX_CLIENT_HEADER_LENGTH = 14; // Max server header length is 10
 
-    private PerMessageCompression mCompression;
+    private PayloadFilter mFilter;
     private final boolean mIsClient;
     private final SocketChannelWriter mWriter;
 
@@ -35,67 +35,55 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void compressMessagesWith(PerMessageCompression compression) {
-        mCompression = compression;
-    }
-
-    @Override
     public void sendTextAsync(String data) {
-        WsLog.v(TAG, "sendTextAsync", data.length());
+        // WsLog.v(TAG, "sendTextAsync");
         byte[] barr = ByteArrayUtil.fromText(data);
-        WsLog.v(TAG, "sendTextAsync byte length", barr.length);
-        if (mCompression != null) {
+        if (mFilter != null) {
+            byte[] flags = new byte[]{(byte) 0x00};
             try {
-                byte[] compressed = mCompression.compress(barr);
-                if (compressed.length < barr.length) {
-                    WsLog.v(TAG, "Compressed to", compressed.length);
-                    sendFrameAsync(OpCode.TEXT, compressed, true);
-                    return;
-                } else {
-                    WsLog.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
-                }
+                barr = mFilter.onSendingText(barr, flags);
+                sendFrameAsync(OpCode.TEXT, barr, flags[0]);
+                return;
             } catch (IOException e) {
-                WsLog.v(TAG, "Compression failed");
+                // Filtering error. Send original data.
+                WsLog.printStackTrace(TAG, e);
             }
         }
-        sendFrameAsync(OpCode.TEXT, barr, false);
+        sendFrameAsync(OpCode.TEXT, barr);
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
-        WsLog.v(TAG, "sendBinaryAsync", data.length);
-        if (mCompression != null) {
+        // WsLog.v(TAG, "sendBinaryAsync");
+        if (mFilter != null) {
+            byte[] flags = new byte[]{(byte) 0x00};
             try {
-                byte[] compressed = mCompression.compress(data);
-                if (compressed.length < data.length) {
-                    WsLog.v(TAG, "Compressed to", compressed.length);
-                    sendFrameAsync(OpCode.BINARY, compressed, true);
-                    return;
-                } else {
-                    WsLog.v(TAG, "Compression unfriendly data or out of compression target", compressed.length);
-                }
+                data = mFilter.onSendingBinary(data, flags);
+                sendFrameAsync(OpCode.BINARY, data, flags[0]);
+                return;
             } catch (IOException e) {
-                WsLog.v(TAG, "Compression failed");
+                // Filtering error. Send original data.
+                WsLog.printStackTrace(TAG, e);
             }
         }
-        sendFrameAsync(OpCode.BINARY, data, false);
+        sendFrameAsync(OpCode.BINARY, data);
     }
 
     @Override
     public void sendPingAsync(String message) {
-        WsLog.v(TAG, "sendPingAsync");
+        // WsLog.v(TAG, "sendPingAsync");
         sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText(message));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
-        WsLog.v(TAG, "sendPongAsync", pingMessage);
+        // WsLog.v(TAG, "sendPongAsync", pingMessage);
         sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
-        WsLog.v(TAG, "sendCloseAsync");
+        // WsLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         byte[] payload = new byte[2 + messageBytes.length];
         payload[0] = (byte) (code.statusCode >>> 8);
@@ -105,11 +93,16 @@ class Rfc6455Tx implements FrameTx {
         sendFrameAsync(OpCode.CONNECTION_CLOSE, payload);
     }
 
-    private void sendFrameAsync(byte opcode, byte[] payload) {
-        sendFrameAsync(opcode, payload, false);
+    @Override
+    public void setPayloadFilter(PayloadFilter compression) {
+        mFilter = compression;
     }
 
-    private void sendFrameAsync(byte opcode, byte[] payload, boolean compressed) {
+    private void sendFrameAsync(byte opcode, byte[] payload) {
+        sendFrameAsync(opcode, payload, (byte) 0);
+    }
+
+    private void sendFrameAsync(byte opcode, byte[] payload, byte extensionFlags) {
         synchronized (mCloseFlagLock) {
             if (mIsCloseSent) {
                 return;
@@ -123,10 +116,7 @@ class Rfc6455Tx implements FrameTx {
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
 
-        header[0] = (byte) (0x80 | opcode);
-        if (compressed) {
-            header[0] = (byte) (header[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
-        }
+        header[0] = (byte) (0x80 | opcode | extensionFlags);
 
         if (headerLength == 2) {
             if (mIsClient) {
