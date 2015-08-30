@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,7 +19,12 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class HandshakeTest {
     private static final URI DUMMY_URI = URI.create("ws://127.0.0.1:10000/");
@@ -245,6 +252,39 @@ public class HandshakeTest {
     public void upgradeRequestByServer() throws IOException {
         mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
         mHandshake.tryUpgrade(DUMMY_URI, null);
+    }
+
+    @Test
+    public void multipleProtocolHeaders() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+        dummySendUpgradeRequest(mHandshake);
+        String secret = getSecret(mHandshake);
+        String header = "HTTP/1.1 101 Switching Protocols\r\n"
+                + "Upgrade: websocket\r\n"
+                + "Connection: Upgrade\r\n"
+                + "Sec-WebSocket-Protocol: protocol1\r\n"
+                + "Sec-WebSocket-Protocol: protocol2\r\n"
+                + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
+        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        assertThat(mHandshake.protocol(), is("protocol1")); // We use the first one.
+    }
+
+    @Test(expected = HandshakeFailureException.class)
+    public void invalidExtensionResponse() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+        List<ExtensionRequest> exReq = new ArrayList<>();
+        exReq.add(new DeflateRequest.Builder().build());
+        try {
+            mHandshake.tryUpgrade(DUMMY_URI, new SessionRequest.Builder(DUMMY_URI, new SilentEventHandler()).setExtensions(exReq).build());
+        } catch (NullPointerException e) {
+            // Ignore
+        }
+
+        String secret = getSecret(mHandshake);
+        String header = "HTTP/1.1 101 Switching Protocols\r\n"
+                + "Upgrade: websocket\r\n"
+                + "Connection: Upgrade\r\n"
+                + "Sec-WebSocket-Extensions: permessage-deflate;dummy-value;\r\n"
+                + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
+        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
     }
 
     private static String getSecret(Rfc6455Handshake handshake) {

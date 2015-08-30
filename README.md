@@ -6,7 +6,7 @@ WireSpider
 WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
 - High performance `java.nio` based implementation.
-- Incredibly compact binary size.(Only 70KB!!)
+- Incredibly compact binary size.(Only 66KB!!)
 - Android compatible. (Note that Java 7 language features must be enabled.)
 
 ## Download

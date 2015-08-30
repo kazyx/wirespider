@@ -87,7 +87,7 @@ class Rfc6455Handshake implements Handshake {
     }
 
     @Override
-    public void tryUpgrade(URI uri, SessionRequest seed) {
+    public void tryUpgrade(URI uri, SessionRequest request) {
         if (!mIsClient) {
             throw new UnsupportedOperationException("Upgrade request can only be sent from client side.");
         }
@@ -105,7 +105,7 @@ class Rfc6455Handshake implements Handshake {
                 .append("Connection: Upgrade\r\n")
                 .append("Sec-WebSocket-Key: ").append(mSecret).append("\r\n")
                 .append("Sec-WebSocket-Version: 13\r\n");
-        List<ExtensionRequest> extensions = seed.extensions();
+        List<ExtensionRequest> extensions = request.extensions();
         if (extensions != null) {
             for (ExtensionRequest exReq : extensions) {
                 sb.append(exReq.requestHeader().toHeaderLine()).append("\r\n");
@@ -113,7 +113,7 @@ class Rfc6455Handshake implements Handshake {
             }
         }
 
-        List<HttpHeader> requestHeaders = seed.headers();
+        List<HttpHeader> requestHeaders = request.headers();
         if (requestHeaders != null) {
             for (HttpHeader header : requestHeaders) {
                 String headerLine = header.toHeaderLine();
@@ -121,8 +121,8 @@ class Rfc6455Handshake implements Handshake {
             }
         }
 
-        if (seed.protocols() != null) {
-            for (String protocol : seed.protocols()) {
+        if (request.protocols() != null) {
+            for (String protocol : request.protocols()) {
                 sb.append(HttpHeader.SEC_WEBSOCKET_PROTOCOL).append(": ").append(protocol).append("\r\n");
                 mProtocolCandidates.add(protocol);
             }

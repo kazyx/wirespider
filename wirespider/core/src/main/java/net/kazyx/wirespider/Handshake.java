@@ -21,9 +21,9 @@ interface Handshake {
      * Try to upgrade this connection as WebSocket.
      *
      * @param uri URI of the remote server.
-     * @param seed Seed to be used for opening handshake.
+     * @param request Request parameters to be used for opening handshake.
      */
-    void tryUpgrade(URI uri, SessionRequest seed);
+    void tryUpgrade(URI uri, SessionRequest request);
 
     /**
      * Called when WebSocket handshake response is received.
