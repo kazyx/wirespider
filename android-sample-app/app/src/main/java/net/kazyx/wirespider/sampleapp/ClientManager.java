@@ -16,10 +16,15 @@ import net.kazyx.wirespider.SessionRequest;
 import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.WebSocketHandler;
+import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.extension.compression.CompressionStrategy;
+import net.kazyx.wirespider.extension.compression.DeflateRequest;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -28,7 +33,7 @@ public class ClientManager {
     private static final String TAG = ClientManager.class.getSimpleName();
 
     static {
-        net.kazyx.wirespider.Base64.encoder(new net.kazyx.wirespider.Base64.Encoder() {
+        net.kazyx.wirespider.Base64.setEncoder(new net.kazyx.wirespider.Base64.Encoder() {
             @Override
             public String encode(byte[] source) {
                 return Base64.encodeToString(source, android.util.Base64.DEFAULT);
@@ -43,6 +48,14 @@ public class ClientManager {
     }
 
     public void open(URI uri, final ConnectionListener listener) {
+        List<ExtensionRequest> extensionRequests = new ArrayList<>();
+        extensionRequests.add(new DeflateRequest.Builder().strategy(new CompressionStrategy() {
+            @Override
+            public int minSizeInBytes() {
+                return 100;
+            }
+        }).build());
+
         final SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
             @Override
             public void onTextMessage(String message) {
@@ -73,7 +86,7 @@ public class ClientManager {
                     }
                 }
             }
-        }).build();
+        }).setExtensions(extensionRequests).build();
 
         new Thread(new Runnable() {
             @Override

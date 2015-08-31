@@ -14,6 +14,7 @@ import android.util.Log;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -39,6 +40,7 @@ public class LocalServerManager {
                         return new JettyWebSocketServlet();
                     }
                 });
+                factory.getExtensionFactory().register("permessage-deflate", PerMessageDeflateExtension.class);
             }
         };
 

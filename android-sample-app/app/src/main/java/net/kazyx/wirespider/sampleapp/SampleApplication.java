@@ -12,12 +12,14 @@ package net.kazyx.wirespider.sampleapp;
 import android.app.Application;
 import android.util.Log;
 
+import net.kazyx.wirespider.WsLog;
+
 public class SampleApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
 
-        net.kazyx.wirespider.Log.writer(new net.kazyx.wirespider.Log.Writer() {
+        WsLog.writer(new WsLog.Writer() {
             @Override
             public void v(String tag, String message) {
                 Log.v(tag, message);
@@ -38,6 +40,6 @@ public class SampleApplication extends Application {
                 Log.wtf(tag, th);
             }
         });
-        net.kazyx.wirespider.Log.logLevel(net.kazyx.wirespider.Log.Level.DEBUG);
+        WsLog.logLevel(WsLog.Level.DEBUG);
     }
 }

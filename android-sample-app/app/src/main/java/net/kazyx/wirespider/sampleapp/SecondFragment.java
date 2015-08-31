@@ -29,6 +29,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 import net.kazyx.wirespider.WebSocketHandler;
+import net.kazyx.wirespider.extension.Extension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,6 +98,11 @@ public class SecondFragment extends Fragment {
         mLogConsole.setAdapter(mAdapter);
         mManager.setWebSocketHandler(mHandler);
         mViewWidth = container.getWidth();
+
+        for (Extension ext : mManager.getWebSocket().extensions()) {
+            updateConsole("Extension: " + ext.name());
+        }
+
         return v;
     }
 
