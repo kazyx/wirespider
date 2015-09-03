@@ -22,7 +22,7 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.0.1'
+    compile 'net.kazyx:wirespider:1.1.0'
 }
 ```
 
@@ -91,9 +91,31 @@ websocket.closeAsync();
 factory.destroy();
 ```
 
+### Extensions
+
+WebSocket extensions can be implemented with `net.kazyx.wirespider.extension.Extension` interface.
+
+Permessage deflate extension implementation is provided in `wirespider/permessage-deflate` project.  
+And it also can be downloaded as [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate/view)
+or gradle dependency.
+
+```groovy
+dependencies {
+    compile 'net.kazyx:wirespider-permessage-deflate:1.1.0'
+}
+```
+
+Please refer to `android-sample-app` project how to use `permessage-deflate`.
+
 ## ProGuard
 
 No additional prevension required.
+
+## Contribution
+
+Contribution for bugfix, performance improvement, API refinement and extension implementation are wellcome.
+
+Note that JUnit test code is required for the pull request.
 
 ## License
 
