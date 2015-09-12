@@ -41,8 +41,8 @@ android {
 }
 
 dependencies {
-    androidTestCompile project(':core')
-    androidTestCompile project(':permessage-deflate')
+    androidTestCompile project(':wirespider')
+    androidTestCompile project(':wirespider-permessage-deflate')
 
     androidTestCompile ('com.android.support.test.espresso:espresso-core:2.2') {
         exclude group: 'org.hamcrest'
