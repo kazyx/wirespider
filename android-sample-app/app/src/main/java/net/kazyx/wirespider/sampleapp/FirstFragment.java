@@ -156,6 +156,7 @@ public class FirstFragment extends Fragment {
                 mLocalServerPortText.setVisibility(View.VISIBLE);
             } else {
                 mServerSwitch.setEnabled(true);
+                mServerSwitch.setChecked(false);
                 mLocalServerPortText.setVisibility(View.INVISIBLE);
             }
         }
