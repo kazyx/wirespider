@@ -10,6 +10,7 @@
 package net.kazyx.wirespider.sampleapp;
 
 import android.app.Application;
+import android.content.Context;
 import android.util.Log;
 
 import net.kazyx.wirespider.WsLog;
@@ -18,6 +19,8 @@ public class SampleApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        sContext = getApplicationContext();
 
         WsLog.writer(new WsLog.Writer() {
             @Override
@@ -41,5 +44,11 @@ public class SampleApplication extends Application {
             }
         });
         WsLog.logLevel(WsLog.Level.DEBUG);
+    }
+
+    private static Context sContext;
+
+    public static Context getAppContext() {
+        return sContext;
     }
 }

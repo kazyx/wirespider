@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="to_message">#B39DDB</color>
+    <color name="from_message">#F48FB1</color>
+    <color name="accent">#3F51B5</color>
+    <color name="primary">#3F51B5</color>
+    <color name="dark">#1A237E</color>
+</resources>

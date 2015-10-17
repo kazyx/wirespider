@@ -24,16 +24,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
 import net.kazyx.wirespider.WebSocketHandler;
 import net.kazyx.wirespider.extension.Extension;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -54,13 +49,12 @@ public class SecondFragment extends Fragment {
     @Bind(R.id.log_console)
     ListView mLogConsole;
 
-    private List<String> mLogMessages = new ArrayList<>();
-    private ArrayAdapter mAdapter;
+    private final MessageAdapter mAdapter = new MessageAdapter();
+    ;
 
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
-        mLogMessages.add(getString(R.string.ready));
     }
 
     @Override
@@ -95,13 +89,13 @@ public class SecondFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_second, container, false);
         ButterKnife.bind(this, v);
 
-        mAdapter = new ArrayAdapter<>(inflater.getContext(), R.layout.console_row, mLogMessages);
         mLogConsole.setAdapter(mAdapter);
         mManager.setWebSocketHandler(mHandler);
         mViewWidth = container.getWidth();
 
+        updateConsole(getString(R.string.ready), MessageAdapter.Type.OTHER);
         for (Extension ext : mManager.getWebSocket().extensions()) {
-            updateConsole("Extension: " + ext.name());
+            updateConsole("Extension: " + ext.name(), MessageAdapter.Type.OTHER);
         }
 
         return v;
@@ -120,7 +114,8 @@ public class SecondFragment extends Fragment {
             text = getString(R.string.hello);
         }
         mManager.getWebSocket().sendTextMessageAsync(text);
-        updateConsole(getString(R.string.client_to_server) + text);
+        mAdapter.add(getString(R.string.client_to_server) + text, MessageAdapter.Type.SENT);
+        mAdapter.notifyDataSetChanged();
     }
 
     private WebSocketHandler mHandler = new WebSocketHandler() {
@@ -129,7 +124,7 @@ public class SecondFragment extends Fragment {
             if (!isVisible()) {
                 return;
             }
-            updateConsole(getString(R.string.server_to_client) + message);
+            updateConsole(getString(R.string.server_to_client) + message, MessageAdapter.Type.RECEIVED);
         }
 
         @Override
@@ -137,7 +132,7 @@ public class SecondFragment extends Fragment {
             if (!isVisible()) {
                 return;
             }
-            updateConsole(getString(R.string.server_to_client) + "binary message " + message.length + " bytes");
+            updateConsole(getString(R.string.server_to_client) + "binary message " + message.length + " bytes", MessageAdapter.Type.RECEIVED);
         }
 
         @Override
@@ -145,7 +140,7 @@ public class SecondFragment extends Fragment {
             if (!isVisible()) {
                 return;
             }
-            updateConsole(getString(R.string.connection_closed));
+            updateConsole(getString(R.string.connection_closed), MessageAdapter.Type.OTHER);
 
             new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                 @Override
@@ -158,11 +153,11 @@ public class SecondFragment extends Fragment {
         }
     };
 
-    private void updateConsole(final String text) {
+    private void updateConsole(final String text, final MessageAdapter.Type type) {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                mLogMessages.add(text);
+                mAdapter.add(text, type);
                 mAdapter.notifyDataSetChanged();
             }
         });

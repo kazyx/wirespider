@@ -9,7 +9,7 @@
     <string name="message_hint">Message to send</string>
     <string name="hello">Hello!!</string>
     <string name="ready">Connection established.\nReady to send/receive messages.</string>
-    <string name="client_to_server">Client -> Server:\u0020</string>
-    <string name="server_to_client">Server -> Client:\u0020</string>
+    <string name="client_to_server">Sent:\u0020</string>
+    <string name="server_to_client">Received:\u0020</string>
     <string name="connection_closed">Connection closed</string>
 </resources>
