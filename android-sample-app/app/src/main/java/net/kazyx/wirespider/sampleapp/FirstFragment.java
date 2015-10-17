@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,7 +27,6 @@ import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,7 +53,7 @@ public class FirstFragment extends Fragment {
     EditText mUrlEdit;
 
     @Bind(R.id.launch_server_switch)
-    Switch mServerSwitch;
+    SwitchCompat mServerSwitch;
 
     @Bind(R.id.port_indicator)
     TextView mLocalServerPortText;
@@ -108,7 +108,7 @@ public class FirstFragment extends Fragment {
     }
 
     @OnCheckedChanged(R.id.launch_server_switch)
-    void onCheckedChanged(final Switch sw, boolean isChecked) {
+    void onCheckedChanged(final SwitchCompat sw, boolean isChecked) {
         if (isChecked) {
             if (!mActivityProxy.getLocalServerManager().isRunning()) {
                 sw.setEnabled(false);

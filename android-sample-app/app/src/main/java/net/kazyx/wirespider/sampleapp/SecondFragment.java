@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.design.widget.FloatingActionButton;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -113,10 +114,10 @@ public class SecondFragment extends Fragment {
     }
 
     @OnClick(R.id.sendButton)
-    void onClickSend(Button b) {
+    void onClickSend(FloatingActionButton b) {
         String text = mMessageBox.getText().toString();
         if (text.length() == 0) {
-            text = getString(R.string.message_hint);
+            text = getString(R.string.hello);
         }
         mManager.getWebSocket().sendTextMessageAsync(text);
         updateConsole(getString(R.string.client_to_server) + text);

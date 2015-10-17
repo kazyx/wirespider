@@ -2,10 +2,13 @@
 
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="android:textColorPrimary">#fdfff2</item>
+        <item name="colorPrimary">#3F51B5</item>
+        <item name="colorPrimaryDark">#1A237E</item>
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:editTextColor">@android:color/background_dark</item>
         <item name="android:textColor">@android:color/background_dark</item>
         <item name="colorControlNormal">@android:color/background_dark</item>
+        <item name="colorAccent">#3F51B5</item>
     </style>
 
 </resources>

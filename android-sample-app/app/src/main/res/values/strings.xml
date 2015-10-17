@@ -6,8 +6,8 @@
     <string name="open_connection">Connect</string>
     <string name="launch_server">Use local echo server</string>
     <string name="listening">Listening on port %s</string>
-    <string name="message_hint">hello!</string>
-    <string name="send">send</string>
+    <string name="message_hint">Message to send</string>
+    <string name="hello">Hello!!</string>
     <string name="ready">Connection established.\nReady to send/receive messages.</string>
     <string name="client_to_server">Client -> Server:\u0020</string>
     <string name="server_to_client">Server -> Client:\u0020</string>
