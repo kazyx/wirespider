@@ -44,10 +44,10 @@ dependencies {
     androidTestCompile project(':wirespider')
     androidTestCompile project(':wirespider-permessage-deflate')
 
-    androidTestCompile ('com.android.support.test.espresso:espresso-core:2.2') {
+    androidTestCompile ('com.android.support.test.espresso:espresso-core:2.2.1') {
         exclude group: 'org.hamcrest'
     }
-    androidTestCompile ('com.android.support.test:runner:0.3') {
+    androidTestCompile ('com.android.support.test:runner:0.4.1') {
         exclude group: 'org.hamcrest'
     }
 

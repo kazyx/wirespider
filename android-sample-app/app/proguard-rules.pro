@@ -16,7 +16,7 @@
 #   public *;
 #}
 
-## beginning of Butter Knife begins
+## beginning of Butter Knife
 -keep class butterknife.** { *; }
 -dontwarn butterknife.internal.**
 -keep class **$$ViewBinder { *; }
