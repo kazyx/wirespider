@@ -36,6 +36,7 @@ dependencies {
     compile 'net.kazyx:wirespider-permessage-deflate:1.1.0'
 
     compile 'com.jakewharton:butterknife:7.0.1'
+    compile 'com.android.support:cardview-v7:23.1.0'
     compile 'com.android.support:design:23.1.0'
 
     // For local echo server

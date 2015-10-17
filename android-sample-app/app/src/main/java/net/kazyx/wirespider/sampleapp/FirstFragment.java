@@ -90,8 +90,6 @@ public class FirstFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
         View v = inflater.inflate(R.layout.fragment_first, container, false);
         ButterKnife.bind(this, v);
-        mServerSwitch.setEnabled(true);
-        mServerSwitch.setChecked(mActivityProxy.getLocalServerManager().isRunning());
 
         WebSocket ws = mActivityProxy.getClientManager().getWebSocket();
         if (ws != null) {
@@ -99,6 +97,13 @@ public class FirstFragment extends Fragment {
         }
         mViewWidth = container.getWidth();
         return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        onServerStatusChanged(mActivityProxy.getLocalServerManager().isRunning());
     }
 
     @Override
@@ -118,7 +123,7 @@ public class FirstFragment extends Fragment {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                onServerLaunched();
+                                onServerStatusChanged(true);
                             }
                         });
                     }
@@ -128,33 +133,31 @@ public class FirstFragment extends Fragment {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                onServerStopped();
+                                onServerStatusChanged(false);
                             }
                         });
                     }
                 });
             } else {
-                onServerLaunched();
+                onServerStatusChanged(true);
             }
         } else if (mActivityProxy.getLocalServerManager().isRunning()) {
             mActivityProxy.getLocalServerManager().shutdownAsync();
-            onServerStopped();
+            onServerStatusChanged(false);
         }
     }
 
-    private void onServerLaunched() {
-        if (isVisible()) {
-            mServerSwitch.setEnabled(true);
-            mServerSwitch.setChecked(true);
-            mLocalServerPortText.setText(String.format(getString(R.string.listening), "10000"));
-            mLocalServerPortText.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void onServerStopped() {
-        if (isVisible()) {
-            mServerSwitch.setEnabled(true);
-            mLocalServerPortText.setVisibility(View.INVISIBLE);
+    private void onServerStatusChanged(boolean enabled) {
+        if (isResumed()) {
+            if (enabled) {
+                mServerSwitch.setEnabled(true);
+                mServerSwitch.setChecked(true);
+                mLocalServerPortText.setText(String.format(getString(R.string.listening), "10000"));
+                mLocalServerPortText.setVisibility(View.VISIBLE);
+            } else {
+                mServerSwitch.setEnabled(true);
+                mLocalServerPortText.setVisibility(View.INVISIBLE);
+            }
         }
     }
 

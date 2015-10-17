@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="fab_border_width">0dp</dimen>
+    <dimen name="fab_margin_bottom">-12dp</dimen>
+    <dimen name="fab_margin_top">0dp</dimen>
+</resources>

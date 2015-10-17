@@ -50,7 +50,6 @@ public class SecondFragment extends Fragment {
     ListView mLogConsole;
 
     private final MessageAdapter mAdapter = new MessageAdapter();
-    ;
 
     @Override
     public void onCreate(Bundle b) {
@@ -121,25 +120,16 @@ public class SecondFragment extends Fragment {
     private WebSocketHandler mHandler = new WebSocketHandler() {
         @Override
         public void onTextMessage(String message) {
-            if (!isVisible()) {
-                return;
-            }
             updateConsole(getString(R.string.server_to_client) + message, MessageAdapter.Type.RECEIVED);
         }
 
         @Override
         public void onBinaryMessage(byte[] message) {
-            if (!isVisible()) {
-                return;
-            }
             updateConsole(getString(R.string.server_to_client) + "binary message " + message.length + " bytes", MessageAdapter.Type.RECEIVED);
         }
 
         @Override
         public void onClosed(int code, String reason) {
-            if (!isVisible()) {
-                return;
-            }
             updateConsole(getString(R.string.connection_closed), MessageAdapter.Type.OTHER);
 
             new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
@@ -157,8 +147,10 @@ public class SecondFragment extends Fragment {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                mAdapter.add(text, type);
-                mAdapter.notifyDataSetChanged();
+                if (isResumed()) {
+                    mAdapter.add(text, type);
+                    mAdapter.notifyDataSetChanged();
+                }
             }
         });
     }
