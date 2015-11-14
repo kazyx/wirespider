@@ -9,7 +9,6 @@
 
 package net.kazyx.wirespider;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class Base64Encoder implements Base64.Encoder {
@@ -19,7 +18,7 @@ public class Base64Encoder implements Base64.Encoder {
             Class<?> c = Class.forName("android.util.Base64");
             Method m = c.getDeclaredMethod("encodeToString", byte[].class, int.class);
             return (String) m.invoke(null, source, 2);
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        } catch (Exception e) { // ReflectiveOperationException is added since Android API 19.
             // This is not android device;
         }
 
@@ -27,7 +26,7 @@ public class Base64Encoder implements Base64.Encoder {
             Class<?> c = Class.forName("org.apache.commons.codec.binary.Base64");
             Method m = c.getDeclaredMethod("encodeBase64String", byte[].class);
             return (String) m.invoke(null, new Object[]{source});
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        } catch (Exception e) { // ReflectiveOperationException is added since Android API 19.
             throw new IllegalStateException(e);
         }
     }
