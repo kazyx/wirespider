@@ -150,6 +150,9 @@ public class SecondFragment extends Fragment {
                 if (isResumed()) {
                     mAdapter.add(text, type);
                     mAdapter.notifyDataSetChanged();
+                    if (mLogConsole.getLastVisiblePosition() < mAdapter.getCount() - 1) {
+                        mLogConsole.smoothScrollToPosition(mAdapter.getCount());
+                    }
                 }
             }
         });
