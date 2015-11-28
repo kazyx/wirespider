@@ -21,6 +21,9 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class SocketEngine {
     private static final String TAG = SocketEngine.class.getSimpleName();
@@ -28,6 +31,12 @@ class SocketEngine {
     private static final int DIRECT_BUFFER_SIZE = 1024 * 4;
 
     private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
+
+    private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
+
+    private final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
+
+    private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
 
     SocketEngine(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
@@ -38,7 +47,7 @@ class SocketEngine {
         mSelectorThread.interrupt();
     }
 
-    private static class SelectorThread extends Thread {
+    private class SelectorThread extends Thread {
         private final Selector mSelector;
 
         SelectorThread(Selector selector) {
@@ -59,7 +68,36 @@ class SocketEngine {
                         SelectionKey key = itr.next();
                         itr.remove();
                         if (key.isValid()) {
-                            ((SocketChannelProxy) key.attachment()).onSelected(key);
+                            WebSocket ws = (WebSocket) key.attachment();
+                            if (key.isConnectable()) {
+                                try {
+                                    SocketChannel ch = (SocketChannel) key.channel();
+                                    if (ch.finishConnect()) {
+                                        String scheme = ws.remoteUri().getScheme().toLowerCase(Locale.US);
+                                        SessionFactory factory = mFactories.get(scheme);
+                                        if (factory == null) {
+                                            factory = mDefaultFactory;
+                                        }
+                                        Session session = factory.createNew(ch);
+                                        mSessionMap.put(ch, session);
+                                        key.interestOps(SelectionKey.OP_READ);
+                                        ws.socketChannelProxy().onConnected(key);
+                                        continue;
+                                    }
+                                } catch (IOException e) {
+                                    // Fallthrough
+                                }
+                                ws.socketChannelProxy().onConnectionFailed();
+                            } else {
+                                ws.socketChannelProxy().onSelected(key);
+                            }
+                        } else {
+                            SocketChannel ch = (SocketChannel) key.channel();
+                            Session session = mSessionMap.get(ch);
+                            if (session != null) {
+                                IOUtil.close(session);
+                                mSessionMap.remove(ch);
+                            }
                         }
                     }
                 }
@@ -68,7 +106,7 @@ class SocketEngine {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
                     IOUtil.close(key.channel());
-                    ((SocketChannelProxy) key.attachment()).onCancelled();
+                    ((WebSocket) key.attachment()).socketChannelProxy().onCancelled();
                 }
                 mQueue.clear();
                 IOUtil.close(mSelector);
@@ -98,13 +136,13 @@ class SocketEngine {
             }
         }
 
-        void registerNewChannel(final SocketChannel channel, final int ops, final SocketChannelProxy handler) {
+        void registerNewChannel(final SocketChannel channel, final int ops, final WebSocket ws) {
             synchronized (mQueue) {
                 mQueue.add(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            channel.register(mSelector, ops, handler);
+                            channel.register(mSelector, ops, ws);
                         } catch (ClosedChannelException e) {
                             WsLog.printStackTrace(TAG, e);
                         }
@@ -123,13 +161,17 @@ class SocketEngine {
      * @param ws WebSocket to be registered.
      * @param ops Selector operations.
      */
-    void register(WebSocket ws, int ops) {
-        mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws.socketChannelProxy());
+    public void register(WebSocket ws, int ops) {
+        mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 
     byte[] read(SocketChannel ch) throws IOException {
+        Session session = mSessionMap.get(ch);
+        if (session == null) {
+            throw new IOException("Cannot read from closed session");
+        }
         try {
-            int length = ch.read(mReadBuffer);
+            int length = session.read(mReadBuffer);
             if (length == -1) {
                 throw new IOException("EOF");
             } else if (length == 0) {
@@ -143,5 +185,28 @@ class SocketEngine {
         } finally {
             mReadBuffer.clear();
         }
+    }
+
+    /**
+     * Write given {@link ByteBuffer} to the SocketChannel.
+     *
+     * @param ch SocketChannel to write data.
+     * @param bb ByteBuffer to be written.
+     * @throws IOException If some I/O error occurs.
+     */
+    void write(SocketChannel ch, ByteBuffer bb) throws IOException {
+        Session session = mSessionMap.get(ch);
+        if (session == null) {
+            throw new IOException("Cannot write into closed session");
+        }
+        session.write(bb);
+    }
+
+    /**
+     * @param factory {@link SessionFactory}to use for the specified URI scheme.
+     * @param scheme Scheme to use the {@link SessionFactory} to create a {@link Session}
+     */
+    void registerFactory(SessionFactory factory, String scheme) {
+        mFactories.put(scheme.toLowerCase(Locale.US), factory);
     }
 }

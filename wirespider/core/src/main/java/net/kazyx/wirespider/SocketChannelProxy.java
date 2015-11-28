@@ -38,25 +38,36 @@ class SocketChannelProxy implements SocketChannelWriter {
         this.mListener = listener;
     }
 
+    /**
+     * Called only when the connection is already established.
+     *
+     * @param key Key of the selected channel.
+     */
     void onSelected(SelectionKey key) {
-        mKey = key;
         try {
             if (!key.isValid()) {
                 WsLog.d(TAG, "Skip invalid key");
                 return;
             }
-            if (key.isConnectable()) {
-                onConnectReady();
-            }
             if (key.isReadable()) {
                 onReadReady();
             }
-            if (key.isWritable() && key.isValid()) {
+            if (key.isWritable()) {
                 onWriteReady();
             }
         } catch (IOException | CancelledKeyException e) {
             onClosed();
         }
+    }
+
+    void onConnected(SelectionKey key) {
+        mKey = key;
+        mListener.onSocketConnected();
+    }
+
+    void onConnectionFailed() {
+        WsLog.d(TAG, "Failed to connect");
+        onClosed();
     }
 
     void onCancelled() {
@@ -68,21 +79,6 @@ class SocketChannelProxy implements SocketChannelWriter {
         WsLog.d(TAG, "onClosed");
         close();
         mListener.onClosed();
-    }
-
-    private void onConnectReady() throws IOException {
-        // Log.d(TAG, "onConnectReady");
-        try {
-            if (((SocketChannel) mKey.channel()).finishConnect()) {
-                mKey.interestOps(SelectionKey.OP_READ);
-                mListener.onSocketConnected();
-                return;
-            }
-        } catch (CancelledKeyException e) {
-            // Connected but SelectionKey is cancelled. Fall through to failure
-        }
-        WsLog.d(TAG, "Failed to connect");
-        onClosed();
     }
 
     private void onReadReady() throws IOException {
@@ -185,7 +181,7 @@ class SocketChannelProxy implements SocketChannelWriter {
 
     private boolean flushBuffer() throws IOException {
         mWriteBuffer.flip();
-        ((SocketChannel) mKey.channel()).write(mWriteBuffer);
+        mEngine.write((SocketChannel) mKey.channel(), mWriteBuffer);
         boolean completed = !mWriteBuffer.hasRemaining();
         mWriteBuffer.compact();
         return completed;

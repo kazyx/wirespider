@@ -25,15 +25,15 @@ import java.util.concurrent.CountDownLatch;
 class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
-    private final SessionRequest mSeed;
+    private final SessionRequest mReq;
     private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
 
-    ClientWebSocket(SessionRequest seed, SocketEngine engine, SocketChannel ch) {
-        super(seed, engine, ch);
-        mSeed = seed;
-        mSocketBinder = seed.socketBinder();
+    ClientWebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch) {
+        super(req, engine, ch);
+        mReq = req;
+        mSocketBinder = req.socketBinder();
     }
 
     @Override
@@ -54,7 +54,7 @@ class ClientWebSocket extends WebSocket {
     @Override
     void onSocketConnected() {
         WsLog.d(TAG, "Start opening handshake");
-        handshake().tryUpgrade(remoteUri(), mSeed);
+        handshake().tryUpgrade(remoteUri(), mReq);
     }
 
     @Override

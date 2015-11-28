@@ -81,10 +81,10 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(SessionRequest seed, SocketEngine engine, SocketChannel ch) {
-        mURI = seed.uri();
-        mCallbackHandler = seed.handler();
-        mMaxResponsePayloadSize = seed.maxResponsePayloadSizeInBytes();
+    WebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch) {
+        mURI = req.uri();
+        mCallbackHandler = req.handler();
+        mMaxResponsePayloadSize = req.maxResponsePayloadSizeInBytes();
         mEngine = engine;
         mSocketChannel = ch;
 
@@ -93,7 +93,7 @@ public abstract class WebSocket {
         mFrameTx = newFrameTx();
         mFrameRx = newFrameRx(mRxListener);
         mHandshake = newHandshake();
-        mHandshake.responseHandler(seed.handshakeHandler());
+        mHandshake.responseHandler(req.handshakeHandler());
     }
 
     abstract FrameTx newFrameTx();
