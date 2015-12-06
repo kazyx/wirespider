@@ -16,20 +16,6 @@
 #   public *;
 #}
 
-## beginning of Butter Knife
--keep class butterknife.** { *; }
--dontwarn butterknife.internal.**
--keep class **$$ViewBinder { *; }
-
--keepclasseswithmembernames class * {
-    @butterknife.* <fields>;
-}
-
--keepclasseswithmembernames class * {
-    @butterknife.* <methods>;
-}
-## end of Butter Knife
-
 ## beginning of Jetty for sample local server
 -keep class org.eclipse.jetty.** { *; }
 -dontwarn org.eclipse.jetty.**

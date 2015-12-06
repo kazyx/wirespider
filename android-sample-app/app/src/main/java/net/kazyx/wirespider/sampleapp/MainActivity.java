@@ -47,9 +47,18 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
         super.onDestroy();
     }
 
+    private boolean mIsStarted = false;
+
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStart() {
+        super.onStart();
+        mIsStarted = true;
+    }
+
+    @Override
+    public void onStop() {
+        mIsStarted = false;
+        super.onStop();
     }
 
     @Override
@@ -69,19 +78,35 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
 
     @Override
     public void onConnected() {
-        getFragmentManager().beginTransaction()
-                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                .replace(R.id.contentRoot, SecondFragment.newInstance())
-                .addToBackStack(null)
-                .commit();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mIsStarted) {
+                    return;
+                }
+                getFragmentManager().beginTransaction()
+                        .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                        .replace(R.id.contentRoot, SecondFragment.newInstance())
+                        .addToBackStack(null)
+                        .commit();
+            }
+        });
     }
 
     @Override
     public void onDisconnected() {
-        int count = getFragmentManager().getBackStackEntryCount();
-        if (count != 0) {
-            getFragmentManager().popBackStack();
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mIsStarted) {
+                    return;
+                }
+                int count = getFragmentManager().getBackStackEntryCount();
+                if (count != 0) {
+                    getFragmentManager().popBackStack();
+                }
+            }
+        });
     }
 
     private LocalServerManager mLocalServerManager;

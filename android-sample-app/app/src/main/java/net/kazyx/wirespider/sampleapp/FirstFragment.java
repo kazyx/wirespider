@@ -15,32 +15,26 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Context;
+import android.databinding.DataBindingUtil;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.sampleapp.databinding.FirstFragmentBinding;
 import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnCheckedChanged;
-import butterknife.OnClick;
 
 public class FirstFragment extends Fragment {
     private static final String TAG = FirstFragment.class.getSimpleName();
@@ -49,14 +43,7 @@ public class FirstFragment extends Fragment {
         return new FirstFragment();
     }
 
-    @Bind(R.id.url_edit_box)
-    EditText mUrlEdit;
-
-    @Bind(R.id.launch_server_switch)
-    SwitchCompat mServerSwitch;
-
-    @Bind(R.id.port_indicator)
-    TextView mLocalServerPortText;
+    private FirstFragmentBinding mBinding;
 
     private ActivityProxy mActivityProxy;
 
@@ -88,8 +75,21 @@ public class FirstFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
-        View v = inflater.inflate(R.layout.fragment_first, container, false);
-        ButterKnife.bind(this, v);
+        View v = inflater.inflate(R.layout.first_fragment, container, false);
+        mBinding = DataBindingUtil.bind(v);
+
+        mBinding.launchServerSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                FirstFragment.this.onServerSwitchChanged(buttonView, isChecked);
+            }
+        });
+        mBinding.connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FirstFragment.this.onConnectClicked();
+            }
+        });
 
         WebSocket ws = mActivityProxy.getClientManager().getWebSocket();
         if (ws != null) {
@@ -102,18 +102,16 @@ public class FirstFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-
         onServerStatusChanged(mActivityProxy.getLocalServerManager().isRunning());
     }
 
     @Override
     public void onDestroyView() {
-        ButterKnife.unbind(this);
+        mBinding.unbind();
         super.onDestroyView();
     }
 
-    @OnCheckedChanged(R.id.launch_server_switch)
-    void onCheckedChanged(final SwitchCompat sw, boolean isChecked) {
+    void onServerSwitchChanged(final CompoundButton sw, boolean isChecked) {
         if (isChecked) {
             if (!mActivityProxy.getLocalServerManager().isRunning()) {
                 sw.setEnabled(false);
@@ -150,21 +148,20 @@ public class FirstFragment extends Fragment {
     private void onServerStatusChanged(boolean enabled) {
         if (isResumed()) {
             if (enabled) {
-                mServerSwitch.setEnabled(true);
-                mServerSwitch.setChecked(true);
-                mLocalServerPortText.setText(String.format(getString(R.string.listening), "10000"));
-                mLocalServerPortText.setVisibility(View.VISIBLE);
+                mBinding.launchServerSwitch.setEnabled(true);
+                mBinding.launchServerSwitch.setChecked(true);
+                mBinding.portIndicator.setText(String.format(getString(R.string.listening), "10000"));
+                mBinding.portIndicator.setVisibility(View.VISIBLE);
             } else {
-                mServerSwitch.setEnabled(true);
-                mServerSwitch.setChecked(false);
-                mLocalServerPortText.setVisibility(View.INVISIBLE);
+                mBinding.launchServerSwitch.setEnabled(true);
+                mBinding.launchServerSwitch.setChecked(false);
+                mBinding.portIndicator.setVisibility(View.INVISIBLE);
             }
         }
     }
 
-    @OnClick(R.id.connect_button)
-    void onClick(Button b) {
-        String text = mUrlEdit.getText().toString();
+    void onConnectClicked() {
+        String text = mBinding.urlEditBox.getText().toString();
         if (text.length() == 0) {
             text = getString(R.string.url_hint);
         }
@@ -174,14 +171,9 @@ public class FirstFragment extends Fragment {
                 @Override
                 public void onConnected() {
                     Log.w(TAG, "Connected");
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (mActivityProxy != null) {
-                                mActivityProxy.onConnected();
-                            }
-                        }
-                    });
+                    if (mActivityProxy != null) {
+                        mActivityProxy.onConnected();
+                    }
                 }
 
                 @Override
@@ -190,7 +182,7 @@ public class FirstFragment extends Fragment {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (!isVisible()) {
+                            if (!isResumed()) {
                                 return;
                             }
                             Toast.makeText(getActivity(), "Connection Failed", Toast.LENGTH_SHORT).show();

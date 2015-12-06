@@ -15,39 +15,30 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Context;
+import android.databinding.DataBindingUtil;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.design.widget.FloatingActionButton;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.EditText;
-import android.widget.ListView;
 
 import net.kazyx.wirespider.WebSocketHandler;
 import net.kazyx.wirespider.extension.Extension;
-
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+import net.kazyx.wirespider.sampleapp.databinding.SecondFragmentBinding;
 
 public class SecondFragment extends Fragment {
     public static SecondFragment newInstance() {
         return new SecondFragment();
     }
 
+    private SecondFragmentBinding mBinding;
+
     private ActivityProxy mActivityProxy;
 
     private ClientManager mManager;
-
-    @Bind(R.id.message_edit_box)
-    EditText mMessageBox;
-
-    @Bind(R.id.log_console)
-    ListView mLogConsole;
 
     private final MessageAdapter mAdapter = new MessageAdapter();
 
@@ -85,10 +76,17 @@ public class SecondFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
-        View v = inflater.inflate(R.layout.fragment_second, container, false);
-        ButterKnife.bind(this, v);
+        View v = inflater.inflate(R.layout.second_fragment, container, false);
+        mBinding = DataBindingUtil.bind(v);
 
-        mLogConsole.setAdapter(mAdapter);
+        mBinding.sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SecondFragment.this.onSendClicked();
+            }
+        });
+        mBinding.logConsole.setAdapter(mAdapter);
+
         mManager.setWebSocketHandler(mHandler);
         mViewWidth = container.getWidth();
 
@@ -102,13 +100,12 @@ public class SecondFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        ButterKnife.unbind(this);
+        mBinding.unbind();
         super.onDestroyView();
     }
 
-    @OnClick(R.id.sendButton)
-    void onClickSend(FloatingActionButton b) {
-        String text = mMessageBox.getText().toString();
+    void onSendClicked() {
+        String text = mBinding.messageEditBox.getText().toString();
         if (text.length() == 0) {
             text = getString(R.string.hello);
         }
@@ -132,14 +129,9 @@ public class SecondFragment extends Fragment {
         public void onClosed(int code, String reason) {
             updateConsole(getString(R.string.connection_closed), MessageAdapter.Type.OTHER);
 
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (mActivityProxy != null) {
-                        mActivityProxy.onDisconnected();
-                    }
-                }
-            }, 1000);
+            if (mActivityProxy != null) {
+                mActivityProxy.onDisconnected();
+            }
         }
     };
 
@@ -150,8 +142,8 @@ public class SecondFragment extends Fragment {
                 if (isResumed()) {
                     mAdapter.add(text, type);
                     mAdapter.notifyDataSetChanged();
-                    if (mLogConsole.getLastVisiblePosition() < mAdapter.getCount() - 1) {
-                        mLogConsole.smoothScrollToPosition(mAdapter.getCount());
+                    if (mBinding.logConsole.getLastVisiblePosition() < mAdapter.getCount() - 1) {
+                        mBinding.logConsole.smoothScrollToPosition(mAdapter.getCount());
                     }
                 }
             }
