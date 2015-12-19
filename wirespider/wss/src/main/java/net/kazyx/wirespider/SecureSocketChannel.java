@@ -1,0 +1,260 @@
+/*
+ * WireSpider
+ *
+ * Copyright (c) 2015 kazyx
+ *
+ * This software is released under the MIT License.
+ * http://opensource.org/licenses/mit-license.php
+ */
+
+package net.kazyx.wirespider;
+
+import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.SelectionKeyUtil;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.util.LinkedList;
+
+class SecureSocketChannel implements Closeable {
+    private static final String TAG = SecureSocketChannel.class.getSimpleName();
+
+    private final SelectionKey mKey;
+    private final SocketChannel mChannel;
+    private final SSLEngine mSslEngine;
+
+    private ByteBuffer mNetIn;
+    private ByteBuffer mNetOut;
+
+    private ByteBuffer mAppIn;
+    private final ByteBuffer mAppOut;
+
+
+    SecureSocketChannel(SelectionKey key, SSLEngine sslEngine, int appOutBufferSize) {
+        mKey = key;
+        mChannel = (SocketChannel) key.channel();
+        mSslEngine = sslEngine;
+
+        SSLSession sslSession = sslEngine.getSession();
+
+        int packetBufferSize = sslSession.getPacketBufferSize();
+        mNetOut = ByteBuffer.allocateDirect(packetBufferSize);
+        mNetIn = ByteBuffer.allocateDirect(packetBufferSize);
+
+        mAppOut = ByteBuffer.allocateDirect(appOutBufferSize);
+        mAppIn = ByteBuffer.allocateDirect(sslSession.getApplicationBufferSize());
+    }
+
+    void init() throws IOException {
+        mSslEngine.beginHandshake();
+        evaluateCurrentStatus();
+    }
+
+    void wrapAndEnqueue(byte[] src) throws IOException {
+        // WsLog.v(TAG, "Wrap and Enqueue");
+        int written = 0;
+        while (written != src.length) {
+            if (src.length - written < mAppOut.remaining()) {
+                mAppOut.put(src, written, src.length - written);
+                written = src.length;
+            } else {
+                int toWrite = mAppOut.remaining();
+                mAppOut.put(src, 0, toWrite);
+                written += toWrite;
+            }
+            wrap();
+        }
+    }
+
+    void onReadReady() throws IOException {
+        // WsLog.v(TAG, "onReadReady");
+        unwrap();
+    }
+
+    private Session.Listener mListener;
+
+    void setDataListener(Session.Listener listener) {
+        mListener = listener;
+    }
+
+    private void onUnwrapped() {
+        // WsLog.v(TAG, "onUnwrapped");
+        if (mListener == null) {
+            return;
+        }
+
+        mAppIn.flip();
+        if (mAppIn.limit() == 0) {
+            mAppIn.clear();
+            return;
+        }
+
+        byte[] ret = new byte[mAppIn.limit()];
+        mAppIn.get(ret);
+        mAppIn.clear();
+
+        // WsLog.v(TAG, "Unwrapped", ret);
+
+        LinkedList<byte[]> list = new LinkedList<>();
+        list.add(ret);
+
+        mListener.onAppDataReceived(list);
+    }
+
+    private void evaluateCurrentStatus() throws IOException {
+        evaluateStatus(mSslEngine.getHandshakeStatus());
+    }
+
+    private void evaluateStatus(SSLEngineResult.HandshakeStatus hsStatus) throws IOException {
+        // WsLog.v(TAG, "evaluateStatus", hsStatus.name());
+
+        switch (hsStatus) {
+            case NEED_TASK:
+                Runnable task;
+                while ((task = mSslEngine.getDelegatedTask()) != null) {
+                    task.run();
+                }
+                evaluateCurrentStatus();
+                break;
+            case NEED_WRAP:
+                wrap();
+                break;
+            case NEED_UNWRAP:
+                unwrap();
+                break;
+            case FINISHED:
+                WsLog.d(TAG, "SSL handshake completed: ", mSslEngine.getSession().getProtocol());
+                if (mListener != null) {
+                    mListener.onConnected();
+                }
+                return;
+            default:
+                break;
+        }
+    }
+
+    private void wrap() throws IOException {
+        mAppOut.flip();
+        final SSLEngineResult result;
+        try {
+            result = mSslEngine.wrap(mAppOut, mNetOut);
+        } catch (SSLException e) {
+            WsLog.printStackTrace(TAG, e);
+            close();
+            throw new IOException("Detected end of stream");
+        }
+        mAppOut.compact();
+        // WsLog.v(TAG, "wrap: ", result.toString());
+
+        final SSLEngineResult.Status status = result.getStatus();
+        switch (status) {
+            case OK:
+                if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
+                    SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                    mKey.selector().wakeup();
+                }
+                break;
+            case BUFFER_OVERFLOW:
+                mNetOut = reallocateBufferIfRequired(mNetOut, mSslEngine.getSession().getPacketBufferSize());
+                wrap();
+                break;
+            case CLOSED:
+                evaluateStatus(result.getHandshakeStatus());
+                close();
+                break;
+            default:
+                break;
+        }
+    }
+
+    void flush() throws IOException {
+        // WsLog.d(TAG, "flush");
+        mNetOut.flip();
+        try {
+            while (mNetOut.hasRemaining()) {
+                mChannel.write(mNetOut);
+            }
+        } finally {
+            mNetOut.compact();
+        }
+
+        SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
+
+        evaluateCurrentStatus();
+    }
+
+    private void unwrap() throws IOException {
+        if (mNetIn.position() == 0) {
+            final int count = mChannel.read(mNetIn);
+            if (count == -1) {
+                close();
+                throw new IOException("Detected end of stream");
+            }
+        }
+
+        mNetIn.flip();
+        final SSLEngineResult result;
+        try {
+            result = mSslEngine.unwrap(mNetIn, mAppIn);
+        } catch (SSLException e) {
+            WsLog.printStackTrace(TAG, e);
+            close();
+            throw new IOException("Detected end of stream");
+        }
+        mNetIn.compact();
+        // WsLog.v(TAG, "unwrap: ", result.toString());
+
+        final SSLEngineResult.Status status = result.getStatus();
+        switch (status) {
+            case OK:
+                onUnwrapped();
+                evaluateStatus(result.getHandshakeStatus());
+                break;
+            case BUFFER_UNDERFLOW:
+                mNetIn = reallocateBufferIfRequired(mNetIn, mSslEngine.getSession().getPacketBufferSize());
+                SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
+                break;
+            case BUFFER_OVERFLOW:
+                mAppIn = reallocateBufferIfRequired(mAppIn, mSslEngine.getSession().getApplicationBufferSize());
+                unwrap();
+                break;
+            case CLOSED:
+                close();
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static ByteBuffer reallocateBufferIfRequired(ByteBuffer current, int newRemaining) {
+        if (current.remaining() < newRemaining) {
+            current.flip();
+            final ByteBuffer newBuffer = ByteBuffer.allocateDirect(current.position() + newRemaining);
+            newBuffer.put(current);
+            return newBuffer;
+        } else {
+            return current;
+        }
+    }
+
+    @Override
+    public void close() {
+        WsLog.d(TAG, "close");
+        try {
+            mSslEngine.closeInbound();
+        } catch (SSLException e) {
+            // WsLog.d(TAG, "Failed to close InBound");
+        }
+        mSslEngine.closeOutbound();
+        if (mChannel.isOpen()) {
+            IOUtil.close(mChannel);
+        }
+    }
+}

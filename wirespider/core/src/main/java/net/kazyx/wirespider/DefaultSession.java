@@ -24,10 +24,10 @@ class DefaultSession implements Session {
     private final SelectionKey mKey;
     private final SocketChannel mChannel;
 
-    private static final int DIRECT_BUFFER_SIZE = 1024 * 4;
-    private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
+    private static final int READ_BUFFER_SIZE = 1024 * 4;
+    private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(READ_BUFFER_SIZE);
 
-    private static final int WRITE_BUFFER_SIZE = 1024;
+    private static final int WRITE_BUFFER_SIZE = 1024 * 4;
     private final ByteBuffer mWriteBuffer = ByteBuffer.allocateDirect(WRITE_BUFFER_SIZE);
 
     private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
@@ -57,7 +57,7 @@ class DefaultSession implements Session {
     private byte[] mRemaining = null;
 
     @Override
-    public void flush() throws IOException {
+    public void onFlushReady() throws IOException {
         byte[] data;
 
         synchronized (mWriteQueue) {

@@ -83,13 +83,25 @@ class ClientWebSocket extends WebSocket {
         socket.setTcpNoDelay(true);
 
         URI uri = remoteUri();
-        socketChannel().connect(new InetSocketAddress(uri.getHost(), (uri.getPort() != -1) ? uri.getPort() : 80));
+        socketChannel().connect(new InetSocketAddress(uri.getHost(), getPort(uri)));
         socketEngine().register(this, SelectionKey.OP_CONNECT);
 
         mConnectLatch.await();
 
         if (!isConnected()) {
             throw new IOException("Socket connection or handshake failure");
+        }
+    }
+
+    private int getPort(URI uri) {
+        int port = uri.getPort();
+        if (port != -1) {
+            return port;
+        }
+        if ("wss".equalsIgnoreCase(uri.getScheme())) {
+            return 443;
+        } else {
+            return 80;
         }
     }
 }

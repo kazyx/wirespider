@@ -31,7 +31,7 @@ interface Session extends Closeable {
      *
      * @throws IOException If some other I/O error occurs
      */
-    void flush() throws IOException;
+    void onFlushReady() throws IOException;
 
     /**
      * Ready to read data from the SocketChannel.
@@ -53,6 +53,9 @@ interface Session extends Closeable {
          */
         void onAppDataReceived(LinkedList<byte[]> data);
 
+        /**
+         * Ready to handle application data.
+         */
         void onConnected();
     }
 }

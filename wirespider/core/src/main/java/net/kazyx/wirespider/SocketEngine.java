@@ -95,7 +95,7 @@ class SocketEngine {
                                 } catch (IOException e) {
                                     WsLog.printStackTrace(TAG, e);
                                     // Fallthrough
-                                }//
+                                }
                                 ws.socketChannelProxy().onConnectionFailed();
                             } else {
                                 SocketChannel ch = (SocketChannel) key.channel();
@@ -219,7 +219,7 @@ class SocketEngine {
             throw new IOException("Cannot read from closed session");
         }
 
-        session.flush();
+        session.onFlushReady();
     }
 
     /**

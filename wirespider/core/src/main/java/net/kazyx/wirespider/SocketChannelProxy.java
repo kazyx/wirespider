@@ -48,7 +48,6 @@ class SocketChannelProxy implements SocketChannelWriter {
     }
 
     void onReceived(LinkedList<byte[]> data) {
-        WsLog.v(TAG, "onReceived");
         if (data.size() != 0) {
             mListener.onDataReceived(data);
         }

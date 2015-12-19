@@ -95,4 +95,22 @@ public final class ByteArrayUtil {
         }
         return (int) l;
     }
+
+    private static final char[] HEX_SOURCE = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+    /**
+     * Convert byte array to HEX format.
+     * @param bytes Source byte array
+     * @return HEX format.
+     */
+    public static String toHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("0x");
+        for (byte b : bytes) {
+            int v = b & 0xFF;
+            sb.append(HEX_SOURCE[v >>> 4])
+                    .append(HEX_SOURCE[v & 0x0F]);
+        }
+        return sb.toString();
+    }
 }
