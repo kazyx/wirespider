@@ -88,7 +88,7 @@ public abstract class WebSocket {
         mEngine = engine;
         mSocketChannel = ch;
 
-        mSocketChannelProxy = new SocketChannelProxy(engine, mChannelProxyListener);
+        mSocketChannelProxy = new SocketChannelProxy(mChannelProxyListener);
 
         mFrameTx = newFrameTx();
         mFrameRx = newFrameRx(mRxListener);

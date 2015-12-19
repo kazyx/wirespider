@@ -9,14 +9,14 @@
 
 package net.kazyx.wirespider;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.SelectionKey;
 
 /**
  * Factory to create unsecured TCP connections.
  */
 class DefaultSessionFactory implements SessionFactory {
     @Override
-    public DefaultSession createNew(SocketChannel ch) {
-        return new DefaultSession(ch);
+    public DefaultSession createNew(SelectionKey key) {
+        return new DefaultSession(key);
     }
 }

@@ -69,4 +69,8 @@ public class WebSocketFactory {
             }
         });
     }
+
+    SocketEngine socketEngine() {
+        return mSocketEngine;
+    }
 }

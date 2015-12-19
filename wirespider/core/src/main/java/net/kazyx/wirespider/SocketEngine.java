@@ -10,9 +10,10 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.SelectionKeyUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -20,6 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,10 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 class SocketEngine {
     private static final String TAG = SocketEngine.class.getSimpleName();
-
-    private static final int DIRECT_BUFFER_SIZE = 1024 * 4;
-
-    private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
@@ -65,10 +63,10 @@ class SocketEngine {
                     }
                     Iterator<SelectionKey> itr = mSelector.selectedKeys().iterator();
                     while (itr.hasNext()) {
-                        SelectionKey key = itr.next();
+                        final SelectionKey key = itr.next();
                         itr.remove();
                         if (key.isValid()) {
-                            WebSocket ws = (WebSocket) key.attachment();
+                            final WebSocket ws = (WebSocket) key.attachment();
                             if (key.isConnectable()) {
                                 try {
                                     SocketChannel ch = (SocketChannel) key.channel();
@@ -78,18 +76,33 @@ class SocketEngine {
                                         if (factory == null) {
                                             factory = mDefaultFactory;
                                         }
-                                        Session session = factory.createNew(ch);
+                                        SelectionKeyUtil.interestOps(key, SelectionKey.OP_READ);
+                                        final Session session = factory.createNew(key);
+                                        session.setListener(new Session.Listener() {
+                                            @Override
+                                            public void onAppDataReceived(LinkedList<byte[]> data) {
+                                                ws.socketChannelProxy().onReceived(data);
+                                            }
+
+                                            @Override
+                                            public void onConnected() {
+                                                ws.socketChannelProxy().onConnected(session);
+                                            }
+                                        });
                                         mSessionMap.put(ch, session);
-                                        key.interestOps(SelectionKey.OP_READ);
-                                        ws.socketChannelProxy().onConnected(key);
                                         continue;
                                     }
                                 } catch (IOException e) {
+                                    WsLog.printStackTrace(TAG, e);
                                     // Fallthrough
-                                }
+                                }//
                                 ws.socketChannelProxy().onConnectionFailed();
                             } else {
-                                ws.socketChannelProxy().onSelected(key);
+                                SocketChannel ch = (SocketChannel) key.channel();
+                                Session session = mSessionMap.get(ch);
+                                if (session != null) {
+                                    onSelected(key, ws.socketChannelProxy());
+                                }
                             }
                         } else {
                             SocketChannel ch = (SocketChannel) key.channel();
@@ -153,6 +166,28 @@ class SocketEngine {
         }
     }
 
+    /**
+     * Called only when the connection is already established.
+     *
+     * @param key Key of the selected channel.
+     */
+    private void onSelected(SelectionKey key, SocketChannelProxy proxy) {
+        try {
+            if (!key.isValid()) {
+                WsLog.d(TAG, "Skip invalid key");
+                return;
+            }
+            if (key.isReadable()) {
+                onReadReady(key);
+            }
+            if (key.isWritable()) {
+                onWriteReady(key);
+            }
+        } catch (IOException | CancelledKeyException e) {
+            proxy.onClosed();
+        }
+    }
+
     private final SelectorThread mSelectorThread;
 
     /**
@@ -165,41 +200,26 @@ class SocketEngine {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 
-    byte[] read(SocketChannel ch) throws IOException {
+    private void onReadReady(SelectionKey key) throws IOException {
+        SocketChannel ch = (SocketChannel) key.channel();
+
         Session session = mSessionMap.get(ch);
         if (session == null) {
             throw new IOException("Cannot read from closed session");
         }
-        try {
-            int length = session.read(mReadBuffer);
-            if (length == -1) {
-                throw new IOException("EOF");
-            } else if (length == 0) {
-                return null;
-            } else {
-                mReadBuffer.flip();
-                byte[] ret = new byte[length];
-                mReadBuffer.get(ret);
-                return ret;
-            }
-        } finally {
-            mReadBuffer.clear();
-        }
+
+        session.onReadReady();
     }
 
-    /**
-     * Write given {@link ByteBuffer} to the SocketChannel.
-     *
-     * @param ch SocketChannel to write data.
-     * @param bb ByteBuffer to be written.
-     * @throws IOException If some I/O error occurs.
-     */
-    void write(SocketChannel ch, ByteBuffer bb) throws IOException {
+    void onWriteReady(SelectionKey key) throws IOException {
+        SocketChannel ch = (SocketChannel) key.channel();
+
         Session session = mSessionMap.get(ch);
         if (session == null) {
-            throw new IOException("Cannot write into closed session");
+            throw new IOException("Cannot read from closed session");
         }
-        session.write(bb);
+
+        session.flush();
     }
 
     /**

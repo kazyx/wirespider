@@ -9,14 +9,16 @@
 
 package net.kazyx.wirespider;
 
-import java.nio.channels.SocketChannel;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 interface SessionFactory {
     /**
-     * Create a new TCP connection wrapper with the given {@link SocketChannel}.
+     * Create a new TCP connection wrapper with the given {@link SelectionKey}.
      *
-     * @param ch Substance of the connection.
+     * @param key Selection key of the connection.
      * @return Newly created {@link Session}.
+     * @throws IOException If failed to create new session.
      */
-    Session createNew(SocketChannel ch);
+    Session createNew(SelectionKey key) throws IOException;
 }

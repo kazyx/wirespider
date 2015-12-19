@@ -12,27 +12,47 @@ package net.kazyx.wirespider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 
 /**
  * TCP connection.
  */
 interface Session extends Closeable {
     /**
-     * Read data into the given {@link ByteBuffer}
-     *
-     * @param readBuffer The buffer into which bytes are to be transferred
-     * @return The number of bytes read, possibly zero, or <tt>-1</tt> if the
-     * channel has reached end-of-stream
-     * @throws IOException If some other I/O error occurs
-     */
-    int read(ByteBuffer readBuffer) throws IOException;
-
-    /**
      * Write data from the given {@link ByteBuffer}
      *
      * @param buffer The buffer from which bytes are to be retrieved
-     * @return The number of bytes written, possibly zero
      * @throws IOException If some other I/O error occurs
      */
-    int write(ByteBuffer buffer) throws IOException;
+    void enqueueWrite(byte[] buffer) throws IOException;
+
+    /**
+     * Ready to write data into the SocketChannel.
+     *
+     * @throws IOException If some other I/O error occurs
+     */
+    void flush() throws IOException;
+
+    /**
+     * Ready to read data from the SocketChannel.
+     *
+     * @throws IOException If some other I/O error occurs
+     */
+    void onReadReady() throws IOException;
+
+    /**
+     * Set {@link Listener} to detect data reception.
+     *
+     * @param listener Data reception listener.
+     */
+    void setListener(Listener listener);
+
+    interface Listener {
+        /**
+         * @param data Received application data.
+         */
+        void onAppDataReceived(LinkedList<byte[]> data);
+
+        void onConnected();
+    }
 }
