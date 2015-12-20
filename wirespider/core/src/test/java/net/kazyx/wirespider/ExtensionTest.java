@@ -17,8 +17,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class ExtensionTest {
 
     public static class CompressorTest {
@@ -140,7 +137,7 @@ public class ExtensionTest {
         @BeforeClass
         public static void setupClass() throws Exception {
             RandomSource.setSeed(0x12345678);
-            WsLog.logLevel(WsLog.Level.VERBOSE);
+            Base64.setEncoder(new Base64Encoder());
             server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();
         }

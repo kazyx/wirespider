@@ -48,6 +48,7 @@ public class WebSocketClientTest {
     @BeforeClass
     public static void setupClass() throws Exception {
         RandomSource.setSeed(0x12345678);
+        Base64.setEncoder(new Base64Encoder());
         server.boot();
     }
 

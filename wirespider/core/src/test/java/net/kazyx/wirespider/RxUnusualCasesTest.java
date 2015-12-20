@@ -10,8 +10,6 @@
 package net.kazyx.wirespider;
 
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -19,9 +17,7 @@ import java.util.Arrays;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class RxUnusualCasesTest {
-
     public static class ProtocolViolationTest {
         private void serverViolationTest(byte[] data) {
             final CustomLatch latch = new CustomLatch(1);

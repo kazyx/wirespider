@@ -11,15 +11,12 @@ package net.kazyx.wirespider;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class TxTest {
     public static class ServerToClientTest extends TestBase {
         @Override

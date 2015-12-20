@@ -94,8 +94,6 @@ public class TestWebSocketServer {
         handler.addServlet(new ServletHolder(servlet), "/");
         server.setHandler(handler);
 
-        Base64.setEncoder(new Base64Encoder());
-
         mStartLatch = new CountDownLatch(1);
         mEndLatch = new CountDownLatch(1);
 
