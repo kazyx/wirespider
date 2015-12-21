@@ -34,9 +34,8 @@ public class SecureSessionTest {
             WsLog.logLevel(WsLog.Level.DEBUG);
         }
 
-        private void echoExternalServer(String url) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
+        private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
             final CustomLatch latch = new CustomLatch(1);
-            final String echoMessage = "Hello !!!";
             SessionRequest seed = new SessionRequest.Builder(URI.create(url), new WebSocketHandler() {
                 @Override
                 public void onTextMessage(String message) {
@@ -44,6 +43,7 @@ public class SecureSessionTest {
                     if (message.equals(echoMessage)) {
                         latch.countDown();
                     } else {
+                        WsLog.d(TAG, "Message not matched: length " + echoMessage.length() + " -> " + message.length());
                         latch.unlockByFailure();
                     }
                 }
@@ -66,9 +66,9 @@ public class SecureSessionTest {
                 Future<WebSocket> future = factory.openAsync(seed);
                 ws = future.get(5, TimeUnit.SECONDS);
                 assertThat(ws.isConnected(), is(true));
+                WsLog.d(TAG, "Send: " + echoMessage);
                 ws.sendTextMessageAsync(echoMessage);
-                assertThat(latch.await(5, TimeUnit.SECONDS), is(true));
-                assertThat(latch.isUnlockedByCountDown(), is(true));
+                assertThat(latch.awaitSuccess(5, TimeUnit.SECONDS), is(true));
             } finally {
                 if (ws != null) {
                     ws.closeNow();
@@ -79,17 +79,22 @@ public class SecureSessionTest {
 
         @Test
         public void echoWebSocketOrgInsecure() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
-            echoExternalServer("ws://echo.websocket.org");
+            echoExternalServer("ws://echo.websocket.org", TestUtil.fixedLengthRandomString(128));
         }
 
         @Test
         public void echoWebSocketOrgSecureDefaultPort() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
-            echoExternalServer("wss://echo.websocket.org");
+            echoExternalServer("wss://echo.websocket.org", TestUtil.fixedLengthRandomString(128));
         }
 
         @Test
         public void echoWebSocketOrgSecurePort443() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
-            echoExternalServer("wss://echo.websocket.org:443");
+            echoExternalServer("wss://echo.websocket.org:443", TestUtil.fixedLengthRandomString(128));
+        }
+
+        @Test
+        public void echoWebSocketOrgSecureLargeMessage() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
+            echoExternalServer("wss://echo.websocket.org", TestUtil.fixedLengthRandomString(4096));
         }
     }
 }

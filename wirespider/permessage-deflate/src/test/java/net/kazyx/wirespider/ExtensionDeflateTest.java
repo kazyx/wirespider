@@ -407,5 +407,25 @@ public class ExtensionDeflateTest {
             byte[] compressed = mCompression.compress(original);
             assertThat(Arrays.equals(copy, compressed), is(false));
         }
+
+        @Test
+        public void requestBuilder() throws IOException {
+            CompressionStrategy storategy = new CompressionStrategy() {
+                @Override
+                public int minSizeInBytes() {
+                    return 2;
+                }
+            };
+            DeflateRequest req = new DeflateRequest.Builder()
+                    .setStrategy(storategy)
+                    .build();
+            PerMessageDeflate deflate = ((PerMessageDeflate) req.extension());
+
+            byte[] one = {(byte) 0x11};
+            assertThat(Arrays.equals(deflate.compress(one), one), is(true));
+
+            byte[] two = {(byte) 0x11, (byte) 0x11};
+            assertThat(Arrays.equals(deflate.compress(two), two), is(false));
+        }
     }
 }

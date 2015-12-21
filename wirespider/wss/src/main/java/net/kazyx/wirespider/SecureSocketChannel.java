@@ -32,6 +32,7 @@ class SecureSocketChannel implements Closeable {
 
     private ByteBuffer mNetIn;
     private ByteBuffer mNetOut;
+    private static final Object mNetOutSync = new Object();
 
     private ByteBuffer mAppIn;
     private final ByteBuffer mAppOut;
@@ -66,10 +67,14 @@ class SecureSocketChannel implements Closeable {
                 written = src.length;
             } else {
                 int toWrite = mAppOut.remaining();
-                mAppOut.put(src, 0, toWrite);
+                mAppOut.put(src, written, toWrite);
                 written += toWrite;
             }
-            wrap();
+            mAppOut.flip();
+            synchronized (mNetOutSync) {
+                wrap();
+            }
+            mAppOut.compact();
         }
     }
 
@@ -124,7 +129,11 @@ class SecureSocketChannel implements Closeable {
                 evaluateCurrentStatus();
                 break;
             case NEED_WRAP:
-                wrap();
+                mAppOut.flip();
+                synchronized (mNetOutSync) {
+                    wrap();
+                }
+                mAppOut.compact();
                 break;
             case NEED_UNWRAP:
                 unwrap();
@@ -141,16 +150,7 @@ class SecureSocketChannel implements Closeable {
     }
 
     private void wrap() throws IOException {
-        mAppOut.flip();
-        final SSLEngineResult result;
-        try {
-            result = mSslEngine.wrap(mAppOut, mNetOut);
-        } catch (SSLException e) {
-            WsLog.printStackTrace(TAG, e);
-            close();
-            throw new IOException("Detected end of stream");
-        }
-        mAppOut.compact();
+        SSLEngineResult result = mSslEngine.wrap(mAppOut, mNetOut);
         // WsLog.v(TAG, "wrap: ", result.toString());
 
         final SSLEngineResult.Status status = result.getStatus();
@@ -162,11 +162,11 @@ class SecureSocketChannel implements Closeable {
                 }
                 break;
             case BUFFER_OVERFLOW:
-                mNetOut = reallocateBufferIfRequired(mNetOut, mSslEngine.getSession().getPacketBufferSize());
+                mNetOut = reallocateByOverflow(mNetOut, mSslEngine.getSession().getPacketBufferSize());
                 wrap();
                 break;
             case CLOSED:
-                evaluateStatus(result.getHandshakeStatus());
+                WsLog.d(TAG, "SSLEngine wrap result: CLOSED");
                 close();
                 break;
             default:
@@ -176,13 +176,15 @@ class SecureSocketChannel implements Closeable {
 
     void flush() throws IOException {
         // WsLog.d(TAG, "flush");
-        mNetOut.flip();
-        try {
-            while (mNetOut.hasRemaining()) {
-                mChannel.write(mNetOut);
+        synchronized (mNetOutSync) {
+            mNetOut.flip();
+            try {
+                while (mNetOut.hasRemaining()) {
+                    mChannel.write(mNetOut);
+                }
+            } finally {
+                mNetOut.compact();
             }
-        } finally {
-            mNetOut.compact();
         }
 
         SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
@@ -200,14 +202,7 @@ class SecureSocketChannel implements Closeable {
         }
 
         mNetIn.flip();
-        final SSLEngineResult result;
-        try {
-            result = mSslEngine.unwrap(mNetIn, mAppIn);
-        } catch (SSLException e) {
-            WsLog.printStackTrace(TAG, e);
-            close();
-            throw new IOException("Detected end of stream");
-        }
+        SSLEngineResult result = mSslEngine.unwrap(mNetIn, mAppIn);
         mNetIn.compact();
         // WsLog.v(TAG, "unwrap: ", result.toString());
 
@@ -218,14 +213,15 @@ class SecureSocketChannel implements Closeable {
                 evaluateStatus(result.getHandshakeStatus());
                 break;
             case BUFFER_UNDERFLOW:
-                mNetIn = reallocateBufferIfRequired(mNetIn, mSslEngine.getSession().getPacketBufferSize());
+                mNetIn = reallocateByUnderflow(mNetIn, mAppIn, mSslEngine.getSession().getPacketBufferSize());
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
                 break;
             case BUFFER_OVERFLOW:
-                mAppIn = reallocateBufferIfRequired(mAppIn, mSslEngine.getSession().getApplicationBufferSize());
+                mAppIn = reallocateByOverflow(mAppIn, mSslEngine.getSession().getApplicationBufferSize());
                 unwrap();
                 break;
             case CLOSED:
+                WsLog.d(TAG, "SSLEngine unwrap result: CLOSED");
                 close();
                 break;
             default:
@@ -233,15 +229,22 @@ class SecureSocketChannel implements Closeable {
         }
     }
 
-    private static ByteBuffer reallocateBufferIfRequired(ByteBuffer current, int newRemaining) {
-        if (current.remaining() < newRemaining) {
-            current.flip();
-            final ByteBuffer newBuffer = ByteBuffer.allocateDirect(current.position() + newRemaining);
-            newBuffer.put(current);
+    private static ByteBuffer reallocateByOverflow(ByteBuffer dst, int newSize) {
+        ByteBuffer newBuffer = ByteBuffer.allocateDirect(dst.position() + newSize);
+        dst.flip();
+        newBuffer.put(dst);
+        // WsLog.d(TAG, "Original: " + dst.capacity() + ", New: " + newBuffer.capacity());
+        return newBuffer;
+    }
+
+    private static ByteBuffer reallocateByUnderflow(ByteBuffer src, ByteBuffer dst, int newSize) {
+        if (newSize > dst.capacity()) {
+            ByteBuffer newBuffer = ByteBuffer.allocateDirect(newSize);
+            src.flip();
+            newBuffer.put(src);
             return newBuffer;
-        } else {
-            return current;
         }
+        return src;
     }
 
     @Override

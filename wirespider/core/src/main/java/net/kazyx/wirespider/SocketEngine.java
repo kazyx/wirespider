@@ -101,7 +101,17 @@ class SocketEngine {
                                 SocketChannel ch = (SocketChannel) key.channel();
                                 Session session = mSessionMap.get(ch);
                                 if (session != null) {
-                                    onSelected(key, ws.socketChannelProxy());
+                                    try {
+                                        if (key.isReadable()) {
+                                            session.onReadReady();
+                                        }
+                                        if (key.isWritable()) {
+                                            session.onFlushReady();
+                                        }
+                                    } catch (IOException | CancelledKeyException e) {
+                                        IOUtil.close(session);
+                                        ws.socketChannelProxy().onClosed();
+                                    }
                                 }
                             }
                         } else {
@@ -166,28 +176,6 @@ class SocketEngine {
         }
     }
 
-    /**
-     * Called only when the connection is already established.
-     *
-     * @param key Key of the selected channel.
-     */
-    private void onSelected(SelectionKey key, SocketChannelProxy proxy) {
-        try {
-            if (!key.isValid()) {
-                WsLog.d(TAG, "Skip invalid key");
-                return;
-            }
-            if (key.isReadable()) {
-                onReadReady(key);
-            }
-            if (key.isWritable()) {
-                onWriteReady(key);
-            }
-        } catch (IOException | CancelledKeyException e) {
-            proxy.onClosed();
-        }
-    }
-
     private final SelectorThread mSelectorThread;
 
     /**
@@ -196,30 +184,8 @@ class SocketEngine {
      * @param ws WebSocket to be registered.
      * @param ops Selector operations.
      */
-    public void register(WebSocket ws, int ops) {
+    void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
-    }
-
-    private void onReadReady(SelectionKey key) throws IOException {
-        SocketChannel ch = (SocketChannel) key.channel();
-
-        Session session = mSessionMap.get(ch);
-        if (session == null) {
-            throw new IOException("Cannot read from closed session");
-        }
-
-        session.onReadReady();
-    }
-
-    void onWriteReady(SelectionKey key) throws IOException {
-        SocketChannel ch = (SocketChannel) key.channel();
-
-        Session session = mSessionMap.get(ch);
-        if (session == null) {
-            throw new IOException("Cannot read from closed session");
-        }
-
-        session.onFlushReady();
     }
 
     /**

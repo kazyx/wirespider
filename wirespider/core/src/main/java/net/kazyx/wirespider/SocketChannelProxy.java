@@ -68,6 +68,7 @@ class SocketChannelProxy implements SocketChannelWriter {
         try {
             mSession.enqueueWrite(data);
         } catch (IOException e) {
+            IOUtil.close(mSession);
             onClosed();
         }
     }

@@ -9,11 +9,13 @@
 
 package net.kazyx.wirespider.util;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 public final class ByteArrayUtil {
     private ByteArrayUtil() {
     }
+
+    private static final Charset UTF8 = Charset.forName("UTF-8");
 
     /**
      * Convert byte array to UTF-8 String.
@@ -22,11 +24,7 @@ public final class ByteArrayUtil {
      * @return String expression of the byte array.
      */
     public static String toText(byte[] bytes) {
-        try {
-            return new String(bytes, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new UnsupportedOperationException(e);
-        }
+        return new String(bytes, UTF8);
     }
 
     /**
@@ -38,11 +36,7 @@ public final class ByteArrayUtil {
      * @return String expression of the byte array.
      */
     public static String toText(byte[] bytes, int offset, int length) {
-        try {
-            return new String(bytes, offset, length, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new UnsupportedOperationException(e);
-        }
+        return new String(bytes, offset, length, UTF8);
     }
 
     /**
@@ -52,11 +46,7 @@ public final class ByteArrayUtil {
      * @return Byte array expression of the String.
      */
     public static byte[] fromText(String text) {
-        try {
-            return text.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new UnsupportedOperationException(e);
-        }
+        return text.getBytes(UTF8);
     }
 
     /**
@@ -100,6 +90,7 @@ public final class ByteArrayUtil {
 
     /**
      * Convert byte array to HEX format.
+     *
      * @param bytes Source byte array
      * @return HEX format.
      */

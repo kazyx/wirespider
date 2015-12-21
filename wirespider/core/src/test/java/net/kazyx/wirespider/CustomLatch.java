@@ -37,6 +37,10 @@ public class CustomLatch {
         return mLatch.await(time, unit);
     }
 
+    public boolean awaitSuccess(long time, TimeUnit unit) throws InterruptedException {
+        return mLatch.await(time, unit) && !isUnlockedByFailure;
+    }
+
     public synchronized long getCount() {
         return mLatch.getCount();
     }
