@@ -17,8 +17,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,9 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class ExtensionDeflateTest {
-
     public static class CompressorTest {
         private PerMessageDeflate mCompression;
 
@@ -140,7 +136,7 @@ public class ExtensionDeflateTest {
         @BeforeClass
         public static void setupClass() throws Exception {
             RandomSource.setSeed(0x12345678);
-            WsLog.logLevel(WsLog.Level.VERBOSE);
+            Base64.setEncoder(new Base64Encoder());
             server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();
         }
@@ -410,6 +406,26 @@ public class ExtensionDeflateTest {
             final byte[] copy = Arrays.copyOf(original, original.length);
             byte[] compressed = mCompression.compress(original);
             assertThat(Arrays.equals(copy, compressed), is(false));
+        }
+
+        @Test
+        public void requestBuilder() throws IOException {
+            CompressionStrategy storategy = new CompressionStrategy() {
+                @Override
+                public int minSizeInBytes() {
+                    return 2;
+                }
+            };
+            DeflateRequest req = new DeflateRequest.Builder()
+                    .setStrategy(storategy)
+                    .build();
+            PerMessageDeflate deflate = ((PerMessageDeflate) req.extension());
+
+            byte[] one = {(byte) 0x11};
+            assertThat(Arrays.equals(deflate.compress(one), one), is(true));
+
+            byte[] two = {(byte) 0x11, (byte) 0x11};
+            assertThat(Arrays.equals(deflate.compress(two), two), is(false));
         }
     }
 }

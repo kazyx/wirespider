@@ -36,7 +36,7 @@ public class SubProtocolTest {
     @BeforeClass
     public static void setupClass() throws Exception {
         RandomSource.setSeed(0x12345678);
-        WsLog.logLevel(WsLog.Level.VERBOSE);
+        Base64.setEncoder(new Base64Encoder());
         server.registerSubProtocol(SUBPROTOCOL);
         server.boot();
     }

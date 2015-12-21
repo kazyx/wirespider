@@ -18,7 +18,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +36,15 @@ public class HandshakeTest {
 
     @Before
     public void setup() throws IOException {
-        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), true);
+        mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
+            @Override
+            public void writeAsync(byte[] data) {
+            }
+
+            @Override
+            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            }
+        }, true);
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -250,7 +257,16 @@ public class HandshakeTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void upgradeRequestByServer() throws IOException {
-        mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
+        // mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
+        mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
+            @Override
+            public void writeAsync(byte[] data) {
+            }
+
+            @Override
+            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            }
+        }, false);
         mHandshake.tryUpgrade(DUMMY_URI, null);
     }
 

@@ -44,12 +44,12 @@ public class WebSocketFactory {
     /**
      * Open WebSocket connection to the specified remote server.
      *
-     * @param seed Seed to be used for opening handshake.
+     * @param req Request to be used for opening handshake.
      * @return Future of WebSocket instance.
      * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
-    public synchronized Future<WebSocket> openAsync(final SessionRequest seed) {
-        ArgumentCheck.rejectNullArgs(seed);
+    public synchronized Future<WebSocket> openAsync(final SessionRequest req) {
+        ArgumentCheck.rejectNullArgs(req);
 
         return mExecutor.submit(new Callable<WebSocket>() {
             @Override
@@ -57,7 +57,7 @@ public class WebSocketFactory {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = new ClientWebSocket(seed, mSocketEngine, ch);
+                ClientWebSocket ws = new ClientWebSocket(req, mSocketEngine, ch);
                 try {
                     ws.connect();
                     return ws;
@@ -68,5 +68,9 @@ public class WebSocketFactory {
                 }
             }
         });
+    }
+
+    SocketEngine socketEngine() {
+        return mSocketEngine;
     }
 }

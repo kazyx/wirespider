@@ -11,8 +11,6 @@ package net.kazyx.wirespider;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class WsLogTest {
     private static final String TAG = WsLogTest.class.getSimpleName();
 

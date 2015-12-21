@@ -10,6 +10,7 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -134,6 +135,12 @@ public class WsLog {
     static void v(String tag, String message, long detail) {
         if (sLevel == Level.VERBOSE) {
             sWriter.v(tag, message + ": " + detail);
+        }
+    }
+
+    static void v(String tag, String message, byte[] detail) {
+        if (sLevel == Level.VERBOSE) {
+            sWriter.v(tag, message + ": " + ByteArrayUtil.toHex(detail));
         }
     }
 

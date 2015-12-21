@@ -10,9 +10,10 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.SelectionKeyUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -20,14 +21,20 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class SocketEngine {
     private static final String TAG = SocketEngine.class.getSimpleName();
 
-    private static final int DIRECT_BUFFER_SIZE = 1024 * 4;
+    private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
-    private final ByteBuffer mReadBuffer = ByteBuffer.allocateDirect(DIRECT_BUFFER_SIZE);
+    private final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
+
+    private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
 
     SocketEngine(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
@@ -38,7 +45,7 @@ class SocketEngine {
         mSelectorThread.interrupt();
     }
 
-    private static class SelectorThread extends Thread {
+    private class SelectorThread extends Thread {
         private final Selector mSelector;
 
         SelectorThread(Selector selector) {
@@ -56,10 +63,64 @@ class SocketEngine {
                     }
                     Iterator<SelectionKey> itr = mSelector.selectedKeys().iterator();
                     while (itr.hasNext()) {
-                        SelectionKey key = itr.next();
+                        final SelectionKey key = itr.next();
                         itr.remove();
                         if (key.isValid()) {
-                            ((SocketChannelProxy) key.attachment()).onSelected(key);
+                            final WebSocket ws = (WebSocket) key.attachment();
+                            if (key.isConnectable()) {
+                                try {
+                                    SocketChannel ch = (SocketChannel) key.channel();
+                                    if (ch.finishConnect()) {
+                                        String scheme = ws.remoteUri().getScheme().toLowerCase(Locale.US);
+                                        SessionFactory factory = mFactories.get(scheme);
+                                        if (factory == null) {
+                                            factory = mDefaultFactory;
+                                        }
+                                        SelectionKeyUtil.interestOps(key, SelectionKey.OP_READ);
+                                        final Session session = factory.createNew(key);
+                                        session.setListener(new Session.Listener() {
+                                            @Override
+                                            public void onAppDataReceived(LinkedList<byte[]> data) {
+                                                ws.socketChannelProxy().onReceived(data);
+                                            }
+
+                                            @Override
+                                            public void onConnected() {
+                                                ws.socketChannelProxy().onConnected(session);
+                                            }
+                                        });
+                                        mSessionMap.put(ch, session);
+                                        continue;
+                                    }
+                                } catch (IOException e) {
+                                    WsLog.printStackTrace(TAG, e);
+                                    // Fallthrough
+                                }
+                                ws.socketChannelProxy().onConnectionFailed();
+                            } else {
+                                SocketChannel ch = (SocketChannel) key.channel();
+                                Session session = mSessionMap.get(ch);
+                                if (session != null) {
+                                    try {
+                                        if (key.isReadable()) {
+                                            session.onReadReady();
+                                        }
+                                        if (key.isWritable()) {
+                                            session.onFlushReady();
+                                        }
+                                    } catch (IOException | CancelledKeyException e) {
+                                        IOUtil.close(session);
+                                        ws.socketChannelProxy().onClosed();
+                                    }
+                                }
+                            }
+                        } else {
+                            SocketChannel ch = (SocketChannel) key.channel();
+                            Session session = mSessionMap.get(ch);
+                            if (session != null) {
+                                IOUtil.close(session);
+                                mSessionMap.remove(ch);
+                            }
                         }
                     }
                 }
@@ -68,7 +129,7 @@ class SocketEngine {
                 for (SelectionKey key : mSelector.keys()) {
                     key.cancel();
                     IOUtil.close(key.channel());
-                    ((SocketChannelProxy) key.attachment()).onCancelled();
+                    ((WebSocket) key.attachment()).socketChannelProxy().onCancelled();
                 }
                 mQueue.clear();
                 IOUtil.close(mSelector);
@@ -98,13 +159,13 @@ class SocketEngine {
             }
         }
 
-        void registerNewChannel(final SocketChannel channel, final int ops, final SocketChannelProxy handler) {
+        void registerNewChannel(final SocketChannel channel, final int ops, final WebSocket ws) {
             synchronized (mQueue) {
                 mQueue.add(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            channel.register(mSelector, ops, handler);
+                            channel.register(mSelector, ops, ws);
                         } catch (ClosedChannelException e) {
                             WsLog.printStackTrace(TAG, e);
                         }
@@ -124,24 +185,14 @@ class SocketEngine {
      * @param ops Selector operations.
      */
     void register(WebSocket ws, int ops) {
-        mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws.socketChannelProxy());
+        mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 
-    byte[] read(SocketChannel ch) throws IOException {
-        try {
-            int length = ch.read(mReadBuffer);
-            if (length == -1) {
-                throw new IOException("EOF");
-            } else if (length == 0) {
-                return null;
-            } else {
-                mReadBuffer.flip();
-                byte[] ret = new byte[length];
-                mReadBuffer.get(ret);
-                return ret;
-            }
-        } finally {
-            mReadBuffer.clear();
-        }
+    /**
+     * @param factory {@link SessionFactory}to use for the specified URI scheme.
+     * @param scheme Scheme to use the {@link SessionFactory} to create a {@link Session}
+     */
+    void registerFactory(SessionFactory factory, String scheme) {
+        mFactories.put(scheme.toLowerCase(Locale.US), factory);
     }
 }

@@ -48,6 +48,7 @@ public class WebSocketClientTest {
     @BeforeClass
     public static void setupClass() throws Exception {
         RandomSource.setSeed(0x12345678);
+        Base64.setEncoder(new Base64Encoder());
         server.boot();
     }
 
@@ -155,6 +156,35 @@ public class WebSocketClientTest {
             ws = future.get(500, TimeUnit.MILLISECONDS);
             ws.closeAsync();
             assertThat(sCloseFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void suddenShutdownOfSocketEngine() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        final CustomLatch latch = new CustomLatch(1);
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if(code == CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
+                    latch.countDown();
+                } else {
+                    latch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketFactory factory = new WebSocketFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(seed);
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+            factory.destroy();
+            assertThat(latch.awaitSuccess(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
             if (ws != null) {
                 ws.closeNow();

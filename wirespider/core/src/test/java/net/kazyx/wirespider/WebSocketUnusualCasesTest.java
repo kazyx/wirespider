@@ -21,8 +21,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -36,7 +34,6 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@RunWith(Enclosed.class)
 public class WebSocketUnusualCasesTest {
     public static class EventAfterClosed {
         private static Server server = new Server(10000);

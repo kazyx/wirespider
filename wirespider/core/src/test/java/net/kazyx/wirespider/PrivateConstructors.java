@@ -13,6 +13,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.SelectionKeyUtil;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -66,6 +67,11 @@ public class PrivateConstructors {
     @Test
     public void randomSource() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         constructor(RandomSource.class);
+    }
+
+    @Test
+    public void selectionKeyUtil() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        constructor(SelectionKeyUtil.class);
     }
 
     private void constructor(Class<?> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
