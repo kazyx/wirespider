@@ -31,8 +31,9 @@ android {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.1.0'
-    compile 'net.kazyx:wirespider-permessage-deflate:1.1.0'
+    compile 'net.kazyx:wirespider:1.2.0'
+    compile 'net.kazyx:wirespider-permessage-deflate:1.2.0'
+    compile 'net.kazyx:wirespider-wss:1.2.0'
 
     compile 'com.android.support:cardview-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'

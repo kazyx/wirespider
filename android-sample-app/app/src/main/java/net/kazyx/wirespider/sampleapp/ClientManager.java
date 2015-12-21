@@ -12,6 +12,7 @@ package net.kazyx.wirespider.sampleapp;
 import android.util.Base64;
 import android.util.Log;
 
+import net.kazyx.wirespider.SecureTransport;
 import net.kazyx.wirespider.SessionRequest;
 import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.WebSocketFactory;
@@ -23,6 +24,7 @@ import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -43,13 +45,14 @@ public class ClientManager {
 
     private final WebSocketFactory mFactory;
 
-    public ClientManager() throws IOException {
+    public ClientManager() throws IOException, NoSuchAlgorithmException {
         mFactory = new WebSocketFactory();
+        SecureTransport.enable(mFactory);
     }
 
     public void open(URI uri, final ConnectionListener listener) {
         List<ExtensionRequest> extensionRequests = new ArrayList<>();
-        extensionRequests.add(new DeflateRequest.Builder().strategy(new CompressionStrategy() {
+        extensionRequests.add(new DeflateRequest.Builder().setStrategy(new CompressionStrategy() {
             @Override
             public int minSizeInBytes() {
                 return 100;

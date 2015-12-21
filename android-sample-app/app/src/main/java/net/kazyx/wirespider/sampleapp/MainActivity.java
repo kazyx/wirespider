@@ -16,6 +16,7 @@ import android.support.v7.app.AppCompatActivity;
 import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 public class MainActivity extends AppCompatActivity implements ActivityProxy {
 
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
 
         try {
             mManager = new ClientManager();
-        } catch (IOException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
 

@@ -2,7 +2,7 @@
     <string name="app_name">WireSpider Sample</string>
 
     <string name="url_box_title">Remote server URL:</string>
-    <string name="url_hint">ws://localhost:10000</string>
+    <string name="url_hint">wss://echo.websocket.org</string>
     <string name="open_connection">Connect</string>
     <string name="launch_server">Use local echo server</string>
     <string name="listening">Listening on port %s</string>
