@@ -5,3 +5,6 @@ project(':wirespider').projectDir = new File(settingsDir, '../wirespider/core')
 
 includeFlat 'wirespider-permessage-deflate'
 project(':wirespider-permessage-deflate').projectDir = new File(settingsDir, '../wirespider/permessage-deflate')
+
+includeFlat 'wirespider-wss'
+project(':wirespider-wss').projectDir = new File(settingsDir, '../wirespider/wss')
