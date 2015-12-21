@@ -178,16 +178,12 @@ class SecureSocketChannel implements Closeable {
         // WsLog.d(TAG, "flush");
         synchronized (mNetOutSync) {
             mNetOut.flip();
-            try {
-                while (mNetOut.hasRemaining()) {
-                    mChannel.write(mNetOut);
-                }
-            } finally {
-                mNetOut.compact();
+            mChannel.write(mNetOut);
+            mNetOut.compact();
+            if (mNetOut.position() == 0) {
+                SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
             }
         }
-
-        SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
 
         evaluateCurrentStatus();
     }
@@ -214,7 +210,6 @@ class SecureSocketChannel implements Closeable {
                 break;
             case BUFFER_UNDERFLOW:
                 mNetIn = reallocateByUnderflow(mNetIn, mAppIn, mSslEngine.getSession().getPacketBufferSize());
-                SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
                 break;
             case BUFFER_OVERFLOW:
                 mAppIn = reallocateByOverflow(mAppIn, mSslEngine.getSession().getApplicationBufferSize());

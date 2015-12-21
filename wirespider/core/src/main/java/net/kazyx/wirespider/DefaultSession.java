@@ -70,7 +70,8 @@ class DefaultSession implements Session {
                 }
 
                 if (data != null) {
-                    int written = writeToBuffer(data, mOffset);
+                    int written = Math.min(data.length - mOffset, mWriteBuffer.capacity() - mWriteBuffer.position());
+                    mWriteBuffer.put(data, mOffset, written);
                     if (mOffset + written == data.length) {
                         mRemaining = null;
                         mOffset = 0;
@@ -82,27 +83,15 @@ class DefaultSession implements Session {
             }
         }
 
-        boolean completed = flushBuffer();
+        mWriteBuffer.flip();
+        mChannel.write(mWriteBuffer);
+        mWriteBuffer.compact();
 
         synchronized (mWriteQueue) {
-            if (completed && mRemaining == null && mWriteQueue.isEmpty()) {
+            if (mWriteBuffer.position() == 0 && mRemaining == null && mWriteQueue.isEmpty()) {
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
             }
         }
-    }
-
-    private int writeToBuffer(byte[] data, int offset) throws IOException {
-        int written = Math.min(data.length - offset, mWriteBuffer.capacity() - mWriteBuffer.position());
-        mWriteBuffer.put(data, offset, written);
-        return written;
-    }
-
-    private boolean flushBuffer() throws IOException {
-        mWriteBuffer.flip();
-        mChannel.write(mWriteBuffer);
-        boolean completed = !mWriteBuffer.hasRemaining();
-        mWriteBuffer.compact();
-        return completed;
     }
 
     @Override
