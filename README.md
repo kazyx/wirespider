@@ -6,13 +6,13 @@ WireSpider
 WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
 - High performance `java.nio` based implementation.
-- Incredibly compact binary size.(Only 66KB!!)
+- Incredibly compact binary size.
 - Android compatible. (Note that Java 7 language features must be enabled.)
 
 ## Download
 
 Download [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider) from Bintray,
-or add the following dependencies in your `build.gradle`.
+or write Gradle dependency as follows.
 
 ```groovy
 buildscript {
@@ -22,14 +22,14 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.1.0'
+    compile 'net.kazyx:wirespider:1.2.0'
 }
 ```
 
 ## Build from source code
 ```bash
 cd <root>/wirespider
-./gradlew assemble
+./gradlew wirespider:assemble
 ```
 Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/core/build/libs`
 
@@ -91,18 +91,63 @@ websocket.closeAsync();
 factory.destroy();
 ```
 
+### WebSocket over TLS
+
+WebSocket secure connection ("wss" scheme) is provided by `wirespider-wss` placed under `wirespider/wss`.  
+Downloaded [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-wss)
+or write Gradle dependency as follows.
+
+```groovy
+dependencies {
+    compile 'net.kazyx:wirespider-wss:1.2.0'
+}
+```
+
+Before opening WebSocket connection, enable `SecureTransport` on the `WebSocketFactory`.
+
+```java
+SecureTransport.enable(factory);
+```
+
+All settings done. TLS handshake will be performed in case of `wss` scheme.
+
+```java
+URI uri = URI.create("wss://host:port/path"); // wss scheme
+SessionRequest req = new SessionRequest.Builder(uri, handler).build();
+
+WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS); // This is a WebSocket over TLS
+```
+
 ### Extensions
 
 WebSocket extensions can be implemented with `net.kazyx.wirespider.extension.Extension` interface.
 
-Permessage deflate extension implementation is provided in `wirespider/permessage-deflate` project.  
-And it also can be downloaded as [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate)
-or gradle dependency.
+#### Per message deflate extension
+
+Permessage deflate extension is provided by `wirespider-permessage-deflate` placed under `wirespider/permessage-deflate`.  
+Downloaded [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate)
+or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-permessage-deflate:1.1.0'
+    compile 'net.kazyx:wirespider-permessage-deflate:1.2.0'
 }
+```
+
+Set `DeflateRequest` in the `SessionRequest`.
+
+```java
+List<ExtensionRequest> extensions = new ArrayList<>();
+extensions.add(new DeflateRequest.Builder().setStrategy(new CompressionStrategy() {
+    @Override
+    public int minSizeInBytes() {
+        return 200; // Threshold message size to perform compression.
+    }
+}).build());
+
+SessionRequest req = new SessionRequest.Builder(uri, handler)
+        .setExtensions(extensions)
+        .build();
 ```
 
 Please refer to `android-sample-app` project to learn usage of `permessage-deflate` extension.
