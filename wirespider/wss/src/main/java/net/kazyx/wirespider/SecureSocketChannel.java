@@ -32,11 +32,10 @@ class SecureSocketChannel implements Closeable {
 
     private ByteBuffer mNetIn;
     private ByteBuffer mNetOut;
-    private static final Object mNetOutSync = new Object();
+    private static final Object mOutSync = new Object();
 
     private ByteBuffer mAppIn;
     private final ByteBuffer mAppOut;
-
 
     SecureSocketChannel(SelectionKey key, SSLEngine sslEngine, int appOutBufferSize) {
         mKey = key;
@@ -60,21 +59,21 @@ class SecureSocketChannel implements Closeable {
 
     void wrapAndEnqueue(byte[] src) throws IOException {
         // WsLog.v(TAG, "Wrap and Enqueue");
-        int written = 0;
-        while (written != src.length) {
-            if (src.length - written < mAppOut.remaining()) {
-                mAppOut.put(src, written, src.length - written);
-                written = src.length;
-            } else {
-                int toWrite = mAppOut.remaining();
-                mAppOut.put(src, written, toWrite);
-                written += toWrite;
-            }
-            mAppOut.flip();
-            synchronized (mNetOutSync) {
+        synchronized (mOutSync) {
+            int written = 0;
+            while (written != src.length) {
+                if (src.length - written < mAppOut.remaining()) {
+                    mAppOut.put(src, written, src.length - written);
+                    written = src.length;
+                } else {
+                    int toWrite = mAppOut.remaining();
+                    mAppOut.put(src, written, toWrite);
+                    written += toWrite;
+                }
+                mAppOut.flip();
                 wrap();
+                mAppOut.compact();
             }
-            mAppOut.compact();
         }
     }
 
@@ -129,11 +128,11 @@ class SecureSocketChannel implements Closeable {
                 evaluateCurrentStatus();
                 break;
             case NEED_WRAP:
-                mAppOut.flip();
-                synchronized (mNetOutSync) {
+                synchronized (mOutSync) {
+                    mAppOut.flip();
                     wrap();
+                    mAppOut.compact();
                 }
-                mAppOut.compact();
                 break;
             case NEED_UNWRAP:
                 unwrap();
@@ -176,7 +175,7 @@ class SecureSocketChannel implements Closeable {
 
     void flush() throws IOException {
         // WsLog.d(TAG, "flush");
-        synchronized (mNetOutSync) {
+        synchronized (mOutSync) {
             mNetOut.flip();
             mChannel.write(mNetOut);
             mNetOut.compact();
@@ -200,7 +199,7 @@ class SecureSocketChannel implements Closeable {
         mNetIn.flip();
         SSLEngineResult result = mSslEngine.unwrap(mNetIn, mAppIn);
         mNetIn.compact();
-        // WsLog.v(TAG, "unwrap: ", result.toString());
+        // WsLog.d(TAG, "unwrap: ", result.toString());
 
         final SSLEngineResult.Status status = result.getStatus();
         switch (status) {
