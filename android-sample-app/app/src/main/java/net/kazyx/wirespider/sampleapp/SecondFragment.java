@@ -90,7 +90,7 @@ public class SecondFragment extends Fragment {
         mManager.setWebSocketHandler(mHandler);
         mViewWidth = container.getWidth();
 
-        updateConsole(getString(R.string.ready), MessageAdapter.Type.OTHER);
+        updateConsole(SampleApp.getTextRes(R.string.ready), MessageAdapter.Type.OTHER);
         for (Extension ext : mManager.getWebSocket().extensions()) {
             updateConsole("Extension: " + ext.name(), MessageAdapter.Type.OTHER);
         }
@@ -107,27 +107,27 @@ public class SecondFragment extends Fragment {
     void onSendClicked() {
         String text = mBinding.messageEditBox.getText().toString();
         if (text.length() == 0) {
-            text = getString(R.string.hello);
+            text = SampleApp.getTextRes(R.string.hello);
         }
         mManager.getWebSocket().sendTextMessageAsync(text);
-        mAdapter.add(getString(R.string.client_to_server) + text, MessageAdapter.Type.SENT);
+        mAdapter.add(SampleApp.getTextRes(R.string.client_to_server) + text, MessageAdapter.Type.SENT);
         mAdapter.notifyDataSetChanged();
     }
 
     private WebSocketHandler mHandler = new WebSocketHandler() {
         @Override
         public void onTextMessage(String message) {
-            updateConsole(getString(R.string.server_to_client) + message, MessageAdapter.Type.RECEIVED);
+            updateConsole(SampleApp.getTextRes(R.string.server_to_client) + message, MessageAdapter.Type.RECEIVED);
         }
 
         @Override
         public void onBinaryMessage(byte[] message) {
-            updateConsole(getString(R.string.server_to_client) + "binary message " + message.length + " bytes", MessageAdapter.Type.RECEIVED);
+            updateConsole(SampleApp.getTextRes(R.string.server_to_client) + "binary message " + message.length + " bytes", MessageAdapter.Type.RECEIVED);
         }
 
         @Override
         public void onClosed(int code, String reason) {
-            updateConsole(getString(R.string.connection_closed), MessageAdapter.Type.OTHER);
+            updateConsole(SampleApp.getTextRes(R.string.connection_closed), MessageAdapter.Type.OTHER);
 
             if (mActivityProxy != null) {
                 mActivityProxy.onDisconnected();

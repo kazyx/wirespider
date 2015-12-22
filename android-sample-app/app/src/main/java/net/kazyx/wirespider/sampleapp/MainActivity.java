@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
             throw new IllegalStateException(e);
         }
 
-        mLocalServerManager = new LocalServerManager(10000);
+        mLocalServerManager = new LocalServerManager();
 
         getFragmentManager().beginTransaction()
                 .replace(R.id.contentRoot, FirstFragment.newInstance())

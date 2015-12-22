@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout  xmlns:android="http://schemas.android.com/apk/res/android"
-         xmlns:tools="http://schemas.android.com/tools"
-         android:layout_width="match_parent"
-         android:layout_height="match_parent"
-         xmlns:app="http://schemas.android.com/apk/res-auto"
-         tools:context=".FirstFragment">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".FirstFragment">
 
     <RelativeLayout>
+
         <LinearLayout
             android:id="@+id/url_frame"
             android:layout_width="match_parent"
@@ -18,38 +19,62 @@
                 android:id="@+id/textView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/url_box_title"
-                android:textSize="16sp" />
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textSize="16sp"/>
 
-            <EditText
-                android:id="@+id/url_edit_box"
-                android:inputType="textUri"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/url_hint"
-                android:textColor="@android:color/black"
-                android:textSize="16sp" />
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/encryption_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/encryption_selector"/>
+
+                <EditText
+                    android:id="@+id/url_edit_box"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="@string/url_hint"
+                    android:inputType="textUri"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp"/>
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <Button
             android:id="@+id/connect_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/open_connection"
-            android:textSize="16sp"
-            android:padding="16dp"
             android:layout_below="@+id/url_frame"
             android:layout_centerHorizontal="true"
-            android:layout_margin="24dp" />
+            android:layout_margin="24dp"
+            android:padding="16dp"
+            android:text="@string/open_connection"
+            android:textSize="16sp"/>
+
+        <ProgressBar
+            android:id="@+id/progress_circle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_below="@id/connect_button"
+            android:layout_centerHorizontal="true"
+            android:visibility="gone"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:padding="16dp"
             android:layout_margin="24dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <LinearLayout
                 android:id="@+id/local_server_frame"
@@ -62,22 +87,22 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/launch_server"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"/>
 
                 <android.support.v7.widget.SwitchCompat
                     android:id="@+id/launch_server_switch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:switchMinWidth="54dp"
-                    android:checked="false" />
+                    android:checked="false"
+                    app:switchMinWidth="54dp"/>
             </LinearLayout>
 
             <TextView
                 android:id="@+id/port_indicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="invisible"
-                android:textColor="@android:color/tertiary_text_light" />
+                android:textColor="@android:color/tertiary_text_light"
+                android:visibility="invisible"/>
         </LinearLayout>
 
     </RelativeLayout>

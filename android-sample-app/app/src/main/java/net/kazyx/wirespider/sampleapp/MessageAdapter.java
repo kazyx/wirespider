@@ -20,7 +20,7 @@ public class MessageAdapter extends BaseAdapter {
     private final Context mContext;
 
     public MessageAdapter() {
-        mContext = SampleApplication.getAppContext();
+        mContext = SampleApp.getAppContext();
         mInflater = LayoutInflater.from(mContext);
     }
 

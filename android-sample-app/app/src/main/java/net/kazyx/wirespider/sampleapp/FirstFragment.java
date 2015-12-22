@@ -20,6 +20,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -90,6 +92,20 @@ public class FirstFragment extends Fragment {
                 FirstFragment.this.onConnectClicked();
             }
         });
+        mBinding.urlEditBox.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                mBinding.encryptionIcon.setEnabled(s.length() == 0 || s.toString().startsWith("wss://"));
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
 
         WebSocket ws = mActivityProxy.getClientManager().getWebSocket();
         if (ws != null) {
@@ -150,8 +166,9 @@ public class FirstFragment extends Fragment {
             if (enabled) {
                 mBinding.launchServerSwitch.setEnabled(true);
                 mBinding.launchServerSwitch.setChecked(true);
-                mBinding.portIndicator.setText(String.format(getString(R.string.listening), "10000"));
+                mBinding.portIndicator.setText(String.format(SampleApp.getTextRes(R.string.listening), LocalServerManager.PORT));
                 mBinding.portIndicator.setVisibility(View.VISIBLE);
+                mBinding.urlEditBox.setText(String.format(SampleApp.getTextRes(R.string.url_hint_local), LocalServerManager.PORT));
             } else {
                 mBinding.launchServerSwitch.setEnabled(true);
                 mBinding.launchServerSwitch.setChecked(false);
@@ -163,14 +180,25 @@ public class FirstFragment extends Fragment {
     void onConnectClicked() {
         String text = mBinding.urlEditBox.getText().toString();
         if (text.length() == 0) {
-            text = getString(R.string.url_hint);
+            text = SampleApp.getTextRes(R.string.url_hint);
         }
         try {
             URI uri = new URI(text);
+            mBinding.progressCircle.setVisibility(View.VISIBLE);
             mActivityProxy.getClientManager().open(uri, new ClientManager.ConnectionListener() {
                 @Override
                 public void onConnected() {
                     Log.w(TAG, "Connected");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!isResumed()) {
+                                return;
+                            }
+                            mBinding.progressCircle.setVisibility(View.GONE);
+                        }
+                    });
+
                     if (mActivityProxy != null) {
                         mActivityProxy.onConnected();
                     }
@@ -185,6 +213,7 @@ public class FirstFragment extends Fragment {
                             if (!isResumed()) {
                                 return;
                             }
+                            mBinding.progressCircle.setVisibility(View.GONE);
                             Toast.makeText(getActivity(), "Connection Failed", Toast.LENGTH_SHORT).show();
                         }
                     });

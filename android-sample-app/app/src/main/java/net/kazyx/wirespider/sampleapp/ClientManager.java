@@ -38,7 +38,7 @@ public class ClientManager {
         net.kazyx.wirespider.Base64.setEncoder(new net.kazyx.wirespider.Base64.Encoder() {
             @Override
             public String encode(byte[] source) {
-                return Base64.encodeToString(source, android.util.Base64.DEFAULT);
+                return Base64.encodeToString(source, Base64.DEFAULT);
             }
         });
     }
@@ -47,7 +47,7 @@ public class ClientManager {
 
     public ClientManager() throws IOException, NoSuchAlgorithmException {
         mFactory = new WebSocketFactory();
-        SecureTransport.enable(mFactory);
+        SecureTransport.enable(mFactory); // Enable WebSocket over TLS
     }
 
     public void open(URI uri, final ConnectionListener listener) {
@@ -55,7 +55,7 @@ public class ClientManager {
         extensionRequests.add(new DeflateRequest.Builder().setStrategy(new CompressionStrategy() {
             @Override
             public int minSizeInBytes() {
-                return 100;
+                return 100; // If sending message size is over 100 byte, compression will be performed.
             }
         }).build());
 

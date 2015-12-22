@@ -24,10 +24,12 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class LocalServerManager {
     private static final String TAG = LocalServerManager.class.getSimpleName();
 
+    public static final int PORT = 10000;
+
     private Server mServer;
 
-    public LocalServerManager(int port) {
-        mServer = new Server(port);
+    public LocalServerManager() {
+        mServer = new Server(PORT);
     }
 
     public void bootAsync(final ServerLifeCycle listener) {
