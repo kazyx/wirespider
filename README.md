@@ -155,8 +155,6 @@ SessionRequest req = new SessionRequest.Builder(uri, handler)
         .build();
 ```
 
-Please refer to `android-sample-app` project to learn usage of `permessage-deflate` extension.
-
 ## ProGuard
 
 No additional prevension required.
