@@ -30,7 +30,14 @@ public class UtilsTest {
     public static class IOUtilTest {
         @Test
         public void closeNull() {
-            IOUtil.close(null);
+            Closeable closeable = null;
+            IOUtil.close(closeable);
+        }
+
+        @Test
+        public void closeNullSelectable() {
+            Selector closeable = null;
+            IOUtil.close(closeable);
         }
 
         @Test
