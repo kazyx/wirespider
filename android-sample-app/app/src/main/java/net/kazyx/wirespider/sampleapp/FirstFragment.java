@@ -33,6 +33,7 @@ import android.widget.Toast;
 import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.sampleapp.databinding.FirstFragmentBinding;
+import net.kazyx.wirespider.sampleapp.echoserver.JettyServerManager;
 import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.net.URI;
@@ -112,6 +113,11 @@ public class FirstFragment extends Fragment {
             ws.closeAsync(CloseStatusCode.NORMAL_CLOSURE, "normal closure");
         }
         mViewWidth = container.getWidth();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            mBinding.launchServerDescription.setText(R.string.local_server_restriction);
+            mBinding.launchServerSwitch.setVisibility(View.GONE);
+        }
         return v;
     }
 
@@ -166,9 +172,9 @@ public class FirstFragment extends Fragment {
             if (enabled) {
                 mBinding.launchServerSwitch.setEnabled(true);
                 mBinding.launchServerSwitch.setChecked(true);
-                mBinding.portIndicator.setText(String.format(SampleApp.getTextRes(R.string.listening), LocalServerManager.PORT));
+                mBinding.portIndicator.setText(String.format(SampleApp.getTextRes(R.string.listening), JettyServerManager.PORT));
                 mBinding.portIndicator.setVisibility(View.VISIBLE);
-                mBinding.urlEditBox.setText(String.format(SampleApp.getTextRes(R.string.url_hint_local), LocalServerManager.PORT));
+                mBinding.urlEditBox.setText(String.format(SampleApp.getTextRes(R.string.url_hint_local), JettyServerManager.PORT));
             } else {
                 mBinding.launchServerSwitch.setEnabled(true);
                 mBinding.launchServerSwitch.setChecked(false);
