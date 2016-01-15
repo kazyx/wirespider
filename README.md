@@ -23,7 +23,7 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.2.0'
+    compile 'net.kazyx:wirespider:1.2.1'
 }
 ```
 
@@ -102,7 +102,7 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-wss:1.2.0'
+    compile 'net.kazyx:wirespider-wss:1.2.1'
 }
 ```
 
@@ -135,7 +135,7 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-permessage-deflate:1.2.0'
+    compile 'net.kazyx:wirespider-permessage-deflate:1.2.1'
 }
 ```
 
