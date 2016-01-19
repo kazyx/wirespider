@@ -12,8 +12,10 @@ package net.kazyx.wirespider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
+import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -98,5 +100,74 @@ public class SecureSessionTest {
             echoExternalServer("wss://echo.websocket.org", TestUtil.fixedLengthRandomString(4096));
         }
         */
+    }
+
+    public static class SSLContextTest {
+        @BeforeClass
+        public static void setupClass() throws Exception {
+            RandomSource.setSeed(0x12345678);
+            Base64.setEncoder(new Base64Encoder());
+            WsLog.logLevel(WsLog.Level.DEBUG);
+        }
+
+        private void echoExternalServer(String protocol) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException, KeyManagementException {
+            final CustomLatch latch = new CustomLatch(1);
+            SessionRequest seed = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), new WebSocketHandler() {
+                @Override
+                public void onTextMessage(String message) {
+                    WsLog.d(TAG, "Received: " + message);
+                    if (message.equals("hello")) {
+                        latch.countDown();
+                    } else {
+                        WsLog.d(TAG, "Message not matched: " + message);
+                        latch.unlockByFailure();
+                    }
+                }
+
+                @Override
+                public void onBinaryMessage(byte[] message) {
+                    latch.unlockByFailure();
+                }
+
+                @Override
+                public void onClosed(int code, String reason) {
+                    latch.unlockByFailure();
+                }
+            }).build();
+
+            WebSocketFactory factory = new WebSocketFactory();
+            SSLContext context = SSLContext.getInstance(protocol);
+            context.init(null, null, null);
+            SecureTransport.enable(factory, context);
+            WebSocket ws = null;
+            try {
+                Future<WebSocket> future = factory.openAsync(seed);
+                ws = future.get(5, TimeUnit.SECONDS);
+                assertThat(ws.isConnected(), is(true));
+                WsLog.d(TAG, "Send: hello");
+                ws.sendTextMessageAsync("hello");
+                assertThat(latch.awaitSuccess(5, TimeUnit.SECONDS), is(true));
+            } finally {
+                if (ws != null) {
+                    ws.closeNow();
+                }
+                factory.destroy();
+            }
+        }
+
+        @Test
+        public void TLSv1() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException, KeyManagementException {
+            echoExternalServer("TLSv1");
+        }
+
+        @Test
+        public void TLSv1_1() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException, KeyManagementException {
+            echoExternalServer("TLSv1.1");
+        }
+
+        @Test
+        public void TLSv1_2() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException, KeyManagementException {
+            echoExternalServer("TLSv1.2");
+        }
     }
 }

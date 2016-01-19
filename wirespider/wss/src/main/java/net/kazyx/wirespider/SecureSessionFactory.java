@@ -17,8 +17,12 @@ import java.security.NoSuchAlgorithmException;
 class SecureSessionFactory implements SessionFactory {
     private final SSLContext mSslContext;
 
-    public SecureSessionFactory() throws NoSuchAlgorithmException {
-        mSslContext = SSLContext.getDefault();
+    SecureSessionFactory(SSLContext context) throws NoSuchAlgorithmException {
+        if (context == null) {
+            mSslContext = SSLContext.getDefault();
+        } else {
+            mSslContext = context;
+        }
     }
 
     @Override
