@@ -9,8 +9,13 @@
 
 package net.kazyx.wirespider.sampleapp;
 
+import android.content.Context;
 import android.util.Base64;
 import android.util.Log;
+
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.security.ProviderInstaller;
 
 import net.kazyx.wirespider.SecureTransport;
 import net.kazyx.wirespider.SessionRequest;
@@ -45,8 +50,9 @@ public class ClientManager {
 
     private final WebSocketFactory mFactory;
 
-    public ClientManager() throws IOException, NoSuchAlgorithmException {
+    public ClientManager() throws IOException, NoSuchAlgorithmException, GooglePlayServicesNotAvailableException, GooglePlayServicesRepairableException {
         mFactory = new WebSocketFactory();
+        ProviderInstaller.installIfNeeded(SampleApp.getAppContext()); // For Android 4.4 and lower
         SecureTransport.enable(mFactory); // Enable WebSocket over TLS
     }
 

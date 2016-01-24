@@ -13,6 +13,10 @@ import android.app.FragmentTransaction;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.Toast;
+
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 
 import net.kazyx.wirespider.sampleapp.echoserver.DummyServerManager;
 import net.kazyx.wirespider.sampleapp.echoserver.JettyServerManager;
@@ -35,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
             mManager = new ClientManager();
         } catch (IOException | NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
+        } catch (GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
+            Toast.makeText(getApplicationContext(), R.string.play_service_error, Toast.LENGTH_LONG).show();
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {

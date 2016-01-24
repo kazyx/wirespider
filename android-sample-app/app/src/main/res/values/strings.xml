@@ -14,4 +14,5 @@
     <string name="server_to_client">Received:\u0020</string>
     <string name="connection_closed">Connection closed</string>
     <string name="local_server_restriction">Local echo server is supported only on Android 4.4 or newer</string>
+    <string name="play_service_error">Google Play Services error</string>
 </resources>
