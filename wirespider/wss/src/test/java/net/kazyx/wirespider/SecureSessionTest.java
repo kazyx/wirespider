@@ -156,11 +156,6 @@ public class SecureSessionTest {
         }
 
         @Test
-        public void TLSv1() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException, KeyManagementException {
-            echoExternalServer("TLSv1");
-        }
-
-        @Test
         public void TLSv1_1() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException, KeyManagementException {
             echoExternalServer("TLSv1.1");
         }

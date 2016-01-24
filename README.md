@@ -23,7 +23,7 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.2.1'
+    compile 'net.kazyx:wirespider:1.2.2'
 }
 ```
 
@@ -102,7 +102,7 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-wss:1.2.1'
+    compile 'net.kazyx:wirespider-wss:1.2.2'
 }
 ```
 
@@ -121,6 +121,26 @@ SessionRequest req = new SessionRequest.Builder(uri, handler).build();
 WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS); // This is a WebSocket over TLS
 ```
 
+#### In case of Android 4.4 and lower
+
+It is recommended to use Google Play Services to enable newer version of TLS.
+
+```groovy
+dependencies {
+    'com.google.android.gms:play-services-basement:+'
+}
+```
+
+```java
+mFactory = new WebSocketFactory();
+
+ProviderInstaller.installIfNeeded(getApplicationContext());
+SSLContext context = SSLContext.getInstance("TLSv1.2");
+context.init(null, null, null);
+
+SecureTransport.enable(mFactory, context);
+```
+
 ### Extensions
 
 WebSocket extensions can be implemented with `net.kazyx.wirespider.extension.Extension` interface.
@@ -135,7 +155,7 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-permessage-deflate:1.2.1'
+    compile 'net.kazyx:wirespider-permessage-deflate:1.2.2'
 }
 ```
 
