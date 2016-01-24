@@ -121,24 +121,21 @@ SessionRequest req = new SessionRequest.Builder(uri, handler).build();
 WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS); // This is a WebSocket over TLS
 ```
 
-#### In case of Android 4.4 and lower
+#### Note on Android 4.4 and lower versions
 
-It is recommended to use Google Play Services to enable newer version of TLS.
+It is recommended to use Google Play Services to enable `TLSv1.1` or later.
 
 ```groovy
 dependencies {
-    'com.google.android.gms:play-services-basement:+'
+    compile 'com.google.android.gms:play-services-basement:+'
 }
 ```
 
 ```java
-mFactory = new WebSocketFactory();
-
 ProviderInstaller.installIfNeeded(getApplicationContext());
-SSLContext context = SSLContext.getInstance("TLSv1.2");
-context.init(null, null, null);
 
-SecureTransport.enable(mFactory, context);
+mFactory = new WebSocketFactory();
+SecureTransport.enable(mFactory);
 ```
 
 ### Extensions
