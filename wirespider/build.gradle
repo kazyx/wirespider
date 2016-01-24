@@ -17,7 +17,7 @@ subprojects {
     apply plugin: 'com.jfrog.bintray'
 
     group = 'net.kazyx'
-    version = '1.2.2'
+    version = '1.2.3-SNAPSHOT'
 
     repositories {
         jcenter()
