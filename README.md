@@ -2,7 +2,7 @@ WireSpider
 =====
 [![Build Status](https://travis-ci.org/kazyx/wirespider.svg?branch=master)](https://travis-ci.org/kazyx/wirespider)
 [![Coverage Status](https://coveralls.io/repos/kazyx/wirespider/badge.svg?branch=master)](https://coveralls.io/r/kazyx/wirespider)
-[ ![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider/images/download.svg) ](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider/_latestVersion)
+[![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider/images/download.svg)](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider/_latestVersion)
 
 WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
 
@@ -121,9 +121,22 @@ SessionRequest req = new SessionRequest.Builder(uri, handler).build();
 WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS); // This is a WebSocket over TLS
 ```
 
-#### Note on Android 4.4 and lower versions
+#### TLSv1.1 and TLSv1.2 on JDK7
 
-It is recommended to use Google Play Services to enable `TLSv1.1` or later.
+Use `SSLContext` on which the newer version of TLS is enabled,
+since JDK7 disables client side `TLSv1.1` and `TLSv1.2` by default.
+
+```java
+SSLContext context = SSLContext.getInstance("TLSv1.1");
+context.init(null, null, null);
+
+mFactory = new WebSocketFactory();
+SecureTransport.enable(mFactory, context);
+```
+
+#### TLSv1.1 and over on Android 4.4 and lower versions
+
+It is recommended to use Google Play Services to enable `TLSv1.1` and over.
 
 ```groovy
 dependencies {
