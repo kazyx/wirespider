@@ -86,11 +86,13 @@ public class SecureSessionTest {
 
         @Test
         public void echoWebSocketOrgSecureDefaultPort() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
+            // Note: this test fails on JDK 7, since it disables TLS 1.1 on the client side.
             echoExternalServer("wss://echo.websocket.org", TestUtil.fixedLengthRandomString(128));
         }
 
         @Test
         public void echoWebSocketOrgSecurePort443() throws InterruptedException, ExecutionException, TimeoutException, NoSuchAlgorithmException, IOException {
+            // Note: this test fails on JDK 7, since it disables TLS 1.1 on the client side.
             echoExternalServer("wss://echo.websocket.org:443", TestUtil.fixedLengthRandomString(128));
         }
 
