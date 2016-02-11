@@ -57,7 +57,7 @@ class DeflateFilter implements PayloadFilter {
     }
 
     private ByteBuffer onReceivingMessage(ByteBuffer data, byte extensionBits) throws IOException {
-        if (BitMask.isMatched(extensionBits, PerMessageCompression.RESERVED_BIT_FLAGS)) {
+        if (BitMask.isFlagMatched(extensionBits, PerMessageCompression.RESERVED_BIT_FLAGS)) {
             return mDeflater.decompress(data);
         }
         return data;

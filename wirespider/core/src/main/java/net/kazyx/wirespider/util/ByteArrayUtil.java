@@ -82,22 +82,6 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte array to unsigned integer.
-     *
-     * @param bytes Source byte array.
-     * @return The unsigned integer value.
-     * @throws IllegalArgumentException Value exceeds int 32.
-     */
-    public static int toUnsignedInteger(byte[] bytes) {
-        long l = toUnsignedLong(bytes);
-        if (Integer.MAX_VALUE < l) {
-            // TODO support large payload over 2GB
-            throw new IllegalArgumentException("Exceeds int32 range: " + l);
-        }
-        return (int) l;
-    }
-
-    /**
      * Convert byte array to long.
      *
      * @param bytes Source byte buffer.
@@ -119,7 +103,7 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte array to unsigned integer.
+     * Convert byte buffer to unsigned integer.
      *
      * @param bytes Source byte buffer.
      * @return The unsigned integer value.

@@ -48,7 +48,7 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 first = readBytes(1).array()[0];
-                isFinal = BitMask.isMatched(first, (byte) 0x80);
+                isFinal = BitMask.isFlagMatched(first, (byte) 0x80);
 
                 if (mFilter == null && (first & 0x70) != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
@@ -76,7 +76,7 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 byte second = readBytes(1).array()[0];
-                isMasked = BitMask.isMatched(second, (byte) 0x80);
+                isMasked = BitMask.isFlagMatched(second, (byte) 0x80);
 
                 if (mIsClient == isMasked) {
                     throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");

@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -75,7 +76,7 @@ public class UtilsTest {
         @Test
         public void bit32ToInteger() {
             byte[] _4BytesZero = {(byte) 0x7f, (byte) 0xff, (byte) 0xff, (byte) 0xff};
-            assertThat(ByteArrayUtil.toUnsignedInteger(_4BytesZero), is(Integer.MAX_VALUE));
+            assertThat(ByteArrayUtil.toUnsignedInteger(ByteBuffer.wrap(_4BytesZero)), is(Integer.MAX_VALUE));
         }
 
         @Test
