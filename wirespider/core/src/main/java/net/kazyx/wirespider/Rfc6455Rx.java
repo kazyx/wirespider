@@ -78,7 +78,7 @@ class Rfc6455Rx implements FrameRx {
                 byte second = readBytes(1).array()[0];
                 isMasked = BitMask.isMatched(second, (byte) 0x80);
 
-                if (!(mIsClient ^ isMasked)) {
+                if (mIsClient == isMasked) {
                     throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");
                 }
 
