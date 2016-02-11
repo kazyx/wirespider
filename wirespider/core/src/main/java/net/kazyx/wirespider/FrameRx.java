@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
 
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 interface FrameRx {
@@ -19,7 +20,7 @@ interface FrameRx {
      *
      * @param data List of received data.
      */
-    void onDataReceived(LinkedList<byte[]> data);
+    void onDataReceived(LinkedList<ByteBuffer> data);
 
     void setPayloadFilter(PayloadFilter filter);
 
@@ -51,7 +52,7 @@ interface FrameRx {
          *
          * @param message Received binary message.
          */
-        void onBinaryMessage(byte[] message);
+        void onBinaryMessage(ByteBuffer message);
 
         /**
          * Called when received text message.

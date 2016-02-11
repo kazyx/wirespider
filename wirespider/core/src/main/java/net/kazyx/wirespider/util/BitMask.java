@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider.util;
 
+import java.nio.ByteBuffer;
+
 public final class BitMask {
     private BitMask() {
     }
@@ -36,5 +38,18 @@ public final class BitMask {
             payload[i] = (byte) (payload[i] ^ maskingKey[i & 3]); // MOD 4
         }
         return payload;
+    }
+
+    /**
+     * Mask payload to send data from client.
+     *
+     * @param payload Source raw payload.
+     * @param maskingKey Masking key
+     */
+    public static void maskAll(ByteBuffer payload, byte[] maskingKey) {
+        byte[] array = payload.array();
+        for (int i = 0; i < array.length; i++) {
+            array[i] = (byte) (array[i] ^ maskingKey[i & 3]); // MOD 4
+        }
     }
 }

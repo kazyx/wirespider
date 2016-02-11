@@ -100,13 +100,14 @@ class SecureSocketChannel implements Closeable {
             return;
         }
 
-        byte[] ret = new byte[mAppIn.limit()];
-        mAppIn.get(ret);
+        ByteBuffer ret = ByteBuffer.allocate(mAppIn.limit());
+        ret.put(mAppIn);
         mAppIn.clear();
+        ret.flip();
 
         // WsLog.v(TAG, "Unwrapped", ret);
 
-        LinkedList<byte[]> list = new LinkedList<>();
+        LinkedList<ByteBuffer> list = new LinkedList<>();
         list.add(ret);
 
         mListener.onAppDataReceived(list);

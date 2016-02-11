@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import java.nio.ByteBuffer;
+
 import static org.junit.Assert.fail;
 
 public class FailOnCallbackRxListener implements FrameRx.Listener {
@@ -31,7 +33,7 @@ public class FailOnCallbackRxListener implements FrameRx.Listener {
     }
 
     @Override
-    public void onBinaryMessage(byte[] message) {
+    public void onBinaryMessage(ByteBuffer message) {
         fail();
     }
 

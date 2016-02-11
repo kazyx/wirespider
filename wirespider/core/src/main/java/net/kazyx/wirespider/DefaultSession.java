@@ -96,10 +96,10 @@ class DefaultSession implements Session {
 
     @Override
     public void onReadReady() throws IOException {
-        LinkedList<byte[]> list = new LinkedList<>();
+        LinkedList<ByteBuffer> list = new LinkedList<>();
 
         while (true) {
-            byte[] buff = read();
+            ByteBuffer buff = read();
             if (buff == null) {
                 break;
             }
@@ -117,7 +117,7 @@ class DefaultSession implements Session {
         mListener.onConnected();
     }
 
-    private byte[] read() throws IOException {
+    private ByteBuffer read() throws IOException {
         try {
             int length = mChannel.read(mReadBuffer);
             if (length == -1) {
@@ -126,9 +126,10 @@ class DefaultSession implements Session {
                 return null;
             } else {
                 mReadBuffer.flip();
-                byte[] ret = new byte[length];
-                mReadBuffer.get(ret);
-                return ret;
+                ByteBuffer buff = ByteBuffer.allocate(length);
+                buff.put(mReadBuffer);
+                buff.flip();
+                return buff;
             }
         } finally {
             mReadBuffer.clear();

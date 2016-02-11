@@ -12,6 +12,7 @@ package net.kazyx.wirespider.extension.compression;
 import net.kazyx.wirespider.extension.Extension;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * permessage-compression extension.
@@ -32,5 +33,5 @@ public abstract class PerMessageCompression implements Extension {
      * @return Original data.
      * @throws IOException Failed to decompress data.
      */
-    public abstract byte[] decompress(byte[] source) throws IOException;
+    public abstract ByteBuffer decompress(ByteBuffer source) throws IOException;
 }

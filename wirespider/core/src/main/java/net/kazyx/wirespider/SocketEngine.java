@@ -13,6 +13,7 @@ import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -80,7 +81,7 @@ class SocketEngine {
                                         final Session session = factory.createNew(key);
                                         session.setListener(new Session.Listener() {
                                             @Override
-                                            public void onAppDataReceived(LinkedList<byte[]> data) {
+                                            public void onAppDataReceived(LinkedList<ByteBuffer> data) {
                                                 ws.socketChannelProxy().onReceived(data);
                                             }
 

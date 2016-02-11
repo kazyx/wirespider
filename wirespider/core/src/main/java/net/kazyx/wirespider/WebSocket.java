@@ -14,6 +14,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
@@ -258,11 +259,11 @@ public abstract class WebSocket {
         }
 
         @Override
-        public void onDataReceived(final LinkedList<byte[]> data) {
+        public void onDataReceived(final LinkedList<ByteBuffer> data) {
             // Log.d(TAG, "SocketChannelProxy onDataReceived");
             if (!isConnected()) {
                 try {
-                    LinkedList<byte[]> remaining = mHandshake.onHandshakeResponse(data);
+                    LinkedList<ByteBuffer> remaining = mHandshake.onHandshakeResponse(data);
                     mIsHandshakeCompleted = true;
                     mIsConnected = true;
                     List<Extension> extensions = mHandshake.extensions();
@@ -324,11 +325,11 @@ public abstract class WebSocket {
         }
 
         @Override
-        public void onBinaryMessage(byte[] message) {
+        public void onBinaryMessage(ByteBuffer message) {
             if (!isConnected()) {
                 return;
             }
-            mCallbackHandler.onBinaryMessage(message);
+            mCallbackHandler.onBinaryMessage(message.array());
         }
 
         @Override

@@ -15,6 +15,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.Deflater;
@@ -116,19 +117,19 @@ public class PerMessageDeflate extends PerMessageCompression {
     private static final int INFLATE_BUFFER = 512;
 
     @Override
-    public byte[] decompress(byte[] source) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.length);
+    public ByteBuffer decompress(ByteBuffer source) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.remaining());
 
         synchronized (mDecompressor) {
             mDecompressor.reset();
 
             InflaterOutputStream ios = new InflaterOutputStream(buffer, mDecompressor, INFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(ios);
-            os.write(source, 0, source.length);
+            os.write(source.array(), 0, source.remaining());
             os.flush();
             ios.finish();
 
-            return buffer.toByteArray();
+            return ByteBuffer.wrap(buffer.toByteArray());
         }
     }
 }

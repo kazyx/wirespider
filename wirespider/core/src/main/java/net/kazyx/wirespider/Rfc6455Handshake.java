@@ -20,8 +20,8 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -136,27 +136,31 @@ class Rfc6455Handshake implements Handshake {
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
-    public LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException {
+    public LinkedList<ByteBuffer> onHandshakeResponse(LinkedList<ByteBuffer> data) throws BufferUnsatisfiedException, HandshakeFailureException {
         boolean isHeaderEnd = false;
 
-        ListIterator<byte[]> itr = data.listIterator();
+        ListIterator<ByteBuffer> itr = data.listIterator();
         while (itr.hasNext()) {
-            byte[] ba = itr.next();
+            ByteBuffer ba = itr.next();
 
-            String str = ByteArrayUtil.toText(ba);
+            int pos = ba.position();
+            int limit = ba.limit();
+            String str = ByteArrayUtil.toTextRemaining(ba);
+            ba.position(pos);
+            ba.limit(limit);
             // Log.d(TAG, str);
 
             int index = str.indexOf("\r\n\r\n");
             if (index == -1) {
-                mBuffer.write(ba, 0, ba.length);
+                mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, ba.remaining());
                 itr.remove();
             } else {
                 isHeaderEnd = true;
                 int end = index + 4;
-                mBuffer.write(ba, 0, end);
+                mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, end);
 
-                if (ba.length > end) {
-                    itr.set(Arrays.copyOfRange(ba, end, ba.length));
+                if (ba.remaining() > end) {
+                    // itr.set(Arrays.copyOfRange(ba, end, ba.length));
                 } else {
                     itr.remove();
                 }

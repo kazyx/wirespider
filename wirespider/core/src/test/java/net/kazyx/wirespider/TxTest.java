@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -137,8 +138,8 @@ public class TxTest {
             final byte[] msg = TestUtil.fixedLengthRandomByteArray(length);
             mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] data) {
-                    assertThat(Arrays.equals(msg, data), is(true));
+                public void onBinaryMessage(ByteBuffer data) {
+                    assertThat(Arrays.equals(msg, data.array()), is(true));
                 }
             }, 100000, fromServer());
             mTx.sendBinaryAsync(Arrays.copyOf(msg, msg.length));

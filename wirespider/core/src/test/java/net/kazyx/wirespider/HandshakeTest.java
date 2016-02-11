@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -331,7 +332,7 @@ public class HandshakeTest {
         }
 
         @Override
-        public void onDataReceived(LinkedList<byte[]> data) {
+        public void onDataReceived(LinkedList<ByteBuffer> data) {
         }
     }
 }

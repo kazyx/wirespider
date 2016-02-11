@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -156,8 +157,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    assertThat(message.length, is(limit));
+                public void onBinaryMessage(ByteBuffer message) {
+                    assertThat(message.array().length, is(limit));
                     assertThat(latch.getCount(), is(1L));
                 }
 
@@ -431,8 +432,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(payload, message)) {
+                public void onBinaryMessage(ByteBuffer message) {
+                    if (Arrays.equals(payload, message.array())) {
                         latch.countDown();
                     } else {
                         latch.unlockByFailure();
@@ -460,8 +461,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(payload, message)) {
+                public void onBinaryMessage(ByteBuffer message) {
+                    if (Arrays.equals(payload, message.array())) {
                         latch.countDown();
                     } else {
                         latch.unlockByFailure();

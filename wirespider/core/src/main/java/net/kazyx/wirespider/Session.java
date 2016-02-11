@@ -51,7 +51,7 @@ interface Session extends Closeable {
         /**
          * @param data Received application data.
          */
-        void onAppDataReceived(LinkedList<byte[]> data);
+        void onAppDataReceived(LinkedList<ByteBuffer> data);
 
         /**
          * Ready to handle application data.

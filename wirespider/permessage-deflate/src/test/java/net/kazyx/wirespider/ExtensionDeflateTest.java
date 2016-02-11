@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
@@ -50,10 +51,10 @@ public class ExtensionDeflateTest {
             byte[] compressed = mCompression.compress(source);
             System.out.println("Compressed: " + source.length + " to " + compressed.length);
 
-            byte[] decompressed = mCompression.decompress(compressed);
+            ByteBuffer decompressed = mCompression.decompress(ByteBuffer.wrap(compressed));
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
         }
 
         @Test
@@ -66,18 +67,18 @@ public class ExtensionDeflateTest {
             byte[] compressed = mCompression.compress(source);
             System.out.println("Compressed: " + source.length + " to " + compressed.length);
 
-            byte[] decompressed = mCompression.decompress(compressed);
+            ByteBuffer decompressed = mCompression.decompress(ByteBuffer.wrap(compressed));
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
 
             compressed = mCompression.compress(source);
             System.out.println("Compressed: " + source.length + " to " + compressed.length);
 
-            decompressed = mCompression.decompress(compressed);
+            decompressed = mCompression.decompress(ByteBuffer.wrap(compressed));
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
         }
     }
 
