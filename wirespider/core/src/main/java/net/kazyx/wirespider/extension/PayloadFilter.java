@@ -21,7 +21,7 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onSendingText(byte[] data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException;
 
     /**
      * Called before the frame is created.
@@ -31,7 +31,7 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onSendingBinary(byte[] data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException;
 
     /**
      * Called before the message is restored from the frame.

@@ -57,19 +57,18 @@ class SecureSocketChannel implements Closeable {
         evaluateCurrentStatus();
     }
 
-    void wrapAndEnqueue(byte[] src) throws IOException {
+    void wrapAndEnqueue(ByteBuffer src) throws IOException {
         // WsLog.v(TAG, "Wrap and Enqueue");
         synchronized (mOutSync) {
-            int written = 0;
-            while (written != src.length) {
-                if (src.length - written < mAppOut.remaining()) {
-                    mAppOut.put(src, written, src.length - written);
-                    written = src.length;
+            while (src.remaining() != 0) {
+                if (mAppOut.remaining() < src.remaining()) {
+                    byte[] tmp = new byte[mAppOut.remaining()];
+                    src.get(tmp);
+                    mAppOut.put(tmp);
                 } else {
-                    int toWrite = mAppOut.remaining();
-                    mAppOut.put(src, written, toWrite);
-                    written += toWrite;
+                    mAppOut.put(src);
                 }
+
                 mAppOut.flip();
                 wrap();
                 mAppOut.compact();

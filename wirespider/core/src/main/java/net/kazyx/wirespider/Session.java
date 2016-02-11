@@ -24,7 +24,7 @@ interface Session extends Closeable {
      * @param buffer The buffer from which bytes are to be retrieved
      * @throws IOException If some other I/O error occurs
      */
-    void enqueueWrite(byte[] buffer) throws IOException;
+    void enqueueWrite(ByteBuffer buffer) throws IOException;
 
     /**
      * Ready to write data into the SocketChannel.

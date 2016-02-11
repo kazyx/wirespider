@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.ByteArrayUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,13 +39,13 @@ public class TxTest {
 
         private class DummyWriter implements SocketChannelWriter {
             @Override
-            public void writeAsync(byte[] data) {
+            public void writeAsync(ByteBuffer data) {
                 writeAsync(data, false);
             }
 
             @Override
-            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
-                mRx.onDataReceived(TestUtil.asLinkedList(data));
+            public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
+                mRx.onDataReceived(TestUtil.asLinkedList(ByteArrayUtil.toBytesRemaining(data)));
             }
         }
 

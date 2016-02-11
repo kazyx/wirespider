@@ -30,7 +30,7 @@ class DefaultSession implements Session {
     private static final int WRITE_BUFFER_SIZE = 1024 * 4;
     private final ByteBuffer mWriteBuffer = ByteBuffer.allocateDirect(WRITE_BUFFER_SIZE);
 
-    private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
+    private final LinkedList<ByteBuffer> mWriteQueue = new LinkedList<>();
 
     private Listener mListener;
 
@@ -40,7 +40,7 @@ class DefaultSession implements Session {
     }
 
     @Override
-    public void enqueueWrite(byte[] data) throws IOException {
+    public void enqueueWrite(ByteBuffer data) throws IOException {
         synchronized (mWriteQueue) {
             if (!mKey.isValid()) {
                 throw new IOException("SelectionKey is invalid");
@@ -53,12 +53,11 @@ class DefaultSession implements Session {
         }
     }
 
-    private int mOffset = 0;
-    private byte[] mRemaining = null;
+    private ByteBuffer mRemaining = null;
 
     @Override
     public void onFlushReady() throws IOException {
-        byte[] data;
+        ByteBuffer data;
 
         synchronized (mWriteQueue) {
             while (mWriteBuffer.remaining() != 0 && (mRemaining != null || !mWriteQueue.isEmpty())) {
@@ -70,14 +69,13 @@ class DefaultSession implements Session {
                 }
 
                 if (data != null) {
-                    int written = Math.min(data.length - mOffset, mWriteBuffer.capacity() - mWriteBuffer.position());
-                    mWriteBuffer.put(data, mOffset, written);
-                    if (mOffset + written == data.length) {
-                        mRemaining = null;
-                        mOffset = 0;
-                    } else {
+                    if (mWriteBuffer.remaining() < data.remaining()) {
+                        byte[] tmp = new byte[mWriteBuffer.remaining()];
+                        data.get(tmp);
                         mRemaining = data;
-                        mOffset = mOffset + written;
+                        mWriteBuffer.put(tmp);
+                    } else {
+                        mWriteBuffer.put(data);
                     }
                 }
             }

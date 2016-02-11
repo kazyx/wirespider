@@ -130,7 +130,7 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        mWriter.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
+        mWriter.writeAsync(ByteBuffer.wrap(ByteArrayUtil.fromText(sb.toString())), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
@@ -159,11 +159,10 @@ class Rfc6455Handshake implements Handshake {
                 int end = index + 4;
                 mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, end);
 
-                if (ba.remaining() > end) {
-                    // itr.set(Arrays.copyOfRange(ba, end, ba.length));
-                } else {
+                if (ba.remaining() <= end) {
                     itr.remove();
                 }
+
                 break;
             }
             // TODO if header is separated to multiple ByteBuffer

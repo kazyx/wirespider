@@ -23,12 +23,12 @@ class DeflateFilter implements PayloadFilter {
     }
 
     @Override
-    public byte[] onSendingText(byte[] barr, byte[] extensionBits) throws IOException {
-        return onSendingMessage(barr, extensionBits);
+    public ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException {
+        return onSendingMessage(data, extensionBits);
     }
 
     @Override
-    public byte[] onSendingBinary(byte[] data, byte[] extensionBits) throws IOException {
+    public ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException {
         return onSendingMessage(data, extensionBits);
     }
 
@@ -42,13 +42,18 @@ class DeflateFilter implements PayloadFilter {
         return onReceivingMessage(data, extensionBits);
     }
 
-    private byte[] onSendingMessage(byte[] barr, byte[] extensionBits) throws IOException {
-        byte[] compressed = mDeflater.compress(barr);
-        if (compressed.length < barr.length) {
+    private ByteBuffer onSendingMessage(ByteBuffer data, byte[] extensionBits) throws IOException {
+        int pos = data.position();
+        int limit = data.limit();
+        int remaining = data.remaining();
+        ByteBuffer compressed = mDeflater.compress(data);
+        if (compressed.remaining() < remaining) {
             extensionBits[0] = (byte) (extensionBits[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
             return compressed;
         }
-        return barr;
+        data.position(pos);
+        data.limit(limit);
+        return data;
     }
 
     private ByteBuffer onReceivingMessage(ByteBuffer data, byte extensionBits) throws IOException {

@@ -12,10 +12,9 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
-import net.kazyx.wirespider.util.IOUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
@@ -37,58 +36,60 @@ class Rfc6455Tx implements FrameTx {
     @Override
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
-        byte[] barr = ByteArrayUtil.fromText(data);
+        ByteBuffer buff = ByteBuffer.wrap(ByteArrayUtil.fromText(data));
         if (mFilter != null) {
             byte[] flags = new byte[]{(byte) 0x00};
             try {
-                barr = mFilter.onSendingText(barr, flags);
-                sendFrameAsync(OpCode.TEXT, barr, flags[0]);
+                buff = mFilter.onSendingText(buff, flags);
+                sendFrameAsync(OpCode.TEXT, buff, flags[0]);
                 return;
             } catch (IOException e) {
                 // Filtering error. Send original data.
                 WsLog.printStackTrace(TAG, e);
             }
         }
-        sendFrameAsync(OpCode.TEXT, barr);
+        sendFrameAsync(OpCode.TEXT, buff);
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
         // WsLog.v(TAG, "sendBinaryAsync");
+        ByteBuffer buff = ByteBuffer.wrap(data);
         if (mFilter != null) {
             byte[] flags = new byte[]{(byte) 0x00};
             try {
-                data = mFilter.onSendingBinary(data, flags);
-                sendFrameAsync(OpCode.BINARY, data, flags[0]);
+                buff = mFilter.onSendingBinary(buff, flags);
+                sendFrameAsync(OpCode.BINARY, buff, flags[0]);
                 return;
             } catch (IOException e) {
                 // Filtering error. Send original data.
                 WsLog.printStackTrace(TAG, e);
             }
         }
-        sendFrameAsync(OpCode.BINARY, data);
+        sendFrameAsync(OpCode.BINARY, buff);
     }
 
     @Override
     public void sendPingAsync(String message) {
         // WsLog.v(TAG, "sendPingAsync");
-        sendFrameAsync(OpCode.PING, ByteArrayUtil.fromText(message));
+        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(ByteArrayUtil.fromText(message)));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
         // WsLog.v(TAG, "sendPongAsync", pingMessage);
-        sendFrameAsync(OpCode.PONG, ByteArrayUtil.fromText(pingMessage));
+        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(ByteArrayUtil.fromText(pingMessage)));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
         // WsLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
-        byte[] payload = new byte[2 + messageBytes.length];
-        payload[0] = (byte) (code.statusCode >>> 8);
-        payload[1] = (byte) (code.statusCode);
-        System.arraycopy(messageBytes, 0, payload, 2, messageBytes.length);
+        ByteBuffer payload = ByteBuffer.allocate(2 + messageBytes.length);
+        payload.put((byte) (code.statusCode >>> 8));
+        payload.put((byte) (code.statusCode));
+        payload.put(messageBytes);
+        payload.flip();
 
         sendFrameAsync(OpCode.CONNECTION_CLOSE, payload);
     }
@@ -98,11 +99,11 @@ class Rfc6455Tx implements FrameTx {
         mFilter = compression;
     }
 
-    private void sendFrameAsync(byte opcode, byte[] payload) {
+    private void sendFrameAsync(byte opcode, ByteBuffer payload) {
         sendFrameAsync(opcode, payload, (byte) 0);
     }
 
-    private void sendFrameAsync(byte opcode, byte[] payload, byte extensionFlags) {
+    private void sendFrameAsync(byte opcode, ByteBuffer payload, byte extensionFlags) {
         synchronized (mCloseFlagLock) {
             if (mIsCloseSent) {
                 return;
@@ -112,7 +113,7 @@ class Rfc6455Tx implements FrameTx {
             }
         }
 
-        long payloadLength = payload.length; // Maximum length of array is Integer.MAX_VALUE
+        long payloadLength = payload.remaining(); // Maximum length of array is Integer.MAX_VALUE
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
 
@@ -148,28 +149,24 @@ class Rfc6455Tx implements FrameTx {
             header[9] = (byte) (payloadLength);
         }
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(MAX_CLIENT_HEADER_LENGTH + payload.length);
-        try {
-            buffer.write(header, 0, header.length);
+        ByteBuffer buffer = ByteBuffer.allocate(MAX_CLIENT_HEADER_LENGTH + payload.remaining());
+        buffer.put(header);
 
-            if (mIsClient) {
-                int mask = RandomSource.random().nextInt();
-                byte[] maskingKey = {
-                        (byte) mask,
-                        (byte) (mask >>> 8),
-                        (byte) (mask >>> 16),
-                        (byte) (mask >>> 24)
-                };
-                buffer.write(maskingKey, 0, maskingKey.length);
-                byte[] masked = BitMask.maskAll(payload, maskingKey);
-                buffer.write(masked, 0, masked.length);
-            } else {
-                buffer.write(payload, 0, payload.length);
-            }
-
-            mWriter.writeAsync(buffer.toByteArray());
-        } finally {
-            IOUtil.close(buffer);
+        if (mIsClient) {
+            int mask = RandomSource.random().nextInt();
+            byte[] maskingKey = {
+                    (byte) mask,
+                    (byte) (mask >>> 8),
+                    (byte) (mask >>> 16),
+                    (byte) (mask >>> 24)
+            };
+            buffer.put(maskingKey);
+            BitMask.maskAll(payload, maskingKey);
         }
+
+        buffer.put(payload);
+        buffer.flip();
+
+        mWriter.writeAsync(buffer);
     }
 }

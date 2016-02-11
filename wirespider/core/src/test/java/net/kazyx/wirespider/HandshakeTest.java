@@ -20,7 +20,6 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,11 +38,11 @@ public class HandshakeTest {
     public void setup() throws IOException {
         mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
             @Override
-            public void writeAsync(byte[] data) {
+            public void writeAsync(ByteBuffer data) {
             }
 
             @Override
-            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
             }
         }, true);
     }
@@ -261,11 +260,11 @@ public class HandshakeTest {
         // mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
         mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
             @Override
-            public void writeAsync(byte[] data) {
+            public void writeAsync(ByteBuffer data) {
             }
 
             @Override
-            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
             }
         }, false);
         mHandshake.tryUpgrade(DUMMY_URI, null);
@@ -319,20 +318,6 @@ public class HandshakeTest {
             handshake.tryUpgrade(DUMMY_URI, null);
         } catch (NullPointerException e) {
             // Ignore
-        }
-    }
-
-    private static class SilentListener implements SocketChannelProxy.Listener {
-        @Override
-        public void onSocketConnected() {
-        }
-
-        @Override
-        public void onClosed() {
-        }
-
-        @Override
-        public void onDataReceived(LinkedList<ByteBuffer> data) {
         }
     }
 }

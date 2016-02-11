@@ -55,12 +55,12 @@ class SocketChannelProxy implements SocketChannelWriter {
     }
 
     @Override
-    public void writeAsync(byte[] data) {
+    public void writeAsync(ByteBuffer data) {
         writeAsync(data, false);
     }
 
     @Override
-    public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+    public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
         // Log.d(TAG, "writeAsync");
         if (mIsClosed || mSession == null) {
             WsLog.d(TAG, "Quit writeAsync due to closed state");

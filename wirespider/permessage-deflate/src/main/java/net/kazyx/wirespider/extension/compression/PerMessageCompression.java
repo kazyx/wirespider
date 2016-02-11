@@ -26,7 +26,7 @@ public abstract class PerMessageCompression implements Extension {
      * @return Compressed data.
      * @throws IOException Failed to compress data.
      */
-    public abstract byte[] compress(byte[] source) throws IOException;
+    public abstract ByteBuffer compress(ByteBuffer source) throws IOException;
 
     /**
      * @param source Compressed data.
