@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Insecure TCP connection.
@@ -30,7 +31,9 @@ class DefaultSession implements Session {
     private static final int WRITE_BUFFER_SIZE = 1024 * 4;
     private final ByteBuffer mWriteBuffer = ByteBuffer.allocateDirect(WRITE_BUFFER_SIZE);
 
-    private final LinkedList<ByteBuffer> mWriteQueue = new LinkedList<>();
+    private final LinkedBlockingQueue<ByteBuffer> mWriteQueue = new LinkedBlockingQueue<>();
+
+    private final Object mLock = new Object();
 
     private Listener mListener;
 
@@ -41,11 +44,12 @@ class DefaultSession implements Session {
 
     @Override
     public void enqueueWrite(ByteBuffer data) throws IOException {
-        synchronized (mWriteQueue) {
-            if (!mKey.isValid()) {
-                throw new IOException("SelectionKey is invalid");
-            }
-            mWriteQueue.addLast(data);
+        if (!mKey.isValid()) {
+            throw new IOException("SelectionKey is invalid");
+        }
+        mWriteQueue.add(data);
+
+        synchronized (mLock) {
             if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                 mKey.selector().wakeup();
@@ -59,24 +63,22 @@ class DefaultSession implements Session {
     public void onFlushReady() throws IOException {
         ByteBuffer data;
 
-        synchronized (mWriteQueue) {
-            while (mWriteBuffer.remaining() != 0 && (mRemaining != null || !mWriteQueue.isEmpty())) {
-                if (mRemaining != null) {
-                    data = mRemaining;
-                    mRemaining = null;
-                } else {
-                    data = mWriteQueue.pollFirst();
-                }
+        while (mWriteBuffer.remaining() != 0 && (mRemaining != null || !mWriteQueue.isEmpty())) {
+            if (mRemaining != null) {
+                data = mRemaining;
+                mRemaining = null;
+            } else {
+                data = mWriteQueue.poll();
+            }
 
-                if (data != null) {
-                    if (mWriteBuffer.remaining() < data.remaining()) {
-                        byte[] tmp = new byte[mWriteBuffer.remaining()];
-                        data.get(tmp);
-                        mRemaining = data;
-                        mWriteBuffer.put(tmp);
-                    } else {
-                        mWriteBuffer.put(data);
-                    }
+            if (data != null) {
+                if (mWriteBuffer.remaining() < data.remaining()) {
+                    byte[] tmp = new byte[mWriteBuffer.remaining()];
+                    data.get(tmp);
+                    mRemaining = data;
+                    mWriteBuffer.put(tmp);
+                } else {
+                    mWriteBuffer.put(data);
                 }
             }
         }
@@ -85,7 +87,7 @@ class DefaultSession implements Session {
         mChannel.write(mWriteBuffer);
         mWriteBuffer.compact();
 
-        synchronized (mWriteQueue) {
+        synchronized (mLock) {
             if (mWriteBuffer.position() == 0 && mRemaining == null && mWriteQueue.isEmpty()) {
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
             }
