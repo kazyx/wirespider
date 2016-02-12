@@ -15,7 +15,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /**
  * Insecure TCP connection.
@@ -30,7 +31,9 @@ class DefaultSession implements Session {
     private static final int WRITE_BUFFER_SIZE = 1024 * 4;
     private final ByteBuffer mWriteBuffer = ByteBuffer.allocateDirect(WRITE_BUFFER_SIZE);
 
-    private final LinkedList<byte[]> mWriteQueue = new LinkedList<>();
+    private final Deque<ByteBuffer> mWriteQueue = new ArrayDeque<>();
+
+    private final Object mLock = new Object();
 
     private Listener mListener;
 
@@ -40,11 +43,12 @@ class DefaultSession implements Session {
     }
 
     @Override
-    public void enqueueWrite(byte[] data) throws IOException {
-        synchronized (mWriteQueue) {
-            if (!mKey.isValid()) {
-                throw new IOException("SelectionKey is invalid");
-            }
+    public void enqueueWrite(ByteBuffer data) throws IOException {
+        if (!mKey.isValid()) {
+            throw new IOException("SelectionKey is invalid");
+        }
+
+        synchronized (mLock) {
             mWriteQueue.addLast(data);
             if (mKey.interestOps() != (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) {
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
@@ -53,32 +57,19 @@ class DefaultSession implements Session {
         }
     }
 
-    private int mOffset = 0;
-    private byte[] mRemaining = null;
-
     @Override
     public void onFlushReady() throws IOException {
-        byte[] data;
+        synchronized (mLock) {
+            while (mWriteBuffer.remaining() != 0 && !mWriteQueue.isEmpty()) {
+                ByteBuffer data = mWriteQueue.getFirst();
 
-        synchronized (mWriteQueue) {
-            while (mWriteBuffer.remaining() != 0 && (mRemaining != null || !mWriteQueue.isEmpty())) {
-                if (mRemaining != null) {
-                    data = mRemaining;
-                    mRemaining = null;
+                if (mWriteBuffer.remaining() < data.remaining()) {
+                    byte[] tmp = new byte[mWriteBuffer.remaining()];
+                    data.get(tmp);
+                    mWriteBuffer.put(tmp);
                 } else {
-                    data = mWriteQueue.pollFirst();
-                }
-
-                if (data != null) {
-                    int written = Math.min(data.length - mOffset, mWriteBuffer.capacity() - mWriteBuffer.position());
-                    mWriteBuffer.put(data, mOffset, written);
-                    if (mOffset + written == data.length) {
-                        mRemaining = null;
-                        mOffset = 0;
-                    } else {
-                        mRemaining = data;
-                        mOffset = mOffset + written;
-                    }
+                    mWriteBuffer.put(data);
+                    mWriteQueue.remove();
                 }
             }
         }
@@ -87,8 +78,8 @@ class DefaultSession implements Session {
         mChannel.write(mWriteBuffer);
         mWriteBuffer.compact();
 
-        synchronized (mWriteQueue) {
-            if (mWriteBuffer.position() == 0 && mRemaining == null && mWriteQueue.isEmpty()) {
+        synchronized (mLock) {
+            if (mWriteBuffer.position() == 0 && mWriteQueue.isEmpty()) {
                 SelectionKeyUtil.interestOps(mKey, SelectionKey.OP_READ);
             }
         }
@@ -96,18 +87,14 @@ class DefaultSession implements Session {
 
     @Override
     public void onReadReady() throws IOException {
-        LinkedList<byte[]> list = new LinkedList<>();
-
         while (true) {
-            byte[] buff = read();
+            ByteBuffer buff = read();
             if (buff == null) {
                 break;
             }
-            list.add(buff);
-        }
-
-        if (mListener != null) {
-            mListener.onAppDataReceived(list);
+            if (mListener != null) {
+                mListener.onAppDataReceived(buff);
+            }
         }
     }
 
@@ -117,7 +104,7 @@ class DefaultSession implements Session {
         mListener.onConnected();
     }
 
-    private byte[] read() throws IOException {
+    private ByteBuffer read() throws IOException {
         try {
             int length = mChannel.read(mReadBuffer);
             if (length == -1) {
@@ -126,9 +113,10 @@ class DefaultSession implements Session {
                 return null;
             } else {
                 mReadBuffer.flip();
-                byte[] ret = new byte[length];
-                mReadBuffer.get(ret);
-                return ret;
+                ByteBuffer buff = ByteBuffer.allocate(length);
+                buff.put(mReadBuffer);
+                buff.flip();
+                return buff;
             }
         } finally {
             mReadBuffer.clear();

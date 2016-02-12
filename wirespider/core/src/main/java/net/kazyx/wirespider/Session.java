@@ -12,7 +12,6 @@ package net.kazyx.wirespider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 
 /**
  * TCP connection.
@@ -24,7 +23,7 @@ interface Session extends Closeable {
      * @param buffer The buffer from which bytes are to be retrieved
      * @throws IOException If some other I/O error occurs
      */
-    void enqueueWrite(byte[] buffer) throws IOException;
+    void enqueueWrite(ByteBuffer buffer) throws IOException;
 
     /**
      * Ready to write data into the SocketChannel.
@@ -51,7 +50,7 @@ interface Session extends Closeable {
         /**
          * @param data Received application data.
          */
-        void onAppDataReceived(LinkedList<byte[]> data);
+        void onAppDataReceived(ByteBuffer data);
 
         /**
          * Ready to handle application data.

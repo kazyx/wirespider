@@ -10,6 +10,7 @@
 package net.kazyx.wirespider.extension;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public interface PayloadFilter {
     /**
@@ -20,7 +21,7 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onSendingText(byte[] data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException;
 
     /**
      * Called before the frame is created.
@@ -30,7 +31,7 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onSendingBinary(byte[] data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException;
 
     /**
      * Called before the message is restored from the frame.
@@ -40,7 +41,7 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onReceivingText(byte[] data, byte extensionBits) throws IOException;
+    ByteBuffer onReceivingText(ByteBuffer data, byte extensionBits) throws IOException;
 
     /**
      * Called before the message is restored from the frame.
@@ -50,5 +51,5 @@ public interface PayloadFilter {
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    byte[] onReceivingBinary(byte[] data, byte extensionBits) throws IOException;
+    ByteBuffer onReceivingBinary(ByteBuffer data, byte extensionBits) throws IOException;
 }

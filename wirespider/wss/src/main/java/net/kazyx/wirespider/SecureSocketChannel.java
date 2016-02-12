@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
 
 class SecureSocketChannel implements Closeable {
     private static final String TAG = SecureSocketChannel.class.getSimpleName();
@@ -57,19 +56,18 @@ class SecureSocketChannel implements Closeable {
         evaluateCurrentStatus();
     }
 
-    void wrapAndEnqueue(byte[] src) throws IOException {
+    void wrapAndEnqueue(ByteBuffer src) throws IOException {
         // WsLog.v(TAG, "Wrap and Enqueue");
         synchronized (mOutSync) {
-            int written = 0;
-            while (written != src.length) {
-                if (src.length - written < mAppOut.remaining()) {
-                    mAppOut.put(src, written, src.length - written);
-                    written = src.length;
+            while (src.remaining() != 0) {
+                if (mAppOut.remaining() < src.remaining()) {
+                    byte[] tmp = new byte[mAppOut.remaining()];
+                    src.get(tmp);
+                    mAppOut.put(tmp);
                 } else {
-                    int toWrite = mAppOut.remaining();
-                    mAppOut.put(src, written, toWrite);
-                    written += toWrite;
+                    mAppOut.put(src);
                 }
+
                 mAppOut.flip();
                 wrap();
                 mAppOut.compact();
@@ -100,16 +98,13 @@ class SecureSocketChannel implements Closeable {
             return;
         }
 
-        byte[] ret = new byte[mAppIn.limit()];
-        mAppIn.get(ret);
+        ByteBuffer ret = ByteBuffer.allocate(mAppIn.limit());
+        ret.put(mAppIn);
         mAppIn.clear();
+        ret.flip();
 
         // WsLog.v(TAG, "Unwrapped", ret);
-
-        LinkedList<byte[]> list = new LinkedList<>();
-        list.add(ret);
-
-        mListener.onAppDataReceived(list);
+        mListener.onAppDataReceived(ret);
     }
 
     private void evaluateCurrentStatus() throws IOException {

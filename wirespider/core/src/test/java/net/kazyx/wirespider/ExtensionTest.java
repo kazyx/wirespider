@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
@@ -48,13 +49,13 @@ public class ExtensionTest {
                 sb.append("TestMessage");
             }
             byte[] source = sb.toString().getBytes("UTF-8");
-            byte[] compressed = mCompression.compress(source);
-            System.out.println("Compressed: " + source.length + " to " + compressed.length);
+            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(source));
+            System.out.println("Compressed: " + source.length + " to " + compressed.remaining());
 
-            byte[] decompressed = mCompression.decompress(compressed);
+            ByteBuffer decompressed = mCompression.decompress(compressed);
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
         }
 
         @Test
@@ -64,21 +65,21 @@ public class ExtensionTest {
                 sb.append("TestMessage");
             }
             byte[] source = sb.toString().getBytes("UTF-8");
-            byte[] compressed = mCompression.compress(source);
-            System.out.println("Compressed: " + source.length + " to " + compressed.length);
+            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(source));
+            System.out.println("Compressed: " + source.length + " to " + compressed.remaining());
 
-            byte[] decompressed = mCompression.decompress(compressed);
+            ByteBuffer decompressed = mCompression.decompress(compressed);
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
 
-            compressed = mCompression.compress(source);
-            System.out.println("Compressed: " + source.length + " to " + compressed.length);
+            compressed = mCompression.compress(ByteBuffer.wrap(source));
+            System.out.println("Compressed: " + source.length + " to " + compressed.remaining());
 
             decompressed = mCompression.decompress(compressed);
 
-            System.out.println("Decompressed: " + decompressed.length);
-            assertThat(Arrays.equals(source, decompressed), is(true));
+            System.out.println("Decompressed: " + decompressed.capacity());
+            assertThat(Arrays.equals(source, decompressed.array()), is(true));
         }
     }
 
@@ -389,24 +390,24 @@ public class ExtensionTest {
         public void dataSizeSmallerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE - 1);
             final byte[] copy = Arrays.copyOf(original, original.length);
-            byte[] compressed = mCompression.compress(original);
-            assertThat(Arrays.equals(copy, compressed), is(true)); // If data size is smaller than min, it should not be compressed.
+            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
+            assertThat(Arrays.equals(copy, compressed.array()), is(true)); // If data size is smaller than min, it should not be compressed.
         }
 
         @Test
         public void dataSizeEqualsCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE);
             final byte[] copy = Arrays.copyOf(original, original.length);
-            byte[] compressed = mCompression.compress(original);
-            assertThat(Arrays.equals(copy, compressed), is(false));
+            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
+            assertThat(Arrays.equals(copy, compressed.array()), is(false));
         }
 
         @Test
         public void dataSizeLargerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE + 1);
             final byte[] copy = Arrays.copyOf(original, original.length);
-            byte[] compressed = mCompression.compress(original);
-            assertThat(Arrays.equals(copy, compressed), is(false));
+            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
+            assertThat(Arrays.equals(copy, compressed.array()), is(false));
         }
     }
 }

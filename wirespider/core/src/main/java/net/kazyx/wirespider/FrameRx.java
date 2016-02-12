@@ -11,15 +11,15 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
 
-import java.util.LinkedList;
+import java.nio.ByteBuffer;
 
 interface FrameRx {
     /**
      * Called when WebSocket frame data is received.
      *
-     * @param data List of received data.
+     * @param data Received data.
      */
-    void onDataReceived(LinkedList<byte[]> data);
+    void onDataReceived(ByteBuffer data);
 
     void setPayloadFilter(PayloadFilter filter);
 
@@ -51,7 +51,7 @@ interface FrameRx {
          *
          * @param message Received binary message.
          */
-        void onBinaryMessage(byte[] message);
+        void onBinaryMessage(ByteBuffer message);
 
         /**
          * Called when received text message.

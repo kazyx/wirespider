@@ -17,6 +17,7 @@ import org.junit.Test;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -56,26 +57,26 @@ public class UtilsTest {
         @Test(expected = IllegalArgumentException.class)
         public void bit72ToLong() {
             byte[] _9BytesZero = new byte[9];
-            ByteArrayUtil.toUnsignedLong(_9BytesZero);
+            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_9BytesZero));
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void bit64ToLongSignedBitOn() {
             byte[] _8BytesZero = new byte[8];
             _8BytesZero[0] = (byte) 0b10000000;
-            ByteArrayUtil.toUnsignedLong(_8BytesZero);
+            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero));
         }
 
         @Test
         public void bit64ToLong() {
             byte[] _8BytesZero = new byte[8];
-            assertThat(ByteArrayUtil.toUnsignedLong(_8BytesZero), is(0L));
+            assertThat(ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero)), is(0L));
         }
 
         @Test
         public void bit32ToInteger() {
             byte[] _4BytesZero = {(byte) 0x7f, (byte) 0xff, (byte) 0xff, (byte) 0xff};
-            assertThat(ByteArrayUtil.toUnsignedInteger(_4BytesZero), is(Integer.MAX_VALUE));
+            assertThat(ByteArrayUtil.toUnsignedInteger(ByteBuffer.wrap(_4BytesZero)), is(Integer.MAX_VALUE));
         }
 
         @Test

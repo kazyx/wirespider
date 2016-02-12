@@ -14,6 +14,7 @@ import net.kazyx.wirespider.util.IOUtil;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
 class SecureSession implements Session {
@@ -35,7 +36,7 @@ class SecureSession implements Session {
     }
 
     @Override
-    public void enqueueWrite(byte[] buffer) throws IOException {
+    public void enqueueWrite(ByteBuffer buffer) throws IOException {
         mChannel.wrapAndEnqueue(buffer);
     }
 

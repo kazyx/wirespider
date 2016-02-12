@@ -12,8 +12,7 @@ package net.kazyx.wirespider;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class TestUtil {
@@ -46,13 +45,9 @@ public class TestUtil {
         return sb.toString();
     }
 
-    static LinkedList<byte[]> asLinkedList(byte[] data) {
-        return new LinkedList<>(Collections.singletonList(data));
-    }
-
-    static LinkedList<byte[]> asLinkedList(String data) {
+    static ByteBuffer asByteBuffer(String data) {
         try {
-            return asLinkedList(data.getBytes("UTF-8"));
+            return ByteBuffer.wrap(data.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
             throw new UnsupportedOperationException(e);
         }

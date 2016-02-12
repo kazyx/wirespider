@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -140,7 +141,7 @@ public class WebSocketUnusualCasesTest {
 
         @Test
         public void onBinaryMessage() {
-            mListener.onBinaryMessage(new byte[0]);
+            mListener.onBinaryMessage(ByteBuffer.wrap(new byte[0]));
         }
 
         @Test

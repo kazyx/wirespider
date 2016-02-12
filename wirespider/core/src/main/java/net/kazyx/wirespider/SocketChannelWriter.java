@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import java.nio.ByteBuffer;
+
 interface SocketChannelWriter {
     /**
      * Write data into the SocketChannel.<br>
@@ -16,12 +18,12 @@ interface SocketChannelWriter {
      *
      * @param data Data to write.
      */
-    void writeAsync(byte[] data);
+    void writeAsync(ByteBuffer data);
 
     /**
      * Write data into the SocketChannel.
      *
      * @param calledOnSelectorThread {@code true} to invoke this on the selector's thread.
      */
-    void writeAsync(byte[] data, boolean calledOnSelectorThread);
+    void writeAsync(ByteBuffer data, boolean calledOnSelectorThread);
 }

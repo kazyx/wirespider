@@ -15,9 +15,9 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.ListIterator;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.zip.ZipException;
 
 class Rfc6455Rx implements FrameRx {
@@ -47,8 +47,8 @@ class Rfc6455Rx implements FrameRx {
         @Override
         public void run() {
             try {
-                first = readBytes(1)[0];
-                isFinal = BitMask.isMatched(first, (byte) 0x80);
+                first = readBytes(1).array()[0];
+                isFinal = BitMask.isFlagMatched(first, (byte) 0x80);
 
                 if (mFilter == null && (first & 0x70) != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
@@ -75,10 +75,10 @@ class Rfc6455Rx implements FrameRx {
         @Override
         public void run() {
             try {
-                byte second = readBytes(1)[0];
-                isMasked = BitMask.isMatched(second, (byte) 0x80);
+                byte second = readBytes(1).array()[0];
+                isMasked = BitMask.isFlagMatched(second, (byte) 0x80);
 
-                if (!(mIsClient ^ isMasked)) {
+                if (mIsClient == isMasked) {
                     throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");
                 }
 
@@ -147,7 +147,7 @@ class Rfc6455Rx implements FrameRx {
         @Override
         public void run() {
             try {
-                mask = readBytes(4);
+                mask = readBytes(4).array();
                 mPayloadOperation.run();
             } catch (BufferUnsatisfiedException e) {
                 WsLog.v(TAG, "MaskKey BufferUnsatisfied");
@@ -162,9 +162,9 @@ class Rfc6455Rx implements FrameRx {
         @Override
         public void run() {
             try {
-                byte[] payload = readBytes(payloadLength);
+                ByteBuffer payload = readBytes(payloadLength);
                 if (isMasked) {
-                    payload = BitMask.maskAll(payload, mask);
+                    BitMask.maskAll(payload, mask);
                 }
 
                 handleFrame(opcode, payload, isFinal);
@@ -198,16 +198,17 @@ class Rfc6455Rx implements FrameRx {
     private ContinuationMode mContinuation = ContinuationMode.UNSET;
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
-    private void handleFrame(byte opcode, byte[] payload, boolean isFinal) throws ProtocolViolationException, IOException {
+    private void handleFrame(byte opcode, ByteBuffer payload, boolean isFinal) throws ProtocolViolationException, IOException {
         // WsLog.v(TAG, "handleFrame", opcode);
         switch (opcode) {
-            case OpCode.CONTINUATION:
+            case OpCode.CONTINUATION: {
                 if (mContinuation == ContinuationMode.UNSET) {
                     throw new ProtocolViolationException("Sudden continuation opcode");
                 }
-                mContinuationBuffer.write(payload, 0, payload.length);
+                int length = payload.remaining();
+                mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
                 if (isFinal) {
-                    byte[] binary = mContinuationBuffer.toByteArray();
+                    ByteBuffer binary = ByteBuffer.wrap(mContinuationBuffer.toByteArray());
                     mContinuationBuffer.reset();
                     if (mContinuation == ContinuationMode.BINARY) {
                         if (mFilter != null) {
@@ -218,55 +219,60 @@ class Rfc6455Rx implements FrameRx {
                         if (mFilter != null) {
                             binary = mFilter.onReceivingText(binary, first);
                         }
-                        mListener.onTextMessage(ByteArrayUtil.toText(binary));
+                        mListener.onTextMessage(ByteArrayUtil.toTextAll(binary));
                     }
                     mContinuation = ContinuationMode.UNSET;
                 }
                 break;
-            case OpCode.TEXT:
+            }
+            case OpCode.TEXT: {
                 if (isFinal) {
                     if (mFilter != null) {
                         payload = mFilter.onReceivingText(payload, first);
                     }
-                    String text = ByteArrayUtil.toText(payload);
+                    String text = ByteArrayUtil.toTextAll(payload);
                     mListener.onTextMessage(text);
                 } else {
-                    mContinuationBuffer.write(payload, 0, payload.length);
+                    int length = payload.remaining();
+                    mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
                     mContinuation = ContinuationMode.TEXT;
                 }
                 break;
-            case OpCode.BINARY:
+            }
+            case OpCode.BINARY: {
                 if (isFinal) {
                     if (mFilter != null) {
                         payload = mFilter.onReceivingBinary(payload, first);
                     }
                     mListener.onBinaryMessage(payload);
                 } else {
-                    mContinuationBuffer.write(payload, 0, payload.length);
+                    int length = payload.remaining();
+                    mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
                     mContinuation = ContinuationMode.BINARY;
                 }
                 break;
+            }
             case OpCode.PING:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for ping opcode");
                 }
-                if (payload.length > 125) {
+                if (payload.remaining() > 125) {
                     throw new ProtocolViolationException("Ping payload too large");
                 }
-                mListener.onPingFrame(ByteArrayUtil.toText(payload));
+                mListener.onPingFrame(ByteArrayUtil.toTextAll(payload));
                 break;
             case OpCode.PONG:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for pong opcode");
                 }
-                mListener.onPongFrame(ByteArrayUtil.toText(payload));
+                mListener.onPongFrame(ByteArrayUtil.toTextAll(payload));
                 break;
             case OpCode.CONNECTION_CLOSE:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
-                int code = (payload.length >= 2) ? payload[1] & 0xFF + (payload[0] << 8) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
-                String reason = (payload.length > 2) ? ByteArrayUtil.toText(payload, 2, payload.length - 2) : "";
+                int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
+                String reason = (payload.remaining() > 2) ? ByteArrayUtil.toTextRemaining(payload) : "";
                 mListener.onCloseFrame(code, reason);
                 break;
             default:
@@ -275,12 +281,10 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void onDataReceived(LinkedList<byte[]> data) {
+    public void onDataReceived(ByteBuffer data) {
         // Log.d(TAG, "onDataReceived");
-        mReceivedBuffer.addAll(data);
-        for (byte[] buff : data) {
-            mBufferSize += buff.length;
-        }
+        mReceivedBuffer.addLast(data);
+        mBufferSize += data.remaining();
 
         synchronized (mOperationSequenceLock) {
             if (mWaitingSize <= mBufferSize) {
@@ -297,37 +301,38 @@ class Rfc6455Rx implements FrameRx {
 
     private int mBufferSize = 0;
 
-    private final LinkedList<byte[]> mReceivedBuffer = new LinkedList<>();
+    private final Deque<ByteBuffer> mReceivedBuffer = new ArrayDeque<>();
 
-    private byte[] readBytes(int length) throws BufferUnsatisfiedException {
+    private ByteBuffer readBytes(int length) throws BufferUnsatisfiedException {
         if (mBufferSize < length) {
             mWaitingSize = length;
             throw new BufferUnsatisfiedException();
         }
 
-        byte[] ba = new byte[length];
-        int remaining = length;
+        ByteBuffer ret = ByteBuffer.allocate(length);
 
-        ListIterator<byte[]> itr = mReceivedBuffer.listIterator();
-        while (itr.hasNext()) {
-            byte[] buff = itr.next();
-            int copied = Math.min(remaining, buff.length);
-            System.arraycopy(buff, 0, ba, length - remaining, copied);
-
-            remaining -= copied;
-
-            if (copied == buff.length) {
-                itr.remove();
+        while (!mReceivedBuffer.isEmpty()) {
+            ByteBuffer buff = mReceivedBuffer.getFirst();
+            int copied = Math.min(ret.remaining(), buff.remaining());
+            if (ret.remaining() < buff.remaining()) {
+                byte[] tmp = new byte[copied];
+                buff.get(tmp);
+                ret.put(tmp);
             } else {
-                itr.set(Arrays.copyOfRange(buff, copied, buff.length));
+                ret.put(buff);
             }
-            if (remaining == 0) {
+
+            if (buff.remaining() == 0) {
+                mReceivedBuffer.remove();
+            }
+
+            if (ret.remaining() == 0) {
                 break;
             }
         }
 
         mBufferSize -= length;
-
-        return ba;
+        ret.flip();
+        return ret;
     }
 }

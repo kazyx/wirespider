@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,7 +28,7 @@ public class RxUnusualCasesTest {
                     latch.countDown();
                 }
             }, 1000, true);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -39,7 +40,7 @@ public class RxUnusualCasesTest {
                     latch.countDown();
                 }
             }, 1000, false);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -156,8 +157,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    assertThat(message.length, is(limit));
+                public void onBinaryMessage(ByteBuffer message) {
+                    assertThat(message.array().length, is(limit));
                     assertThat(latch.getCount(), is(1L));
                 }
 
@@ -166,9 +167,9 @@ public class RxUnusualCasesTest {
                     latch.countDown();
                 }
             }, limit, true);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.getCount(), is(1L));
-            rx.onDataReceived(TestUtil.asLinkedList(overflowData));
+            rx.onDataReceived(ByteBuffer.wrap(overflowData));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -319,7 +320,7 @@ public class RxUnusualCasesTest {
                     latch.countDown();
                 }
             }, Integer.MAX_VALUE, true);
-            rx.onDataReceived(TestUtil.asLinkedList(overflowData));
+            rx.onDataReceived(ByteBuffer.wrap(overflowData));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -339,7 +340,7 @@ public class RxUnusualCasesTest {
                     latch.countDown();
                 }
             }, 1000, true);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -376,7 +377,7 @@ public class RxUnusualCasesTest {
                     }
                 }
             }, 1000, true);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
 
@@ -400,7 +401,7 @@ public class RxUnusualCasesTest {
                     }
                 }
             }, 1000, true);
-            rx.onDataReceived(TestUtil.asLinkedList(data));
+            rx.onDataReceived(ByteBuffer.wrap(data));
             assertThat(latch.isUnlockedByCountDown(), is(true));
         }
     }
@@ -431,8 +432,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(payload, message)) {
+                public void onBinaryMessage(ByteBuffer message) {
+                    if (Arrays.equals(payload, message.array())) {
                         latch.countDown();
                     } else {
                         latch.unlockByFailure();
@@ -441,7 +442,7 @@ public class RxUnusualCasesTest {
             }, 1000, false);
 
             for (int i = 0; i < data.length - 1; i++) {
-                rx.onDataReceived(TestUtil.asLinkedList(new byte[]{data[i]}));
+                rx.onDataReceived(ByteBuffer.wrap(new byte[]{data[i]}));
                 if (i != data.length - 1) {
                     assertThat(latch.getCount(), is(1L));
                 } else {
@@ -460,8 +461,8 @@ public class RxUnusualCasesTest {
             final CustomLatch latch = new CustomLatch(1);
             Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(payload, message)) {
+                public void onBinaryMessage(ByteBuffer message) {
+                    if (Arrays.equals(payload, message.array())) {
                         latch.countDown();
                     } else {
                         latch.unlockByFailure();
@@ -475,15 +476,15 @@ public class RxUnusualCasesTest {
                 System.arraycopy(payload, i, data, 2, 1);
                 if (i == 0) {
                     data[0] = (byte) 0b00000010; // non final binary
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.getCount(), is(1L));
                 } else if (i == payloadSize - 1) {
                     data[0] = (byte) 0b10000000; // final continuation
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.isUnlockedByCountDown(), is(true));
                 } else {
                     data[0] = (byte) 0b00000000; // non final continuation
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.getCount(), is(1L));
                 }
             }
@@ -513,15 +514,15 @@ public class RxUnusualCasesTest {
                 System.arraycopy(payload, i, data, 2, 1);
                 if (i == 0) {
                     data[0] = (byte) 0b00000001; // non final binary
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.getCount(), is(1L));
                 } else if (i == payloadSize - 1) {
                     data[0] = (byte) 0b10000000; // final continuation
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.isUnlockedByCountDown(), is(true));
                 } else {
                     data[0] = (byte) 0b00000000; // non final continuation
-                    rx.onDataReceived(TestUtil.asLinkedList(data));
+                    rx.onDataReceived(ByteBuffer.wrap(data));
                     assertThat(latch.getCount(), is(1L));
                 }
             }

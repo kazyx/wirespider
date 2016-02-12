@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 public final class ByteArrayUtil {
@@ -18,25 +19,35 @@ public final class ByteArrayUtil {
     private static final Charset UTF8 = Charset.forName("UTF-8");
 
     /**
-     * Convert byte array to UTF-8 String.
+     * Convert remaining byte buffer to UTF-8 String.
      *
-     * @param bytes Source byte array.
-     * @return String expression of the byte array.
+     * @param bytes Source byte buffer.
+     * @return String expression of the bytes.
      */
-    public static String toText(byte[] bytes) {
-        return new String(bytes, UTF8);
+    public static String toTextRemaining(ByteBuffer bytes) {
+        return new String(toBytesRemaining(bytes), UTF8);
     }
 
     /**
-     * Convert byte array to UTF-8 String.
+     * Convert whole byte buffer to UTF-8 String.
      *
-     * @param bytes Source byte array.
-     * @param offset The index of the first byte to decode
-     * @param length The number of bytes to decode
-     * @return String expression of the byte array.
+     * @param bytes Source byte buffer.
+     * @return String expression of the bytes.
      */
-    public static String toText(byte[] bytes, int offset, int length) {
-        return new String(bytes, offset, length, UTF8);
+    public static String toTextAll(ByteBuffer bytes) {
+        return new String(bytes.array(), UTF8);
+    }
+
+    /**
+     * Convert remaining byte buffer to byte array.
+     *
+     * @param buffer Source byte buffer
+     * @return Remaining byte array.
+     */
+    public static byte[] toBytesRemaining(ByteBuffer buffer) {
+        byte[] array = new byte[buffer.remaining()];
+        buffer.get(array);
+        return array;
     }
 
     /**
@@ -50,18 +61,18 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte array to long.
+     * Convert whole byte buffer to long.
      *
-     * @param bytes Source byte array.
+     * @param bytes Source byte buffer.
      * @return The long value
      * @throws IllegalArgumentException Value exceeds int 64.
      */
-    public static long toUnsignedLong(byte[] bytes) {
-        if (8 < bytes.length) {
-            throw new IllegalArgumentException("bit length overflow: " + bytes.length);
+    public static long toUnsignedLong(ByteBuffer bytes) {
+        if (8 < bytes.remaining()) {
+            throw new IllegalArgumentException("bit length overflow: " + bytes.remaining());
         }
         long value = 0;
-        for (byte b : bytes) {
+        for (byte b : bytes.array()) {
             value = (value << 8) + (b & 0xFF);
         }
         if (value < 0) {
@@ -71,13 +82,13 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte array to unsigned integer.
+     * Convert whole byte buffer to unsigned integer.
      *
-     * @param bytes Source byte array.
+     * @param bytes Source byte buffer.
      * @return The unsigned integer value.
      * @throws IllegalArgumentException Value exceeds int 32.
      */
-    public static int toUnsignedInteger(byte[] bytes) {
+    public static int toUnsignedInteger(ByteBuffer bytes) {
         long l = toUnsignedLong(bytes);
         if (Integer.MAX_VALUE < l) {
             // TODO support large payload over 2GB

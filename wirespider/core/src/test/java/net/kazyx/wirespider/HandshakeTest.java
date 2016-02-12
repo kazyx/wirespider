@@ -18,8 +18,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,11 +38,11 @@ public class HandshakeTest {
     public void setup() throws IOException {
         mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
             @Override
-            public void writeAsync(byte[] data) {
+            public void writeAsync(ByteBuffer data) {
             }
 
             @Override
-            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
             }
         }, true);
     }
@@ -55,7 +55,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -66,7 +66,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -77,7 +77,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -87,13 +87,13 @@ public class HandshakeTest {
         String header = "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = BufferUnsatisfiedException.class)
     public void unsatisfiedHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
         String statusLine = "HTTP/1.1 101 Switching Protocols\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(statusLine));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(statusLine));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -103,7 +103,7 @@ public class HandshakeTest {
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -113,7 +113,7 @@ public class HandshakeTest {
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Upgrade: websocket\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -122,7 +122,7 @@ public class HandshakeTest {
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -133,7 +133,7 @@ public class HandshakeTest {
                 + "Upgrade: hogehoge\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -144,7 +144,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: close\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -154,7 +154,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test
@@ -165,7 +165,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test
@@ -180,7 +180,7 @@ public class HandshakeTest {
                 + " val2\r\n"
                 + " val3\r\n"
                 + "\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class HandshakeTest {
                 + "\tval2\r\n"
                 + "\tval3\r\n"
                 + "\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test
@@ -209,7 +209,7 @@ public class HandshakeTest {
                 + "dummy: val1\r\n"
                 + "dummy: val2\r\n"
                 + "\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -221,7 +221,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -233,7 +233,7 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
@@ -245,14 +245,14 @@ public class HandshakeTest {
                 + "Upgrade: websocket\r\n"
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = HandshakeFailureException.class)
     public void noHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -260,11 +260,11 @@ public class HandshakeTest {
         // mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
         mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
             @Override
-            public void writeAsync(byte[] data) {
+            public void writeAsync(ByteBuffer data) {
             }
 
             @Override
-            public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+            public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
             }
         }, false);
         mHandshake.tryUpgrade(DUMMY_URI, null);
@@ -280,7 +280,7 @@ public class HandshakeTest {
                 + "Sec-WebSocket-Protocol: protocol1\r\n"
                 + "Sec-WebSocket-Protocol: protocol2\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
         assertThat(mHandshake.protocol(), is("protocol1")); // We use the first one.
     }
 
@@ -300,7 +300,7 @@ public class HandshakeTest {
                 + "Connection: Upgrade\r\n"
                 + "Sec-WebSocket-Extensions: permessage-deflate;dummy-value;\r\n"
                 + "Sec-WebSocket-Accept: " + HandshakeSecretUtil.scrambleSecret(secret) + "\r\n\r\n";
-        mHandshake.onHandshakeResponse(TestUtil.asLinkedList(header));
+        mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
     private static String getSecret(Rfc6455Handshake handshake) {
@@ -318,20 +318,6 @@ public class HandshakeTest {
             handshake.tryUpgrade(DUMMY_URI, null);
         } catch (NullPointerException e) {
             // Ignore
-        }
-    }
-
-    private static class SilentListener implements SocketChannelProxy.Listener {
-        @Override
-        public void onSocketConnected() {
-        }
-
-        @Override
-        public void onClosed() {
-        }
-
-        @Override
-        public void onDataReceived(LinkedList<byte[]> data) {
         }
     }
 }

@@ -12,7 +12,7 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.util.IOUtil;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.nio.ByteBuffer;
 
 class SocketChannelProxy implements SocketChannelWriter {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
@@ -47,19 +47,17 @@ class SocketChannelProxy implements SocketChannelWriter {
         mListener.onClosed();
     }
 
-    void onReceived(LinkedList<byte[]> data) {
-        if (data.size() != 0) {
-            mListener.onDataReceived(data);
-        }
+    void onReceived(ByteBuffer data) {
+        mListener.onDataReceived(data);
     }
 
     @Override
-    public void writeAsync(byte[] data) {
+    public void writeAsync(ByteBuffer data) {
         writeAsync(data, false);
     }
 
     @Override
-    public void writeAsync(byte[] data, boolean calledOnSelectorThread) {
+    public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
         // Log.d(TAG, "writeAsync");
         if (mIsClosed || mSession == null) {
             WsLog.d(TAG, "Quit writeAsync due to closed state");
@@ -94,6 +92,6 @@ class SocketChannelProxy implements SocketChannelWriter {
          *
          * @param data Received data.
          */
-        void onDataReceived(LinkedList<byte[]> data);
+        void onDataReceived(ByteBuffer data);
     }
 }

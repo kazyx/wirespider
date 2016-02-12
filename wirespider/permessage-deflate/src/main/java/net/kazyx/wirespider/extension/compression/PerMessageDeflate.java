@@ -10,11 +10,13 @@
 package net.kazyx.wirespider.extension.compression;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
+import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.Deflater;
@@ -92,23 +94,23 @@ public class PerMessageDeflate extends PerMessageCompression {
     private static final int DEFLATE_BUFFER = 512;
 
     @Override
-    public byte[] compress(byte[] source) throws IOException {
-        if (source.length < mStrategy.minSizeInBytes()) {
+    public ByteBuffer compress(ByteBuffer source) throws IOException {
+        if (source.remaining() < mStrategy.minSizeInBytes()) {
             return source;
         }
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.length);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.remaining());
 
         synchronized (mCompressor) {
             mCompressor.reset();
 
             DeflaterOutputStream dos = new DeflaterOutputStream(buffer, mCompressor, DEFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(dos);
-            os.write(source);
+            os.write(ByteArrayUtil.toBytesRemaining(source));
             os.flush();
             dos.finish();
 
-            return buffer.toByteArray();
+            return ByteBuffer.wrap(buffer.toByteArray());
         }
     }
 
@@ -116,19 +118,19 @@ public class PerMessageDeflate extends PerMessageCompression {
     private static final int INFLATE_BUFFER = 512;
 
     @Override
-    public byte[] decompress(byte[] source) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.length);
+    public ByteBuffer decompress(ByteBuffer source) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.remaining());
 
         synchronized (mDecompressor) {
             mDecompressor.reset();
 
             InflaterOutputStream ios = new InflaterOutputStream(buffer, mDecompressor, INFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(ios);
-            os.write(source, 0, source.length);
+            os.write(source.array(), 0, source.remaining());
             os.flush();
             ios.finish();
 
-            return buffer.toByteArray();
+            return ByteBuffer.wrap(buffer.toByteArray());
         }
     }
 }

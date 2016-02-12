@@ -20,12 +20,10 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -130,49 +128,32 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        mWriter.writeAsync(ByteArrayUtil.fromText(sb.toString()), true);
+        mWriter.writeAsync(ByteBuffer.wrap(ByteArrayUtil.fromText(sb.toString())), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
-    public LinkedList<byte[]> onHandshakeResponse(LinkedList<byte[]> data) throws BufferUnsatisfiedException, HandshakeFailureException {
-        boolean isHeaderEnd = false;
+    public void onHandshakeResponse(ByteBuffer ba) throws BufferUnsatisfiedException, HandshakeFailureException {
+        int pos = ba.position();
+        int limit = ba.limit();
+        String str = ByteArrayUtil.toTextRemaining(ba);
+        ba.position(pos);
+        ba.limit(limit);
+        // Log.d(TAG, str);
 
-        ListIterator<byte[]> itr = data.listIterator();
-        while (itr.hasNext()) {
-            byte[] ba = itr.next();
+        int index = str.indexOf("\r\n\r\n");
+        if (index == -1) {
+            mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, ba.remaining());
 
-            String str = ByteArrayUtil.toText(ba);
-            // Log.d(TAG, str);
+            WsLog.d(TAG, "Header unsatisfied");
+            throw new BufferUnsatisfiedException();
+        } else {
+            mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, index + 4);
 
-            int index = str.indexOf("\r\n\r\n");
-            if (index == -1) {
-                mBuffer.write(ba, 0, ba.length);
-                itr.remove();
-            } else {
-                isHeaderEnd = true;
-                int end = index + 4;
-                mBuffer.write(ba, 0, end);
-
-                if (ba.length > end) {
-                    itr.set(Arrays.copyOfRange(ba, end, ba.length));
-                } else {
-                    itr.remove();
-                }
-                break;
-            }
-            // TODO if header is separated to multiple ByteBuffer
-        }
-
-        if (isHeaderEnd) {
             byte[] header = mBuffer.toByteArray();
             mBuffer.reset();
             parseHeader(header);
-            return data;
-        } else {
-            WsLog.d(TAG, "Header unsatisfied");
-            throw new BufferUnsatisfiedException();
         }
     }
 
