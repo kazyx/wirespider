@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
 
 class SecureSocketChannel implements Closeable {
     private static final String TAG = SecureSocketChannel.class.getSimpleName();
@@ -105,11 +104,7 @@ class SecureSocketChannel implements Closeable {
         ret.flip();
 
         // WsLog.v(TAG, "Unwrapped", ret);
-
-        LinkedList<ByteBuffer> list = new LinkedList<>();
-        list.add(ret);
-
-        mListener.onAppDataReceived(list);
+        mListener.onAppDataReceived(ret);
     }
 
     private void evaluateCurrentStatus() throws IOException {

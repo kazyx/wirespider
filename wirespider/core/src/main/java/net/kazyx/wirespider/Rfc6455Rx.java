@@ -281,12 +281,10 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void onDataReceived(LinkedList<ByteBuffer> data) {
+    public void onDataReceived(ByteBuffer data) {
         // Log.d(TAG, "onDataReceived");
-        mReceivedBuffer.addAll(data);
-        for (ByteBuffer buff : data) {
-            mBufferSize += buff.remaining();
-        }
+        mReceivedBuffer.add(data);
+        mBufferSize += data.remaining();
 
         synchronized (mOperationSequenceLock) {
             if (mWaitingSize <= mBufferSize) {

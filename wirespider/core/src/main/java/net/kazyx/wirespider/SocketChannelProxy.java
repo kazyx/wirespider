@@ -13,7 +13,6 @@ import net.kazyx.wirespider.util.IOUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 
 class SocketChannelProxy implements SocketChannelWriter {
     private static final String TAG = SocketChannelProxy.class.getSimpleName();
@@ -48,10 +47,8 @@ class SocketChannelProxy implements SocketChannelWriter {
         mListener.onClosed();
     }
 
-    void onReceived(LinkedList<ByteBuffer> data) {
-        if (data.size() != 0) {
-            mListener.onDataReceived(data);
-        }
+    void onReceived(ByteBuffer data) {
+        mListener.onDataReceived(data);
     }
 
     @Override
@@ -95,6 +92,6 @@ class SocketChannelProxy implements SocketChannelWriter {
          *
          * @param data Received data.
          */
-        void onDataReceived(LinkedList<ByteBuffer> data);
+        void onDataReceived(ByteBuffer data);
     }
 }

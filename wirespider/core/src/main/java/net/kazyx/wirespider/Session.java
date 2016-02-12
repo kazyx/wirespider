@@ -12,7 +12,6 @@ package net.kazyx.wirespider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 
 /**
  * TCP connection.
@@ -51,7 +50,7 @@ interface Session extends Closeable {
         /**
          * @param data Received application data.
          */
-        void onAppDataReceived(LinkedList<ByteBuffer> data);
+        void onAppDataReceived(ByteBuffer data);
 
         /**
          * Ready to handle application data.

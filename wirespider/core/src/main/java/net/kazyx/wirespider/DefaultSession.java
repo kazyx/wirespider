@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -96,18 +95,14 @@ class DefaultSession implements Session {
 
     @Override
     public void onReadReady() throws IOException {
-        LinkedList<ByteBuffer> list = new LinkedList<>();
-
         while (true) {
             ByteBuffer buff = read();
             if (buff == null) {
                 break;
             }
-            list.add(buff);
-        }
-
-        if (mListener != null) {
-            mListener.onAppDataReceived(list);
+            if (mListener != null) {
+                mListener.onAppDataReceived(buff);
+            }
         }
     }
 

@@ -9,7 +9,6 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.util.ByteArrayUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class TxTest {
 
             @Override
             public void writeAsync(ByteBuffer data, boolean calledOnSelectorThread) {
-                mRx.onDataReceived(TestUtil.asLinkedList(ByteArrayUtil.toBytesRemaining(data)));
+                mRx.onDataReceived(data);
             }
         }
 
