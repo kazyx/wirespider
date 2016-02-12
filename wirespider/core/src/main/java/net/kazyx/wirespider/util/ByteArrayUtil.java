@@ -61,28 +61,7 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte array to long.
-     *
-     * @param bytes Source byte array.
-     * @return The long value
-     * @throws IllegalArgumentException Value exceeds int 64.
-     */
-    public static long toUnsignedLong(byte[] bytes) {
-        if (8 < bytes.length) {
-            throw new IllegalArgumentException("bit length overflow: " + bytes.length);
-        }
-        long value = 0;
-        for (byte b : bytes) {
-            value = (value << 8) + (b & 0xFF);
-        }
-        if (value < 0) {
-            throw new IllegalArgumentException("Exceeds int64 range: " + value);
-        }
-        return value;
-    }
-
-    /**
-     * Convert byte array to long.
+     * Convert whole byte buffer to long.
      *
      * @param bytes Source byte buffer.
      * @return The long value
@@ -93,7 +72,7 @@ public final class ByteArrayUtil {
             throw new IllegalArgumentException("bit length overflow: " + bytes.remaining());
         }
         long value = 0;
-        for (byte b : toBytesRemaining(bytes)) {
+        for (byte b : bytes.array()) {
             value = (value << 8) + (b & 0xFF);
         }
         if (value < 0) {
@@ -103,7 +82,7 @@ public final class ByteArrayUtil {
     }
 
     /**
-     * Convert byte buffer to unsigned integer.
+     * Convert whole byte buffer to unsigned integer.
      *
      * @param bytes Source byte buffer.
      * @return The unsigned integer value.

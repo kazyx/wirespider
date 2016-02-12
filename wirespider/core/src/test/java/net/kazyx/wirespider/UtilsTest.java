@@ -57,20 +57,20 @@ public class UtilsTest {
         @Test(expected = IllegalArgumentException.class)
         public void bit72ToLong() {
             byte[] _9BytesZero = new byte[9];
-            ByteArrayUtil.toUnsignedLong(_9BytesZero);
+            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_9BytesZero));
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void bit64ToLongSignedBitOn() {
             byte[] _8BytesZero = new byte[8];
             _8BytesZero[0] = (byte) 0b10000000;
-            ByteArrayUtil.toUnsignedLong(_8BytesZero);
+            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero));
         }
 
         @Test
         public void bit64ToLong() {
             byte[] _8BytesZero = new byte[8];
-            assertThat(ByteArrayUtil.toUnsignedLong(_8BytesZero), is(0L));
+            assertThat(ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero)), is(0L));
         }
 
         @Test
