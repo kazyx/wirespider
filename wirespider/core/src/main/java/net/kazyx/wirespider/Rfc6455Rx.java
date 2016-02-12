@@ -16,8 +16,8 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.ListIterator;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.zip.ZipException;
 
 class Rfc6455Rx implements FrameRx {
@@ -283,7 +283,7 @@ class Rfc6455Rx implements FrameRx {
     @Override
     public void onDataReceived(ByteBuffer data) {
         // Log.d(TAG, "onDataReceived");
-        mReceivedBuffer.add(data);
+        mReceivedBuffer.addLast(data);
         mBufferSize += data.remaining();
 
         synchronized (mOperationSequenceLock) {
@@ -301,7 +301,7 @@ class Rfc6455Rx implements FrameRx {
 
     private int mBufferSize = 0;
 
-    private final LinkedList<ByteBuffer> mReceivedBuffer = new LinkedList<>();
+    private final Deque<ByteBuffer> mReceivedBuffer = new ArrayDeque<>();
 
     private ByteBuffer readBytes(int length) throws BufferUnsatisfiedException {
         if (mBufferSize < length) {
@@ -311,9 +311,8 @@ class Rfc6455Rx implements FrameRx {
 
         ByteBuffer ret = ByteBuffer.allocate(length);
 
-        ListIterator<ByteBuffer> itr = mReceivedBuffer.listIterator();
-        while (itr.hasNext()) {
-            ByteBuffer buff = itr.next();
+        while (!mReceivedBuffer.isEmpty()) {
+            ByteBuffer buff = mReceivedBuffer.getFirst();
             int copied = Math.min(ret.remaining(), buff.remaining());
             if (ret.remaining() < buff.remaining()) {
                 byte[] tmp = new byte[copied];
@@ -324,7 +323,7 @@ class Rfc6455Rx implements FrameRx {
             }
 
             if (buff.remaining() == 0) {
-                itr.remove();
+                mReceivedBuffer.remove();
             }
 
             if (ret.remaining() == 0) {
