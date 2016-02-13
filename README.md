@@ -23,7 +23,7 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.2.2'
+    compile 'net.kazyx:wirespider:1.3.0'
 }
 ```
 
@@ -52,7 +52,7 @@ Base64.setEncoder(new Base64.Encoder() {
 WebSocketFactory factory = new WebSocketFactory();
 // It is recommended to use this WebSocketFactory while your process is alive.
 
-URI uri = URI.create("ws://host:port/path");
+URI uri = URI.create("ws://host:port/path"); // ws scheme
 SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
     @Override
     public void onTextMessage(String message) {
@@ -94,26 +94,6 @@ factory.destroy();
 
 ### WebSocket over TLS
 
-[ ![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider-wss/images/download.svg) ](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-wss/_latestVersion)
-
-WebSocket secure connection ("wss" scheme) is provided by `wirespider-wss` placed under `wirespider/wss`.  
-Downloaded [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-wss)
-or write Gradle dependency as follows.
-
-```groovy
-dependencies {
-    compile 'net.kazyx:wirespider-wss:1.2.2'
-}
-```
-
-Before opening WebSocket connection, enable `SecureTransport` on the `WebSocketFactory`.
-
-```java
-SecureTransport.enable(factory);
-```
-
-All settings done. TLS handshake will be performed in case of `wss` scheme.
-
 ```java
 URI uri = URI.create("wss://host:port/path"); // wss scheme
 SessionRequest req = new SessionRequest.Builder(uri, handler).build();
@@ -130,13 +110,12 @@ since JDK7 disables client side `TLSv1.1` and `TLSv1.2` by default.
 SSLContext context = SSLContext.getInstance("TLSv1.1");
 context.init(null, null, null);
 
-mFactory = new WebSocketFactory();
-SecureTransport.enable(mFactory, context);
+WebSocketFactory.setSslContext(context);
 ```
 
 #### TLSv1.1 and over on Android 4.4 and lower versions
 
-It is recommended to use Google Play Services to enable `TLSv1.1` and over.
+It is recommended to use Google Play services to enable `TLSv1.1` and over.
 
 ```groovy
 dependencies {
@@ -146,9 +125,6 @@ dependencies {
 
 ```java
 ProviderInstaller.installIfNeeded(getApplicationContext());
-
-mFactory = new WebSocketFactory();
-SecureTransport.enable(mFactory);
 ```
 
 ### Extensions
@@ -165,7 +141,7 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-permessage-deflate:1.2.2'
+    compile 'net.kazyx:wirespider-permessage-deflate:1.3.0'
 }
 ```
 
