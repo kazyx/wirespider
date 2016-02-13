@@ -50,8 +50,11 @@ public class ClientManager {
 
     private final WebSocketFactory mFactory;
 
-    public ClientManager() throws IOException, NoSuchAlgorithmException, GooglePlayServicesNotAvailableException, GooglePlayServicesRepairableException {
+    public ClientManager() throws IOException {
         mFactory = new WebSocketFactory();
+    }
+
+    public void enableTls() throws GooglePlayServicesNotAvailableException, GooglePlayServicesRepairableException, NoSuchAlgorithmException {
         ProviderInstaller.installIfNeeded(SampleApp.getAppContext()); // For Android 4.4 and lower
         SecureTransport.enable(mFactory); // Enable WebSocket over TLS
     }

@@ -37,7 +37,13 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
 
         try {
             mManager = new ClientManager();
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+
+        try {
+            mManager.enableTls();
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         } catch (GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
             Toast.makeText(getApplicationContext(), R.string.play_service_error, Toast.LENGTH_LONG).show();
