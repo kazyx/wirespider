@@ -40,6 +40,7 @@ public class WebSocketFactory {
      */
     public synchronized void destroy() {
         mSelectorLoop.destroy();
+        mExecutor.shutdown();
     }
 
     private WebSocketSpec mSpec = new Rfc6455();
