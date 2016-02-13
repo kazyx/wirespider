@@ -29,19 +29,19 @@ public abstract class WebSocket {
 
     private final SelectorLoop mLoop;
 
-    protected final SelectorLoop selectorLoop() {
+    final SelectorLoop selectorLoop() {
         return mLoop;
     }
 
     private final URI mURI;
 
-    protected final URI remoteUri() {
+    public final URI remoteUri() {
         return mURI;
     }
 
     private final SocketChannel mSocketChannel;
 
-    protected final SocketChannel socketChannel() {
+    final SocketChannel socketChannel() {
         return mSocketChannel;
     }
 
@@ -80,7 +80,7 @@ public abstract class WebSocket {
     private final FrameRx mFrameRx;
     private final Handshake mHandshake;
 
-    protected final Handshake handshake() {
+    final Handshake handshake() {
         return mHandshake;
     }
 
@@ -119,7 +119,7 @@ public abstract class WebSocket {
     }
 
     /**
-     * @return Active protocol of this session, or {@code null} if no protocol is defined.
+     * @return Active sub-protocol of this session, or {@code null} if no protocol is defined.
      */
     public String protocol() {
         return mHandshake.protocol();

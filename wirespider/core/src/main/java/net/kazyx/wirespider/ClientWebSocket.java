@@ -20,6 +20,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Client flavor of WebSocket.
+ */
 public abstract class ClientWebSocket extends WebSocket {
     private static final String TAG = ClientWebSocket.class.getSimpleName();
 
