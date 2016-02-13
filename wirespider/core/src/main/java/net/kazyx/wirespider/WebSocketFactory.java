@@ -26,12 +26,12 @@ import java.util.concurrent.Future;
  */
 public class WebSocketFactory {
     private final SelectorProvider mProvider;
-    private final SocketEngine mSocketEngine;
+    private final SelectorLoop mSelectorLoop;
     private final ExecutorService mExecutor = Executors.newCachedThreadPool();
 
     public WebSocketFactory() throws IOException {
         mProvider = SelectorProvider.provider();
-        mSocketEngine = new SocketEngine(mProvider);
+        mSelectorLoop = new SessionManager(mProvider);
     }
 
     /**
@@ -39,7 +39,7 @@ public class WebSocketFactory {
      * Note that any connections created by this instance will be released.
      */
     public synchronized void destroy() {
-        mSocketEngine.destroy();
+        mSelectorLoop.destroy();
     }
 
     private WebSocketVersion mVersion = new Rfc6455();
@@ -60,7 +60,7 @@ public class WebSocketFactory {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = mVersion.newClientWebSocket(req, mSocketEngine, ch);
+                ClientWebSocket ws = mVersion.newClientWebSocket(req, mSelectorLoop, ch);
                 try {
                     ws.connect();
                     return ws;
@@ -73,7 +73,7 @@ public class WebSocketFactory {
         });
     }
 
-    SocketEngine socketEngine() {
-        return mSocketEngine;
+    SelectorLoop selectorLoop() {
+        return mSelectorLoop;
     }
 }

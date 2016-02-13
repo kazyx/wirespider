@@ -10,15 +10,15 @@
 package net.kazyx.wirespider.rfc6455;
 
 import net.kazyx.wirespider.ClientWebSocket;
+import net.kazyx.wirespider.SelectorLoop;
 import net.kazyx.wirespider.SessionRequest;
-import net.kazyx.wirespider.SocketEngine;
 import net.kazyx.wirespider.WebSocketVersion;
 
 import java.nio.channels.SocketChannel;
 
 public class Rfc6455 implements WebSocketVersion {
     @Override
-    public ClientWebSocket newClientWebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch) {
-        return new Rfc6455ClientWebSocket(req, engine, ch);
+    public ClientWebSocket newClientWebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
+        return new Rfc6455ClientWebSocket(req, loop, ch);
     }
 }

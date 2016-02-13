@@ -26,10 +26,10 @@ import java.util.List;
 public abstract class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
 
-    private final SocketEngine mEngine;
+    private final SelectorLoop mLoop;
 
-    protected final SocketEngine socketEngine() {
-        return mEngine;
+    protected final SelectorLoop selectorLoop() {
+        return mLoop;
     }
 
     private final URI mURI;
@@ -83,11 +83,11 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch) {
+    WebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
         mURI = req.uri();
         mCallbackHandler = req.handler();
         mMaxResponsePayloadSize = req.maxResponsePayloadSizeInBytes();
-        mEngine = engine;
+        mLoop = loop;
         mSocketChannel = ch;
 
         mSocketChannelProxy = new SocketChannelProxy(mChannelProxyListener);
@@ -104,11 +104,11 @@ public abstract class WebSocket {
 
     protected abstract Handshake newHandshake();
 
-    protected abstract void onSocketConnected();
+    abstract void onSocketConnected();
 
-    protected abstract void onHandshakeFailed();
+    abstract void onHandshakeFailed();
 
-    protected abstract void onHandshakeCompleted();
+    abstract void onHandshakeCompleted();
 
     /**
      * @return Active WebSocket extensions on this session.

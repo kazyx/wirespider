@@ -12,5 +12,11 @@ package net.kazyx.wirespider;
 import java.nio.channels.SocketChannel;
 
 public interface WebSocketVersion {
-    ClientWebSocket newClientWebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch);
+    /**
+     * @param req Request to be used for opening handshake.
+     * @param loop Core selector loop.
+     * @param ch Channel to be used for the new connection.
+     * @return Newly created un-connected {@link ClientWebSocket} instance.
+     */
+    ClientWebSocket newClientWebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch);
 }

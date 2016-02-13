@@ -43,7 +43,7 @@ public class SessionFactoryTest {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        factory.socketEngine().registerFactory(new DefaultSessionFactory(), "ws");
+        factory.selectorLoop().registerFactory(new DefaultSessionFactory(), "ws");
 
         WebSocket ws = null;
         try {

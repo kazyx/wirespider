@@ -27,8 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SocketEngine {
-    private static final String TAG = SocketEngine.class.getSimpleName();
+class SessionManager implements SelectorLoop {
+    private static final String TAG = SessionManager.class.getSimpleName();
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
@@ -36,12 +36,13 @@ public class SocketEngine {
 
     private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
 
-    SocketEngine(SelectorProvider provider) throws IOException {
+    SessionManager(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
         mSelectorThread.start();
     }
 
-    void destroy() {
+    @Override
+    public void destroy() {
         mSelectorThread.interrupt();
     }
 
@@ -178,21 +179,13 @@ public class SocketEngine {
 
     private final SelectorThread mSelectorThread;
 
-    /**
-     * Register new WebSocket to the Selector.
-     *
-     * @param ws WebSocket to be registered.
-     * @param ops Selector operations.
-     */
+    @Override
     public void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 
-    /**
-     * @param factory {@link SessionFactory}to use for the specified URI scheme.
-     * @param scheme Scheme to use the {@link SessionFactory} to create a {@link Session}
-     */
-    void registerFactory(SessionFactory factory, String scheme) {
+    @Override
+    public void registerFactory(SessionFactory factory, String scheme) {
         mFactories.put(scheme.toLowerCase(Locale.US), factory);
     }
 }
