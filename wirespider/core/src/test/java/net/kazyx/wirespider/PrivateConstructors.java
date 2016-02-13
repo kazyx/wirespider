@@ -10,8 +10,10 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
 import org.junit.Test;

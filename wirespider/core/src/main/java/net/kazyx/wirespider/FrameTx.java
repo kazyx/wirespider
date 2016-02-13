@@ -11,7 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
 
-interface FrameTx {
+public interface FrameTx {
     void sendTextAsync(String data);
 
     void sendBinaryAsync(byte[] data);

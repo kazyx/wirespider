@@ -27,7 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-class SocketEngine {
+public class SocketEngine {
     private static final String TAG = SocketEngine.class.getSimpleName();
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
@@ -184,7 +184,7 @@ class SocketEngine {
      * @param ws WebSocket to be registered.
      * @param ops Selector operations.
      */
-    void register(WebSocket ws, int ops) {
+    public void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 

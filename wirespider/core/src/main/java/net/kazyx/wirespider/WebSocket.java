@@ -28,19 +28,19 @@ public abstract class WebSocket {
 
     private final SocketEngine mEngine;
 
-    SocketEngine socketEngine() {
+    protected final SocketEngine socketEngine() {
         return mEngine;
     }
 
     private final URI mURI;
 
-    final URI remoteUri() {
+    protected final URI remoteUri() {
         return mURI;
     }
 
     private final SocketChannel mSocketChannel;
 
-    final SocketChannel socketChannel() {
+    protected final SocketChannel socketChannel() {
         return mSocketChannel;
     }
 
@@ -71,7 +71,7 @@ public abstract class WebSocket {
 
     private final SocketChannelProxy mSocketChannelProxy;
 
-    final SocketChannelProxy socketChannelProxy() {
+    protected final SocketChannelProxy socketChannelProxy() {
         return mSocketChannelProxy;
     }
 
@@ -79,7 +79,7 @@ public abstract class WebSocket {
     private final FrameRx mFrameRx;
     private final Handshake mHandshake;
 
-    final Handshake handshake() {
+    protected final Handshake handshake() {
         return mHandshake;
     }
 
@@ -98,17 +98,17 @@ public abstract class WebSocket {
         mHandshake.responseHandler(req.handshakeHandler());
     }
 
-    abstract FrameTx newFrameTx();
+    protected abstract FrameTx newFrameTx();
 
-    abstract FrameRx newFrameRx(FrameRx.Listener listener);
+    protected abstract FrameRx newFrameRx(FrameRx.Listener listener);
 
-    abstract Handshake newHandshake();
+    protected abstract Handshake newHandshake();
 
-    abstract void onSocketConnected();
+    protected abstract void onSocketConnected();
 
-    abstract void onHandshakeFailed();
+    protected abstract void onHandshakeFailed();
 
-    abstract void onHandshakeCompleted();
+    protected abstract void onHandshakeCompleted();
 
     /**
      * @return Active WebSocket extensions on this session.

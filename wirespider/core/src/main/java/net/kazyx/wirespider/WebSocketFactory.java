@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.rfc6455.Rfc6455;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 
@@ -41,6 +42,8 @@ public class WebSocketFactory {
         mSocketEngine.destroy();
     }
 
+    private WebSocketVersion mVersion = new Rfc6455();
+
     /**
      * Open WebSocket connection to the specified remote server.
      *
@@ -57,7 +60,7 @@ public class WebSocketFactory {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = new ClientWebSocket(req, mSocketEngine, ch);
+                ClientWebSocket ws = mVersion.newClientWebSocket(req, mSocketEngine, ch);
                 try {
                     ws.connect();
                     return ws;

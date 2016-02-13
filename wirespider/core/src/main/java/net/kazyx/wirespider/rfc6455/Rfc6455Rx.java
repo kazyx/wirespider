@@ -1,14 +1,18 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.OpCode;
+import net.kazyx.wirespider.WsLog;
 import net.kazyx.wirespider.exception.PayloadOverflowException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.exception.ProtocolViolationException;
@@ -274,7 +278,7 @@ class Rfc6455Rx implements FrameRx {
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
-                int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
+                int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.asNumber();
                 String reason = (payload.remaining() > 2) ? ByteArrayUtil.toTextRemaining(payload) : "";
                 mListener.onCloseFrame(code, reason);
                 break;

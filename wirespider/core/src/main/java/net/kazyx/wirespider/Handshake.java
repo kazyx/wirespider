@@ -18,7 +18,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-interface Handshake {
+public interface Handshake {
     /**
      * Try to upgrade this connection as WebSocket.
      *

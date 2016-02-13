@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.Base64;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;

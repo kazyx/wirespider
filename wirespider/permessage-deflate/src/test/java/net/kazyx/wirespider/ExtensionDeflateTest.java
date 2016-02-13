@@ -13,6 +13,7 @@ import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.CompressionStrategy;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
+import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

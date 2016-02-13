@@ -1,18 +1,26 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.Base64Encoder;
+import net.kazyx.wirespider.Handshake;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.SilentEventHandler;
+import net.kazyx.wirespider.SocketChannelWriter;
+import net.kazyx.wirespider.TestUtil;
 import net.kazyx.wirespider.exception.HandshakeFailureException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
+import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

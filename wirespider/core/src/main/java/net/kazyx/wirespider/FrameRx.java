@@ -13,7 +13,7 @@ import net.kazyx.wirespider.extension.PayloadFilter;
 
 import java.nio.ByteBuffer;
 
-interface FrameRx {
+public interface FrameRx {
     /**
      * Called when WebSocket frame data is received.
      *

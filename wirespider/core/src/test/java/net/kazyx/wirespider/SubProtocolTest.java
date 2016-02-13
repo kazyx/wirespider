@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

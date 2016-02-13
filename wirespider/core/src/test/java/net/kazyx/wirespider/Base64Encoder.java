@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.Base64;
+
 import java.lang.reflect.Method;
 
 public class Base64Encoder implements Base64.Encoder {

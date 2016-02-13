@@ -1,14 +1,19 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FrameTx;
+import net.kazyx.wirespider.OpCode;
+import net.kazyx.wirespider.SocketChannelWriter;
+import net.kazyx.wirespider.WsLog;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
@@ -87,8 +92,8 @@ class Rfc6455Tx implements FrameTx {
         // WsLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         ByteBuffer payload = ByteBuffer.allocate(2 + messageBytes.length);
-        payload.put((byte) (code.statusCode >>> 8));
-        payload.put((byte) (code.statusCode));
+        payload.put((byte) (code.asNumber() >>> 8));
+        payload.put((byte) (code.asNumber()));
         payload.put(messageBytes);
         payload.flip();
 
