@@ -65,11 +65,6 @@ public class PrivateConstructors {
     }
 
     @Test
-    public void randomSource() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(RandomSource.class);
-    }
-
-    @Test
     public void selectionKeyUtil() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         constructor(SelectionKeyUtil.class);
     }

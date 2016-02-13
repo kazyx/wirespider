@@ -29,7 +29,6 @@ interface Handshake {
      * Called when WebSocket handshake response is received.
      *
      * @param data Received data.
-     * @return Remaining (non-header) data.
      * @throws BufferUnsatisfiedException if received data does not contain CRLF. Waiting for the next data.
      * @throws HandshakeFailureException if handshake failure is detected.
      */

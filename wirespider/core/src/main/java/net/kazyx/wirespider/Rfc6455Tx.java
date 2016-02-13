@@ -15,6 +15,7 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
@@ -153,7 +154,7 @@ class Rfc6455Tx implements FrameTx {
         buffer.put(header);
 
         if (mIsClient) {
-            int mask = RandomSource.random().nextInt();
+            int mask = ThreadLocalRandom.current().nextInt();
             byte[] maskingKey = {
                     (byte) mask,
                     (byte) (mask >>> 8),

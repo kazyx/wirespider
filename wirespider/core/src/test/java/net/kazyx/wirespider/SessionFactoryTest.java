@@ -24,12 +24,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class SessionFactoryTest {
-    private static final String TAG = SessionFactoryTest.class.getSimpleName();
     private static TestWebSocketServer server = new TestWebSocketServer(10000);
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        RandomSource.setSeed(0x12345678);
         Base64.setEncoder(new Base64Encoder());
         server.boot();
     }

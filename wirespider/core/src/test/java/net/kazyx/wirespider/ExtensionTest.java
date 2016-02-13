@@ -137,7 +137,6 @@ public class ExtensionTest {
 
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             Base64.setEncoder(new Base64Encoder());
             server.registerExtension(TestWebSocketServer.Extension.DEFLATE);
             server.boot();

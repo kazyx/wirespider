@@ -31,7 +31,6 @@ public class SecureSessionTest {
     public static class ExternalServerEchoTest {
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             Base64.setEncoder(new Base64Encoder());
             WsLog.logLevel(WsLog.Level.DEBUG);
         }
@@ -107,7 +106,6 @@ public class SecureSessionTest {
     public static class SSLContextTest {
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             Base64.setEncoder(new Base64Encoder());
             WsLog.logLevel(WsLog.Level.DEBUG);
         }

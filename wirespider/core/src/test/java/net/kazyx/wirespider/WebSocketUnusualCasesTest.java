@@ -41,7 +41,6 @@ public class WebSocketUnusualCasesTest {
 
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             WebSocketServlet servlet = new WebSocketServlet() {
                 @Override
                 public void configure(WebSocketServletFactory factory) {

@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ThreadLocalRandom;
 
 final class HandshakeSecretUtil {
     private HandshakeSecretUtil() {
@@ -27,7 +28,7 @@ final class HandshakeSecretUtil {
      */
     static String newSecretKey() {
         byte[] nonce = new byte[16];
-        RandomSource.random().nextBytes(nonce);
+        ThreadLocalRandom.current().nextBytes(nonce);
         return Base64.encoder().encode(nonce).trim();
     }
 
