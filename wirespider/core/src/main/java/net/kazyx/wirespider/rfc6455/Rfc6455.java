@@ -15,11 +15,11 @@ import net.kazyx.wirespider.FrameTx;
 import net.kazyx.wirespider.Handshake;
 import net.kazyx.wirespider.SelectorLoop;
 import net.kazyx.wirespider.SessionRequest;
-import net.kazyx.wirespider.WebSocketVersion;
+import net.kazyx.wirespider.WebSocketSpec;
 
 import java.nio.channels.SocketChannel;
 
-public class Rfc6455 implements WebSocketVersion {
+public class Rfc6455 implements WebSocketSpec {
     @Override
     public ClientWebSocket newClientWebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
         return new ClientWebSocket(req, loop, ch) {

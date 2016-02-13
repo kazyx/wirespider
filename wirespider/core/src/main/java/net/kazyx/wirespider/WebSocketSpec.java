@@ -11,7 +11,7 @@ package net.kazyx.wirespider;
 
 import java.nio.channels.SocketChannel;
 
-public interface WebSocketVersion {
+public interface WebSocketSpec {
     /**
      * @param req Request to be used for opening handshake.
      * @param loop Core selector loop.

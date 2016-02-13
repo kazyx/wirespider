@@ -42,7 +42,7 @@ public class WebSocketFactory {
         mSelectorLoop.destroy();
     }
 
-    private WebSocketVersion mVersion = new Rfc6455();
+    private WebSocketSpec mSpec = new Rfc6455();
 
     /**
      * Open WebSocket connection to the specified remote server.
@@ -60,7 +60,7 @@ public class WebSocketFactory {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = mVersion.newClientWebSocket(req, mSelectorLoop, ch);
+                ClientWebSocket ws = mSpec.newClientWebSocket(req, mSelectorLoop, ch);
                 try {
                     ws.connect();
                     return ws;
@@ -71,6 +71,16 @@ public class WebSocketFactory {
                 }
             }
         });
+    }
+
+    /**
+     * Set a specification of WebSocket.
+     *
+     * @param spec {@link WebSocketSpec} to be used by this factory. {@link Rfc6455} is used by default.
+     */
+    public void setSpec(WebSocketSpec spec) {
+        ArgumentCheck.rejectNull(spec);
+        mSpec = spec;
     }
 
     SelectorLoop selectorLoop() {
