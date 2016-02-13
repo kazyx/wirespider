@@ -17,13 +17,13 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.security.ProviderInstaller;
 
 import net.kazyx.wirespider.sampleapp.echoserver.DummyServerManager;
 import net.kazyx.wirespider.sampleapp.echoserver.JettyServerManager;
 import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 
 public class MainActivity extends AppCompatActivity implements ActivityProxy {
 
@@ -42,9 +42,7 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
         }
 
         try {
-            mManager.enableTls();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
+            ProviderInstaller.installIfNeeded(SampleApp.getAppContext()); // For Android 4.4 and lower
         } catch (GooglePlayServicesRepairableException | GooglePlayServicesNotAvailableException e) {
             Toast.makeText(getApplicationContext(), R.string.play_service_error, Toast.LENGTH_LONG).show();
         }

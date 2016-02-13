@@ -31,16 +31,15 @@ android {
 }
 
 dependencies {
+    /*
     compile 'net.kazyx:wirespider:1.2.2'
     compile 'net.kazyx:wirespider-permessage-deflate:1.2.2'
     compile 'net.kazyx:wirespider-wss:1.2.2'
+    */
 
-    /*
     // Use local artifacts
     compile fileTree(dir: '../../wirespider/core/build/libs/', include: '*.jar', exclude: ['*-javadoc.jar', '*-sources.jar'])
     compile fileTree(dir: '../../wirespider/permessage-deflate/build/libs/', include: '*.jar', exclude: ['*-javadoc.jar', '*-sources.jar'])
-    compile fileTree(dir: '../../wirespider/wss/build/libs/', include: '*.jar', exclude: ['*-javadoc.jar', '*-sources.jar'])
-    */
 
     compile 'com.android.support:cardview-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'

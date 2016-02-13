@@ -194,7 +194,7 @@ public class FirstFragment extends Fragment {
             mActivityProxy.getClientManager().open(uri, new ClientManager.ConnectionListener() {
                 @Override
                 public void onConnected() {
-                    Log.w(TAG, "Connected");
+                    Log.i(TAG, "Connected");
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

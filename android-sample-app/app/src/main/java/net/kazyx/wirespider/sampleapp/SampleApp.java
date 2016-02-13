@@ -14,7 +14,7 @@ import android.content.Context;
 import android.support.annotation.StringRes;
 import android.util.Log;
 
-import net.kazyx.wirespider.WsLog;
+import net.kazyx.wirespider.util.WsLog;
 
 public class SampleApp extends Application {
     @Override
