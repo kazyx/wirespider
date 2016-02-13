@@ -4,7 +4,7 @@ WireSpider
 [![Coverage Status](https://coveralls.io/repos/kazyx/wirespider/badge.svg?branch=master)](https://coveralls.io/r/kazyx/wirespider)
 [![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider/images/download.svg)](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider/_latestVersion)
 
-WireSpider is a simple and compact WebSocket ([RFC6455](http://tools.ietf.org/html/rfc6455)) client written in Java.
+WireSpider is a simple and compact WebSocket ([RFC6455](https://tools.ietf.org/html/rfc6455)) client written in Java.
 
 - High performance `java.nio` based implementation.
 - Incredibly compact binary size.
@@ -131,11 +131,11 @@ ProviderInstaller.installIfNeeded(getApplicationContext());
 
 WebSocket extensions can be implemented with `net.kazyx.wirespider.extension.Extension` interface.
 
-#### Per message deflate extension
+#### Per-Message Deflate extension
 
 [ ![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate/images/download.svg) ](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate/_latestVersion)
 
-Permessage deflate extension is provided by `wirespider-permessage-deflate` placed under `wirespider/permessage-deflate`.  
+Per-Message Deflate extension ([RFC7692](https://tools.ietf.org/html/rfc7692)) is provided by `wirespider-permessage-deflate` placed under `wirespider/permessage-deflate`.  
 Downloaded [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-permessage-deflate)
 or write Gradle dependency as follows.
 

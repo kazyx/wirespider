@@ -85,14 +85,9 @@ public class ExtensionDeflateTest {
 
     public static class BuilderTest {
 
-        @Test(expected = IllegalArgumentException.class)
-        public void maxClientWindowBitsLow() {
-            new DeflateRequest.Builder().setMaxClientWindowBits(7);
-        }
-
-        @Test(expected = IllegalArgumentException.class)
-        public void maxClientWindowBitsHigh() {
-            new DeflateRequest.Builder().setMaxClientWindowBits(16);
+        @Test(expected = UnsupportedOperationException.class)
+        public void maxClientWindowBits() {
+            new DeflateRequest.Builder().setMaxClientWindowBits(10);
         }
 
         @Test(expected = IllegalArgumentException.class)
@@ -103,19 +98,6 @@ public class ExtensionDeflateTest {
         @Test(expected = IllegalArgumentException.class)
         public void maxServerWindowBitsHigh() {
             new DeflateRequest.Builder().setMaxServerWindowBits(16);
-        }
-
-        @Test
-        public void maxClientWindowBitsInRange() {
-            new DeflateRequest.Builder()
-                    .setMaxClientWindowBits(8)
-                    .setMaxClientWindowBits(9)
-                    .setMaxClientWindowBits(10)
-                    .setMaxClientWindowBits(11)
-                    .setMaxClientWindowBits(12)
-                    .setMaxClientWindowBits(13)
-                    .setMaxClientWindowBits(14)
-                    .setMaxClientWindowBits(15);
         }
 
         @Test
@@ -162,7 +144,6 @@ public class ExtensionDeflateTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthFixedString(MESSAGE_SIZE);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxClientWindowBits(size)
                     .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -217,7 +198,6 @@ public class ExtensionDeflateTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthRandomString(MESSAGE_SIZE);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxClientWindowBits(size)
                     .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -273,7 +253,6 @@ public class ExtensionDeflateTest {
             final byte[] data = TestUtil.fixedLengthFixedByteArray(MESSAGE_SIZE);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxClientWindowBits(size)
                     .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -329,7 +308,6 @@ public class ExtensionDeflateTest {
             final byte[] data = TestUtil.fixedLengthRandomByteArray(MESSAGE_SIZE);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxClientWindowBits(size)
                     .setMaxServerWindowBits(size)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {

@@ -33,24 +33,18 @@ public class PerMessageDeflate extends PerMessageCompression {
      */
     public static final String NAME = "permessage-deflate";
     /**
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-21#section-8.1.1.1">Section 8.1.1.1</a>
+     * @see <a href="https://tools.ietf.org/html/rfc7692#section-7.1.1.1">RFC 7692 Section 7.1.1.1</a>
      */
-    public static final String SERVER_NO_CONTEXT_TAKEOVER = "server_no_context_takeover";
+    static final String SERVER_NO_CONTEXT_TAKEOVER = "server_no_context_takeover";
 
     /**
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-21#section-8.1.1.2">Section 8.1.1.2</a>
+     * @see <a href="https://tools.ietf.org/html/rfc7692#section-7.1.1.2">RFC 7692 Section 7.1.1.2</a>
      */
-    public static final String CLIENT_NO_CONTEXT_TAKEOVER = "client_no_context_takeover";
+    static final String CLIENT_NO_CONTEXT_TAKEOVER = "client_no_context_takeover";
 
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-21#section-8.1.2.1">Section 8.1.2.1</a>
-     */
-    public static final String SERVER_MAX_WINDOW_BITS = "server_max_window_bits";
+    static final String SERVER_MAX_WINDOW_BITS = "server_max_window_bits";
 
-    /**
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-21#section-8.1.2.2">Section 8.1.2.2</a>
-     */
-    public static final String CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
+    // static final String CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
 
     private static final CompressionStrategy ALL_COMPRESSION_STRATEGY = new CompressionStrategy() {
         @Override
