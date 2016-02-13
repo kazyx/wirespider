@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 /**
  * TCP connection.
  */
-interface Session extends Closeable {
+public interface Session extends Closeable {
     /**
      * Write data from the given {@link ByteBuffer}
      *

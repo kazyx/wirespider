@@ -84,10 +84,10 @@ public abstract class ClientWebSocket extends WebSocket {
         if (port != -1) {
             return port;
         }
-        if ("wss".equalsIgnoreCase(uri.getScheme())) {
-            return 443;
+        if (WebSocket.WSS_SCHEME.equalsIgnoreCase(uri.getScheme())) {
+            return WebSocket.DEFAULT_WSS_PORT;
         } else {
-            return 80;
+            return WebSocket.DEFAULT_WS_PORT;
         }
     }
 }

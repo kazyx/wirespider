@@ -9,15 +9,9 @@
 
 package net.kazyx.wirespider.sampleapp;
 
-import android.content.Context;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
-import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.security.ProviderInstaller;
-
-import net.kazyx.wirespider.SecureTransport;
 import net.kazyx.wirespider.SessionRequest;
 import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.WebSocketFactory;
@@ -29,7 +23,6 @@ import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,7 +33,7 @@ public class ClientManager {
     private static final String TAG = ClientManager.class.getSimpleName();
 
     static {
-        net.kazyx.wirespider.Base64.setEncoder(new net.kazyx.wirespider.Base64.Encoder() {
+        net.kazyx.wirespider.util.Base64.setEncoder(new net.kazyx.wirespider.util.Base64.Encoder() {
             @Override
             public String encode(byte[] source) {
                 return Base64.encodeToString(source, Base64.DEFAULT);
@@ -52,11 +45,6 @@ public class ClientManager {
 
     public ClientManager() throws IOException {
         mFactory = new WebSocketFactory();
-    }
-
-    public void enableTls() throws GooglePlayServicesNotAvailableException, GooglePlayServicesRepairableException, NoSuchAlgorithmException {
-        ProviderInstaller.installIfNeeded(SampleApp.getAppContext()); // For Android 4.4 and lower
-        SecureTransport.enable(mFactory); // Enable WebSocket over TLS
     }
 
     public void open(URI uri, final ConnectionListener listener) {

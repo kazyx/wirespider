@@ -19,10 +19,4 @@ public interface SelectorLoop {
      * @param ops Selector operations.
      */
     void register(WebSocket ws, int ops);
-
-    /**
-     * @param factory {@link SessionFactory} to be used for the given URI scheme.
-     * @param scheme Scheme of the remote endpoint URI. e.g.) {@code ws} and {@code wss}.
-     */
-    void registerFactory(SessionFactory factory, String scheme);
 }

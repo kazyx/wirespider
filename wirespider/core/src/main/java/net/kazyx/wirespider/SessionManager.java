@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.secure.SecureSessionFactory;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
 import net.kazyx.wirespider.util.WsLog;
@@ -33,9 +34,8 @@ class SessionManager implements SelectorLoop {
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
-    private final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
-
     private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
+    private final SessionFactory mSecureFactory = new SecureSessionFactory();
 
     SessionManager(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
@@ -74,10 +74,7 @@ class SessionManager implements SelectorLoop {
                                     SocketChannel ch = (SocketChannel) key.channel();
                                     if (ch.finishConnect()) {
                                         String scheme = ws.remoteUri().getScheme().toLowerCase(Locale.US);
-                                        SessionFactory factory = mFactories.get(scheme);
-                                        if (factory == null) {
-                                            factory = mDefaultFactory;
-                                        }
+                                        SessionFactory factory = WebSocket.WSS_SCHEME.equals(scheme) ? mSecureFactory : mDefaultFactory;
                                         SelectionKeyUtil.interestOps(key, SelectionKey.OP_READ);
                                         final Session session = factory.createNew(key);
                                         session.setListener(new Session.Listener() {
@@ -183,10 +180,5 @@ class SessionManager implements SelectorLoop {
     @Override
     public void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
-    }
-
-    @Override
-    public void registerFactory(SessionFactory factory, String scheme) {
-        mFactories.put(scheme.toLowerCase(Locale.US), factory);
     }
 }
