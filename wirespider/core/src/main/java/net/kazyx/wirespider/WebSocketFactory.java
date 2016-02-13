@@ -93,6 +93,6 @@ public class WebSocketFactory {
      * @param context Non default {@link SSLContext}.
      */
     public static void setSslContext(SSLContext context) {
-        SessionManager.registerFactory(WebSocket.WSS_SCHEME, new SecureSessionFactory(context));
+        SecureSessionFactory.setSslContext(context);
     }
 }

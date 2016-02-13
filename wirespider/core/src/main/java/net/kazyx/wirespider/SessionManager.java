@@ -34,14 +34,12 @@ class SessionManager implements SelectorLoop {
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
-    private static final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
-
     private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
+    private final SessionFactory mSecureFactory = new SecureSessionFactory();
 
     SessionManager(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
         mSelectorThread.start();
-        mFactories.put(WebSocket.WSS_SCHEME, new SecureSessionFactory(null));
     }
 
     @Override
@@ -76,10 +74,7 @@ class SessionManager implements SelectorLoop {
                                     SocketChannel ch = (SocketChannel) key.channel();
                                     if (ch.finishConnect()) {
                                         String scheme = ws.remoteUri().getScheme().toLowerCase(Locale.US);
-                                        SessionFactory factory = mFactories.get(scheme);
-                                        if (factory == null) {
-                                            factory = mDefaultFactory;
-                                        }
+                                        SessionFactory factory = WebSocket.WSS_SCHEME.equals(scheme) ? mSecureFactory : mDefaultFactory;
                                         SelectionKeyUtil.interestOps(key, SelectionKey.OP_READ);
                                         final Session session = factory.createNew(key);
                                         session.setListener(new Session.Listener() {
@@ -185,17 +180,5 @@ class SessionManager implements SelectorLoop {
     @Override
     public void register(WebSocket ws, int ops) {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
-    }
-
-    /**
-     * @param scheme Scheme of the remote endpoint URI. e.g.) {@code ws} and {@code wss}.
-     * @param factory {@link SessionFactory} to be used for the given URI scheme.
-     */
-    static void registerFactory(String scheme, SessionFactory factory) {
-        if (factory == null) {
-            mFactories.remove(scheme);
-        } else {
-            mFactories.put(scheme.toLowerCase(Locale.US), factory);
-        }
     }
 }
