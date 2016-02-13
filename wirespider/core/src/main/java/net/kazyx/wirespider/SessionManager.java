@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,16 +1,13 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
-
-import net.kazyx.wirespider.util.ArgumentCheck;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+package net.kazyx.wirespider.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

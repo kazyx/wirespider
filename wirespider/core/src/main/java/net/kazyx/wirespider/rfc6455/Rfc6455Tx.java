@@ -13,10 +13,10 @@ import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.FrameTx;
 import net.kazyx.wirespider.OpCode;
 import net.kazyx.wirespider.SocketChannelWriter;
-import net.kazyx.wirespider.WsLog;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

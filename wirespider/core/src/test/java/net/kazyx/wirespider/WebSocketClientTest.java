@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.WsLog;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

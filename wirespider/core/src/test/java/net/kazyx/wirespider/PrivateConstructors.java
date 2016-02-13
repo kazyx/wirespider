@@ -16,6 +16,7 @@ import net.kazyx.wirespider.util.ByteArrayUtil;
 import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
+import net.kazyx.wirespider.util.WsLog;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;

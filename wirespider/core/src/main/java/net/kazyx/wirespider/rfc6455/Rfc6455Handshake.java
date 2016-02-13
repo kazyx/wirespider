@@ -13,7 +13,6 @@ import net.kazyx.wirespider.Handshake;
 import net.kazyx.wirespider.HandshakeResponse;
 import net.kazyx.wirespider.SessionRequest;
 import net.kazyx.wirespider.SocketChannelWriter;
-import net.kazyx.wirespider.WsLog;
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import net.kazyx.wirespider.exception.HandshakeFailureException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
@@ -24,6 +23,7 @@ import net.kazyx.wirespider.http.HttpHeaderReader;
 import net.kazyx.wirespider.http.HttpStatusLine;
 import net.kazyx.wirespider.util.ByteArrayUtil;
 import net.kazyx.wirespider.util.HandshakeSecretUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

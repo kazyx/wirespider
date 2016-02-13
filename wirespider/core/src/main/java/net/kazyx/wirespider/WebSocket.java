@@ -14,6 +14,7 @@ import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.net.URI;
 import java.nio.ByteBuffer;

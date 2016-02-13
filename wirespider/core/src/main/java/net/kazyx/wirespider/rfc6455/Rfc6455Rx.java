@@ -12,13 +12,13 @@ package net.kazyx.wirespider.rfc6455;
 import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.FrameRx;
 import net.kazyx.wirespider.OpCode;
-import net.kazyx.wirespider.WsLog;
 import net.kazyx.wirespider.exception.PayloadOverflowException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.exception.ProtocolViolationException;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -10,6 +10,7 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.delegate.SocketBinder;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
