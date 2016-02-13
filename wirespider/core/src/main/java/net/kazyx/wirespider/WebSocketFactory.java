@@ -10,9 +10,11 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.rfc6455.Rfc6455;
+import net.kazyx.wirespider.secure.SecureSessionFactory;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
@@ -84,7 +86,13 @@ public class WebSocketFactory {
         mSpec = spec;
     }
 
-    SelectorLoop selectorLoop() {
-        return mSelectorLoop;
+    /**
+     * Set custom {@link SSLContext} for secure WebSocket connection.<br>
+     * If nothing is set, default {@link SSLContext} is used.
+     *
+     * @param context Non default {@link SSLContext}.
+     */
+    public static void setSslContext(SSLContext context) {
+        SessionManager.registerFactory(WebSocket.WSS_SCHEME, new SecureSessionFactory(context));
     }
 }

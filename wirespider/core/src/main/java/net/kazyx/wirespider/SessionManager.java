@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.secure.SecureSessionFactory;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
 import net.kazyx.wirespider.util.WsLog;
@@ -33,13 +34,14 @@ class SessionManager implements SelectorLoop {
 
     private final Map<SocketChannel, Session> mSessionMap = new ConcurrentHashMap<>();
 
-    private final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
+    private static final Map<String, SessionFactory> mFactories = new ConcurrentHashMap<>();
 
     private final SessionFactory mDefaultFactory = new DefaultSessionFactory();
 
     SessionManager(SelectorProvider provider) throws IOException {
         mSelectorThread = new SelectorThread(provider.openSelector());
         mSelectorThread.start();
+        mFactories.put(WebSocket.WSS_SCHEME, new SecureSessionFactory(null));
     }
 
     @Override
@@ -185,8 +187,15 @@ class SessionManager implements SelectorLoop {
         mSelectorThread.registerNewChannel(ws.socketChannel(), ops, ws);
     }
 
-    @Override
-    public void registerFactory(SessionFactory factory, String scheme) {
-        mFactories.put(scheme.toLowerCase(Locale.US), factory);
+    /**
+     * @param scheme Scheme of the remote endpoint URI. e.g.) {@code ws} and {@code wss}.
+     * @param factory {@link SessionFactory} to be used for the given URI scheme.
+     */
+    static void registerFactory(String scheme, SessionFactory factory) {
+        if (factory == null) {
+            mFactories.remove(scheme);
+        } else {
+            mFactories.put(scheme.toLowerCase(Locale.US), factory);
+        }
     }
 }

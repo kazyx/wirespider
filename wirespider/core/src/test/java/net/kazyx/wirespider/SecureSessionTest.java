@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.WsLog;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,6 +36,11 @@ public class SecureSessionTest {
         public static void setupClass() throws Exception {
             Base64.setEncoder(new Base64Encoder());
             WsLog.logLevel(WsLog.Level.DEBUG);
+        }
+
+        @After
+        public void tearDown() throws NoSuchAlgorithmException {
+            WebSocketFactory.setSslContext(null);
         }
 
         private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
@@ -63,7 +69,6 @@ public class SecureSessionTest {
             }).build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            SecureTransport.enable(factory);
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);
@@ -140,7 +145,7 @@ public class SecureSessionTest {
             WebSocketFactory factory = new WebSocketFactory();
             SSLContext context = SSLContext.getInstance(protocol);
             context.init(null, null, null);
-            SecureTransport.enable(factory, context);
+            WebSocketFactory.setSslContext(context);
             WebSocket ws = null;
             try {
                 Future<WebSocket> future = factory.openAsync(seed);

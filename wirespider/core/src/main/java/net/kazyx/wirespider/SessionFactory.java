@@ -12,7 +12,7 @@ package net.kazyx.wirespider;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 
-interface SessionFactory {
+public interface SessionFactory {
     /**
      * Create a new TCP connection wrapper with the given {@link SelectionKey}.
      *

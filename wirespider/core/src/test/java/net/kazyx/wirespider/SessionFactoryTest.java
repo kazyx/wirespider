@@ -43,18 +43,22 @@ public class SessionFactoryTest {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        factory.selectorLoop().registerFactory(new DefaultSessionFactory(), "ws");
-
-        WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
-            assertThat(ws.isConnected(), is(true));
-        } finally {
-            if (ws != null) {
-                ws.closeNow();
+            SessionManager.registerFactory("ws", new DefaultSessionFactory());
+
+            WebSocket ws = null;
+            try {
+                Future<WebSocket> future = factory.openAsync(seed);
+                ws = future.get(1000, TimeUnit.MILLISECONDS);
+                assertThat(ws.isConnected(), is(true));
+            } finally {
+                if (ws != null) {
+                    ws.closeNow();
+                }
+                factory.destroy();
             }
-            factory.destroy();
+        } finally {
+            SessionManager.registerFactory("ws", null);
         }
     }
 }

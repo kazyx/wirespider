@@ -1,25 +1,31 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.secure;
+
+import net.kazyx.wirespider.SessionFactory;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.security.NoSuchAlgorithmException;
 
-class SecureSessionFactory implements SessionFactory {
+public class SecureSessionFactory implements SessionFactory {
     private final SSLContext mSslContext;
 
-    SecureSessionFactory(SSLContext context) throws NoSuchAlgorithmException {
+    public SecureSessionFactory(SSLContext context) {
         if (context == null) {
-            mSslContext = SSLContext.getDefault();
+            try {
+                mSslContext = SSLContext.getDefault();
+            } catch (NoSuchAlgorithmException e) {
+                throw new IllegalStateException(e);
+            }
         } else {
             mSslContext = context;
         }
