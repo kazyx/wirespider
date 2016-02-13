@@ -1,20 +1,26 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FrameTx;
+import net.kazyx.wirespider.OpCode;
+import net.kazyx.wirespider.SocketChannelWriter;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
@@ -86,8 +92,8 @@ class Rfc6455Tx implements FrameTx {
         // WsLog.v(TAG, "sendCloseAsync");
         byte[] messageBytes = ByteArrayUtil.fromText(reason);
         ByteBuffer payload = ByteBuffer.allocate(2 + messageBytes.length);
-        payload.put((byte) (code.statusCode >>> 8));
-        payload.put((byte) (code.statusCode));
+        payload.put((byte) (code.asNumber() >>> 8));
+        payload.put((byte) (code.asNumber()));
         payload.put(messageBytes);
         payload.flip();
 
@@ -153,7 +159,7 @@ class Rfc6455Tx implements FrameTx {
         buffer.put(header);
 
         if (mIsClient) {
-            int mask = RandomSource.random().nextInt();
+            int mask = ThreadLocalRandom.current().nextInt();
             byte[] maskingKey = {
                     (byte) mask,
                     (byte) (mask >>> 8),

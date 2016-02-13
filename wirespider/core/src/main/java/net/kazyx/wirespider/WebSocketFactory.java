@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.rfc6455.Rfc6455;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 
@@ -25,12 +26,12 @@ import java.util.concurrent.Future;
  */
 public class WebSocketFactory {
     private final SelectorProvider mProvider;
-    private final SocketEngine mSocketEngine;
+    private final SelectorLoop mSelectorLoop;
     private final ExecutorService mExecutor = Executors.newCachedThreadPool();
 
     public WebSocketFactory() throws IOException {
         mProvider = SelectorProvider.provider();
-        mSocketEngine = new SocketEngine(mProvider);
+        mSelectorLoop = new SessionManager(mProvider);
     }
 
     /**
@@ -38,8 +39,11 @@ public class WebSocketFactory {
      * Note that any connections created by this instance will be released.
      */
     public synchronized void destroy() {
-        mSocketEngine.destroy();
+        mSelectorLoop.destroy();
+        mExecutor.shutdown();
     }
+
+    private WebSocketSpec mSpec = new Rfc6455();
 
     /**
      * Open WebSocket connection to the specified remote server.
@@ -57,7 +61,7 @@ public class WebSocketFactory {
                 SocketChannel ch = mProvider.openSocketChannel();
                 ch.configureBlocking(false);
 
-                ClientWebSocket ws = new ClientWebSocket(req, mSocketEngine, ch);
+                ClientWebSocket ws = mSpec.newClientWebSocket(req, mSelectorLoop, ch);
                 try {
                     ws.connect();
                     return ws;
@@ -70,7 +74,17 @@ public class WebSocketFactory {
         });
     }
 
-    SocketEngine socketEngine() {
-        return mSocketEngine;
+    /**
+     * Set a specification of WebSocket.
+     *
+     * @param spec {@link WebSocketSpec} to be used by this factory. {@link Rfc6455} is used by default.
+     */
+    public void setSpec(WebSocketSpec spec) {
+        ArgumentCheck.rejectNull(spec);
+        mSpec = spec;
+    }
+
+    SelectorLoop selectorLoop() {
+        return mSelectorLoop;
     }
 }

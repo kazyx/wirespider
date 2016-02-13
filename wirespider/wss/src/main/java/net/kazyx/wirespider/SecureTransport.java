@@ -33,6 +33,6 @@ public class SecureTransport {
      * @throws NoSuchAlgorithmException Failed to start secure session engine.
      */
     public static void enable(WebSocketFactory factory, SSLContext context) throws NoSuchAlgorithmException {
-        factory.socketEngine().registerFactory(new SecureSessionFactory(context), WSS_SCHEME);
+        factory.selectorLoop().registerFactory(new SecureSessionFactory(context), WSS_SCHEME);
     }
 }

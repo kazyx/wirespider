@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

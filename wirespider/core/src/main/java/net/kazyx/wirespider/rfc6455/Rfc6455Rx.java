@@ -1,17 +1,24 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.OpCode;
+import net.kazyx.wirespider.exception.PayloadOverflowException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
+import net.kazyx.wirespider.exception.ProtocolViolationException;
 import net.kazyx.wirespider.extension.PayloadFilter;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,7 +62,7 @@ class Rfc6455Rx implements FrameRx {
                 }
                 opcode = (byte) (first & 0x0f);
                 mSecondByteOperation.run();
-            } catch (BufferUnsatisfiedException e) {
+            } catch (PayloadUnderflowException e) {
                 // No need to flush this log. Always happens at frame end.
                 // Log.d(TAG, "BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
@@ -84,7 +91,7 @@ class Rfc6455Rx implements FrameRx {
 
                 payloadLength = second & 0x7f;
                 if (payloadLength > mMaxPayloadSize) {
-                    throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
+                    throw new PayloadOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
                 switch (payloadLength) {
                     case 126:
@@ -99,12 +106,12 @@ class Rfc6455Rx implements FrameRx {
                         }
                         break;
                 }
-            } catch (BufferUnsatisfiedException e) {
+            } catch (PayloadUnderflowException e) {
                 WsLog.v(TAG, "SecondByte BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (PayloadSizeOverflowException e) {
+            } catch (PayloadOverflowException e) {
                 WsLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             } catch (ProtocolViolationException e) {
@@ -122,19 +129,19 @@ class Rfc6455Rx implements FrameRx {
                 // TODO support large payload over 2GB
                 payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
                 if (payloadLength > mMaxPayloadSize) {
-                    throw new PayloadSizeOverflowException("Payload size exceeds " + mMaxPayloadSize);
+                    throw new PayloadOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
                 if (isMasked) {
                     mMaskKeyOperation.run();
                 } else {
                     mPayloadOperation.run();
                 }
-            } catch (BufferUnsatisfiedException e) {
+            } catch (PayloadUnderflowException e) {
                 WsLog.v(TAG, "ExtendedPayloadLength BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
                 }
-            } catch (PayloadSizeOverflowException | IllegalArgumentException e) {
+            } catch (PayloadOverflowException | IllegalArgumentException e) {
                 WsLog.d(TAG, "Payload size overflow", e.getMessage());
                 mListener.onPayloadOverflow();
             }
@@ -149,7 +156,7 @@ class Rfc6455Rx implements FrameRx {
             try {
                 mask = readBytes(4).array();
                 mPayloadOperation.run();
-            } catch (BufferUnsatisfiedException e) {
+            } catch (PayloadUnderflowException e) {
                 WsLog.v(TAG, "MaskKey BufferUnsatisfied");
                 synchronized (mOperationSequenceLock) {
                     mSuspendedOperation = this;
@@ -169,7 +176,7 @@ class Rfc6455Rx implements FrameRx {
 
                 handleFrame(opcode, payload, isFinal);
                 mReadOpCodeOperation.run();
-            } catch (BufferUnsatisfiedException e) {
+            } catch (PayloadUnderflowException e) {
                 if (mSuspendedOperation != this) {
                     // Flush log only for the first time
                     WsLog.v(TAG, "Payload BufferUnsatisfied");
@@ -271,7 +278,7 @@ class Rfc6455Rx implements FrameRx {
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
-                int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.statusCode;
+                int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.asNumber();
                 String reason = (payload.remaining() > 2) ? ByteArrayUtil.toTextRemaining(payload) : "";
                 mListener.onCloseFrame(code, reason);
                 break;
@@ -303,10 +310,10 @@ class Rfc6455Rx implements FrameRx {
 
     private final Deque<ByteBuffer> mReceivedBuffer = new ArrayDeque<>();
 
-    private ByteBuffer readBytes(int length) throws BufferUnsatisfiedException {
+    private ByteBuffer readBytes(int length) throws PayloadUnderflowException {
         if (mBufferSize < length) {
             mWaitingSize = length;
-            throw new BufferUnsatisfiedException();
+            throw new PayloadUnderflowException();
         }
 
         ByteBuffer ret = ByteBuffer.allocate(length);

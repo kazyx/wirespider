@@ -10,6 +10,8 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +37,6 @@ public class SubProtocolTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        RandomSource.setSeed(0x12345678);
         Base64.setEncoder(new Base64Encoder());
         server.registerSubProtocol(SUBPROTOCOL);
         server.boot();

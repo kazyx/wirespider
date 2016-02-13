@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,12 +25,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class SessionFactoryTest {
-    private static final String TAG = SessionFactoryTest.class.getSimpleName();
     private static TestWebSocketServer server = new TestWebSocketServer(10000);
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        RandomSource.setSeed(0x12345678);
         Base64.setEncoder(new Base64Encoder());
         server.boot();
     }
@@ -44,7 +43,7 @@ public class SessionFactoryTest {
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        factory.socketEngine().registerFactory(new DefaultSessionFactory(), "ws");
+        factory.selectorLoop().registerFactory(new DefaultSessionFactory(), "ws");
 
         WebSocket ws = null;
         try {

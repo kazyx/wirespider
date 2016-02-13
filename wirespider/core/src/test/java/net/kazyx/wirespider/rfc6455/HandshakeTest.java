@@ -1,16 +1,26 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.Base64Encoder;
+import net.kazyx.wirespider.Handshake;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.SilentEventHandler;
+import net.kazyx.wirespider.SocketChannelWriter;
+import net.kazyx.wirespider.TestUtil;
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
+import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,7 +58,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidHttpVersion() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidHttpVersion() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.0 101 Switching Protocols\r\n"
@@ -59,7 +69,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidStatusCode() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidStatusCode() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 OK Switching Protocols\r\n"
@@ -70,7 +80,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidStatusLine() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidStatusLine() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1\r\n101 Switching Protocols\r\n"
@@ -81,7 +91,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void noStatusLine() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void noStatusLine() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "Upgrade: websocket\r\n"
@@ -90,14 +100,14 @@ public class HandshakeTest {
         mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
-    @Test(expected = BufferUnsatisfiedException.class)
-    public void unsatisfiedHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    @Test(expected = PayloadUnderflowException.class)
+    public void unsatisfiedHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         String statusLine = "HTTP/1.1 101 Switching Protocols\r\n";
         mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(statusLine));
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void noUpgradeHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void noUpgradeHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -107,7 +117,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void noConnectionHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void noConnectionHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -117,7 +127,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void noSecHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void noSecHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Upgrade: websocket\r\n"
@@ -126,7 +136,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidUpgradeHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidUpgradeHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -137,7 +147,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidConnectionHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidConnectionHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -148,7 +158,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidSecHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidSecHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
                 + "Upgrade: websocket\r\n"
@@ -158,7 +168,7 @@ public class HandshakeTest {
     }
 
     @Test
-    public void normalSuccessUpgrade() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void normalSuccessUpgrade() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -169,7 +179,7 @@ public class HandshakeTest {
     }
 
     @Test
-    public void includeTripleSeparatedHeaderWithWS() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void includeTripleSeparatedHeaderWithWS() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -184,7 +194,7 @@ public class HandshakeTest {
     }
 
     @Test
-    public void includeTripleSeparatedHeaderWithTab() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void includeTripleSeparatedHeaderWithTab() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -199,7 +209,7 @@ public class HandshakeTest {
     }
 
     @Test
-    public void duplicatedHeaders() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void duplicatedHeaders() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -213,7 +223,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void leadingLineDoesNotHaveHeaderName() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void leadingLineDoesNotHaveHeaderName() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -225,7 +235,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void leadingLineStartsWithWS() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void leadingLineStartsWithWS() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -237,7 +247,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void leadingLineStartsWithTab() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void leadingLineStartsWithTab() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -249,7 +259,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void noHeader() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void noHeader() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n\r\n";
         mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
@@ -271,7 +281,7 @@ public class HandshakeTest {
     }
 
     @Test
-    public void multipleProtocolHeaders() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void multipleProtocolHeaders() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         dummySendUpgradeRequest(mHandshake);
         String secret = getSecret(mHandshake);
         String header = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -285,7 +295,7 @@ public class HandshakeTest {
     }
 
     @Test(expected = HandshakeFailureException.class)
-    public void invalidExtensionResponse() throws IOException, BufferUnsatisfiedException, HandshakeFailureException {
+    public void invalidExtensionResponse() throws IOException, PayloadUnderflowException, HandshakeFailureException {
         List<ExtensionRequest> exReq = new ArrayList<>();
         exReq.add(new DeflateRequest.Builder().build());
         try {

@@ -19,7 +19,7 @@ public class HandshakeResponse {
 
     private String mActiveProtocol;
 
-    HandshakeResponse(List<Extension> extensions, String protocol) {
+    public HandshakeResponse(List<Extension> extensions, String protocol) {
         if (extensions == null) {
             mActiveExtensions = Collections.emptyList();
         } else {

@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.WsLog;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,7 +33,6 @@ public class SecureSessionTest {
     public static class ExternalServerEchoTest {
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             Base64.setEncoder(new Base64Encoder());
             WsLog.logLevel(WsLog.Level.DEBUG);
         }
@@ -107,7 +108,6 @@ public class SecureSessionTest {
     public static class SSLContextTest {
         @BeforeClass
         public static void setupClass() throws Exception {
-            RandomSource.setSeed(0x12345678);
             Base64.setEncoder(new Base64Encoder());
             WsLog.logLevel(WsLog.Level.DEBUG);
         }

@@ -10,13 +10,15 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.Extension;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-interface Handshake {
+public interface Handshake {
     /**
      * Try to upgrade this connection as WebSocket.
      *
@@ -29,11 +31,10 @@ interface Handshake {
      * Called when WebSocket handshake response is received.
      *
      * @param data Received data.
-     * @return Remaining (non-header) data.
-     * @throws BufferUnsatisfiedException if received data does not contain CRLF. Waiting for the next data.
+     * @throws PayloadUnderflowException if received data does not contain CRLF. Waiting for the next data.
      * @throws HandshakeFailureException if handshake failure is detected.
      */
-    void onHandshakeResponse(ByteBuffer data) throws BufferUnsatisfiedException, HandshakeFailureException;
+    void onHandshakeResponse(ByteBuffer data) throws PayloadUnderflowException, HandshakeFailureException;
 
     /**
      * Provide List of accepted WebSocket extensions.

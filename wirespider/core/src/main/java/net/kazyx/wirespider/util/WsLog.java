@@ -1,16 +1,13 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
-
-import net.kazyx.wirespider.util.ArgumentCheck;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+package net.kazyx.wirespider.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -120,67 +117,67 @@ public class WsLog {
 
     private static Writer sWriter = new DefaultWriter();
 
-    static void v(String tag, String message) {
+    public static void v(String tag, String message) {
         if (sLevel == Level.VERBOSE) {
             sWriter.v(tag, message);
         }
     }
 
-    static void v(String tag, String message, String detail) {
+    public static void v(String tag, String message, String detail) {
         if (sLevel == Level.VERBOSE) {
             sWriter.v(tag, message + ": " + detail);
         }
     }
 
-    static void v(String tag, String message, long detail) {
+    public static void v(String tag, String message, long detail) {
         if (sLevel == Level.VERBOSE) {
             sWriter.v(tag, message + ": " + detail);
         }
     }
 
-    static void v(String tag, String message, byte[] detail) {
+    public static void v(String tag, String message, byte[] detail) {
         if (sLevel == Level.VERBOSE) {
             sWriter.v(tag, message + ": " + ByteArrayUtil.toHex(detail));
         }
     }
 
-    static void d(String tag, String message) {
+    public static void d(String tag, String message) {
         if (sLevel.level <= Level.DEBUG.level) {
             sWriter.d(tag, message);
         }
     }
 
-    static void d(String tag, String message, String detail) {
+    public static void d(String tag, String message, String detail) {
         if (sLevel.level <= Level.DEBUG.level) {
             sWriter.d(tag, message + ": " + detail);
         }
     }
 
-    static void d(String tag, String message, long detail) {
+    public static void d(String tag, String message, long detail) {
         if (sLevel.level <= Level.DEBUG.level) {
             sWriter.d(tag, message + ": " + detail);
         }
     }
 
-    static void e(String tag, String message) {
+    public static void e(String tag, String message) {
         if (sLevel.level <= Level.ERROR.level) {
             sWriter.e(tag, message);
         }
     }
 
-    static void e(String tag, String message, String detail) {
+    public static void e(String tag, String message, String detail) {
         if (sLevel.level <= Level.ERROR.level) {
             sWriter.e(tag, message + ": " + detail);
         }
     }
 
-    static void e(String tag, String message, long detail) {
+    public static void e(String tag, String message, long detail) {
         if (sLevel.level <= Level.ERROR.level) {
             sWriter.e(tag, message + ": " + detail);
         }
     }
 
-    static void printStackTrace(String tag, Throwable th) {
+    public static void printStackTrace(String tag, Throwable th) {
         if (sLevel.level <= Level.ERROR.level) {
             sWriter.printStackTrace(tag, th);
         }

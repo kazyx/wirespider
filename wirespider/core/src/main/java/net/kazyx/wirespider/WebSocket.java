@@ -9,9 +9,12 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -24,15 +27,15 @@ import java.util.List;
 public abstract class WebSocket {
     private static final String TAG = WebSocket.class.getSimpleName();
 
-    private final SocketEngine mEngine;
+    private final SelectorLoop mLoop;
 
-    SocketEngine socketEngine() {
-        return mEngine;
+    final SelectorLoop selectorLoop() {
+        return mLoop;
     }
 
     private final URI mURI;
 
-    final URI remoteUri() {
+    public final URI remoteUri() {
         return mURI;
     }
 
@@ -69,7 +72,7 @@ public abstract class WebSocket {
 
     private final SocketChannelProxy mSocketChannelProxy;
 
-    final SocketChannelProxy socketChannelProxy() {
+    protected final SocketChannelProxy socketChannelProxy() {
         return mSocketChannelProxy;
     }
 
@@ -81,11 +84,11 @@ public abstract class WebSocket {
         return mHandshake;
     }
 
-    WebSocket(SessionRequest req, SocketEngine engine, SocketChannel ch) {
+    WebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
         mURI = req.uri();
         mCallbackHandler = req.handler();
         mMaxResponsePayloadSize = req.maxResponsePayloadSizeInBytes();
-        mEngine = engine;
+        mLoop = loop;
         mSocketChannel = ch;
 
         mSocketChannelProxy = new SocketChannelProxy(mChannelProxyListener);
@@ -96,11 +99,11 @@ public abstract class WebSocket {
         mHandshake.responseHandler(req.handshakeHandler());
     }
 
-    abstract FrameTx newFrameTx();
+    protected abstract FrameTx newFrameTx();
 
-    abstract FrameRx newFrameRx(FrameRx.Listener listener);
+    protected abstract FrameRx newFrameRx(FrameRx.Listener listener);
 
-    abstract Handshake newHandshake();
+    protected abstract Handshake newHandshake();
 
     abstract void onSocketConnected();
 
@@ -116,7 +119,7 @@ public abstract class WebSocket {
     }
 
     /**
-     * @return Active protocol of this session, or {@code null} if no protocol is defined.
+     * @return Active sub-protocol of this session, or {@code null} if no protocol is defined.
      */
     public String protocol() {
         return mHandshake.protocol();
@@ -279,7 +282,7 @@ public abstract class WebSocket {
                     if (data.remaining() != 0) {
                         mFrameRx.onDataReceived(data);
                     }
-                } catch (BufferUnsatisfiedException e) {
+                } catch (PayloadUnderflowException e) {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
                     WsLog.d(TAG, "HandshakeFailureException: " + e.getMessage());

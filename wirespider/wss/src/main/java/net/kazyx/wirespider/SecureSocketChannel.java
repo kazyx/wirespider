@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;

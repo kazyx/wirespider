@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class TestUtil {
-    static byte[] fixedLengthRandomByteArray(int length) {
+    public static byte[] fixedLengthRandomByteArray(int length) {
         System.out.println("Create random byte array: " + length);
         byte[] ba = new byte[length];
         Random rnd = new Random(20L);
@@ -24,7 +24,7 @@ public class TestUtil {
         return ba;
     }
 
-    static byte[] fixedLengthFixedByteArray(int length) {
+    public static byte[] fixedLengthFixedByteArray(int length) {
         System.out.println("Create random byte array: " + length);
         byte[] ba = new byte[length];
         for (int i = 0; i < length; i++) {
@@ -33,11 +33,11 @@ public class TestUtil {
         return ba;
     }
 
-    static String fixedLengthRandomString(int length) {
+    public static String fixedLengthRandomString(int length) {
         return RandomStringUtils.random(length);
     }
 
-    static String fixedLengthFixedString(int length) {
+    public static String fixedLengthFixedString(int length) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length; i++) {
             sb.append("a");
@@ -45,7 +45,7 @@ public class TestUtil {
         return sb.toString();
     }
 
-    static ByteBuffer asByteBuffer(String data) {
+    public static ByteBuffer asByteBuffer(String data) {
         try {
             return ByteBuffer.wrap(data.getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {

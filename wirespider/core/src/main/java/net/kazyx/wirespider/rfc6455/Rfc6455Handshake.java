@@ -1,21 +1,29 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.Handshake;
+import net.kazyx.wirespider.HandshakeResponse;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.SocketChannelWriter;
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.http.HttpHeaderReader;
 import net.kazyx.wirespider.http.HttpStatusLine;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -134,7 +142,7 @@ class Rfc6455Handshake implements Handshake {
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
 
     @Override
-    public void onHandshakeResponse(ByteBuffer ba) throws BufferUnsatisfiedException, HandshakeFailureException {
+    public void onHandshakeResponse(ByteBuffer ba) throws PayloadUnderflowException, HandshakeFailureException {
         int pos = ba.position();
         int limit = ba.limit();
         String str = ByteArrayUtil.toTextRemaining(ba);
@@ -147,7 +155,7 @@ class Rfc6455Handshake implements Handshake {
             mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, ba.remaining());
 
             WsLog.d(TAG, "Header unsatisfied");
-            throw new BufferUnsatisfiedException();
+            throw new PayloadUnderflowException();
         } else {
             mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, index + 4);
 

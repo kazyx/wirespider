@@ -10,10 +10,13 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.ArgumentCheck;
+import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
+import net.kazyx.wirespider.util.WsLog;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -62,11 +65,6 @@ public class PrivateConstructors {
     @Test
     public void opCode() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         constructor(OpCode.class);
-    }
-
-    @Test
-    public void randomSource() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(RandomSource.class);
     }
 
     @Test

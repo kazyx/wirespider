@@ -1,19 +1,20 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.util;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.ThreadLocalRandom;
 
-final class HandshakeSecretUtil {
+public final class HandshakeSecretUtil {
     private HandshakeSecretUtil() {
     }
 
@@ -25,9 +26,9 @@ final class HandshakeSecretUtil {
     /**
      * @return Newly created secret key.
      */
-    static String newSecretKey() {
+    public static String newSecretKey() {
         byte[] nonce = new byte[16];
-        RandomSource.random().nextBytes(nonce);
+        ThreadLocalRandom.current().nextBytes(nonce);
         return Base64.encoder().encode(nonce).trim();
     }
 
@@ -37,7 +38,7 @@ final class HandshakeSecretUtil {
      * @param rawSecret Received Sec-WebSocket-Accept value.
      * @return Base64 encoded, SHA-1 hash of the secret key.
      */
-    static String scrambleSecret(String rawSecret) {
+    public static String scrambleSecret(String rawSecret) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             md.update((rawSecret + UUID).getBytes("UTF-8"));

@@ -1,14 +1,18 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.rfc6455;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FailOnCallbackRxListener;
+import net.kazyx.wirespider.SocketChannelWriter;
+import net.kazyx.wirespider.TestUtil;
 import org.junit.Before;
 import org.junit.Test;
 
