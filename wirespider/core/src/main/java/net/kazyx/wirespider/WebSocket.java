@@ -9,6 +9,8 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.exception.HandshakeFailureException;
+import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
@@ -279,7 +281,7 @@ public abstract class WebSocket {
                     if (data.remaining() != 0) {
                         mFrameRx.onDataReceived(data);
                     }
-                } catch (BufferUnsatisfiedException e) {
+                } catch (PayloadUnderflowException e) {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
                     WsLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
