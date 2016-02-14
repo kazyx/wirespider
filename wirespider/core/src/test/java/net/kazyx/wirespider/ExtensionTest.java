@@ -132,20 +132,24 @@ public class ExtensionTest {
 
         @Test
         public void fixedTextCompressionWindow15() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-            fixedTextCompressionByWindowSize(15);
+            fixedTextCompressionByWindowSize(15, 4096);
         }
 
         @Test
         public void fixedTextCompressionWindow8() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-            fixedTextCompressionByWindowSize(8);
+            fixedTextCompressionByWindowSize(8, 4096);
         }
 
-        private void fixedTextCompressionByWindowSize(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            final int MESSAGE_SIZE = 4096;
+        @Test
+        public void smallText() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            fixedTextCompressionByWindowSize(15, 1);
+        }
+
+        private void fixedTextCompressionByWindowSize(int windowSize, int msgSize) throws IOException, InterruptedException, ExecutionException, TimeoutException {
             final CustomLatch latch = new CustomLatch(1);
-            final String data = TestUtil.fixedLengthFixedString(MESSAGE_SIZE);
+            final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxServerWindowBits(size)
+                    .setMaxServerWindowBits(windowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -163,7 +167,7 @@ public class ExtensionTest {
                     }
                 }
             }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
+                    .setMaxResponsePayloadSizeInBytes(msgSize * 5)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
@@ -240,21 +244,25 @@ public class ExtensionTest {
 
         @Test
         public void fixedBinaryCompressionWindow8() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-            fixedBinaryCompressionByWindowSize(8);
+            fixedBinaryCompressionByWindowSize(8, 4096);
         }
 
         @Test
         public void fixedBinaryCompressionWindow15() throws InterruptedException, ExecutionException, TimeoutException, IOException {
-            fixedBinaryCompressionByWindowSize(15);
+            fixedBinaryCompressionByWindowSize(15, 4096);
         }
 
-        private void fixedBinaryCompressionByWindowSize(int size) throws ExecutionException, InterruptedException, TimeoutException, IOException {
-            final int MESSAGE_SIZE = 4096;
+        @Test
+        public void smallBinary() throws InterruptedException, ExecutionException, TimeoutException, IOException {
+            fixedBinaryCompressionByWindowSize(15, 1);
+        }
+
+        private void fixedBinaryCompressionByWindowSize(int serverWindowSize, final int msgSize) throws ExecutionException, InterruptedException, TimeoutException, IOException {
             final CustomLatch latch = new CustomLatch(1);
-            final byte[] data = TestUtil.fixedLengthFixedByteArray(MESSAGE_SIZE);
+            final byte[] data = TestUtil.fixedLengthFixedByteArray(msgSize);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setMaxServerWindowBits(size)
+                    .setMaxServerWindowBits(serverWindowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -272,7 +280,7 @@ public class ExtensionTest {
                     }
                 }
             }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
-                    .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE - 1)
+                    .setMaxResponsePayloadSizeInBytes(msgSize * 5)
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
