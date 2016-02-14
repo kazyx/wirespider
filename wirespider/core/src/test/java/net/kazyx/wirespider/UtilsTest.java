@@ -22,6 +22,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
+import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -83,6 +84,12 @@ public class UtilsTest {
         public void hex() {
             byte[] original = {(byte) 0x01, (byte) 0x23, (byte) 0x45, (byte) 0x67, (byte) 0x89, (byte) 0xab, (byte) 0xcd, (byte) 0xef};
             assertThat(ByteArrayUtil.toHex(original), is("0x0123456789ABCDEF"));
+        }
+
+        @Test
+        public void nullText() {
+            byte[] empty = {};
+            assertThat(Arrays.equals(ByteArrayUtil.fromText(null), empty), is(true));
         }
     }
 

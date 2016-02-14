@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.extension.Extension;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 public interface FrameRx {
     /**
@@ -22,11 +23,11 @@ public interface FrameRx {
     void onDataReceived(ByteBuffer data);
 
     /**
-     * Set WebSocket extension to be used on this session.
+     * Set WebSocket extensions to be used on this session.
      *
-     * @param extension Negotiated extension.
+     * @param extensions Negotiated extensions.
      */
-    void setExtension(Extension extension);
+    void setExtensions(List<Extension> extensions);
 
     interface Listener {
         /**

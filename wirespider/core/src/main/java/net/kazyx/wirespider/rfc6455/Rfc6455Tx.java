@@ -20,6 +20,8 @@ import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 class Rfc6455Tx implements FrameTx {
@@ -27,7 +29,7 @@ class Rfc6455Tx implements FrameTx {
 
     private static final int MAX_CLIENT_HEADER_LENGTH = 14; // Max server header length is 10
 
-    private Extension mExtension;
+    private List<Extension> mExtensions = Collections.emptyList();
     private final boolean mIsClient;
     private final SocketChannelWriter mWriter;
 
@@ -43,34 +45,36 @@ class Rfc6455Tx implements FrameTx {
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
         ByteBuffer buff = ByteBuffer.wrap(ByteArrayUtil.fromText(data));
-        if (mExtension != null) {
+        byte extensionBits = 0;
+        for (Extension ext : mExtensions) {
             try {
-                buff = mExtension.filter().onSendingText(buff);
-                sendFrameAsync(OpCode.TEXT, buff, mExtension.reservedBits());
-                return;
+                buff = ext.filter().onSendingText(buff);
+                extensionBits = (byte) (extensionBits | ext.reservedBits());
             } catch (IOException e) {
                 // Filtering error. Send original data.
                 WsLog.v(TAG, e.getMessage());
             }
         }
-        sendFrameAsync(OpCode.TEXT, buff);
+
+        sendFrameAsync(OpCode.TEXT, buff, extensionBits);
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
         // WsLog.v(TAG, "sendBinaryAsync");
         ByteBuffer buff = ByteBuffer.wrap(data);
-        if (mExtension != null) {
+        byte extensionBits = 0;
+        for (Extension ext : mExtensions) {
             try {
-                buff = mExtension.filter().onSendingBinary(buff);
-                sendFrameAsync(OpCode.BINARY, buff, mExtension.reservedBits());
-                return;
+                buff = ext.filter().onSendingBinary(buff);
+                extensionBits = (byte) (extensionBits | ext.reservedBits());
             } catch (IOException e) {
                 // Filtering error. Send original data.
                 WsLog.v(TAG, e.getMessage());
             }
         }
-        sendFrameAsync(OpCode.BINARY, buff);
+
+        sendFrameAsync(OpCode.BINARY, buff, extensionBits);
     }
 
     @Override
@@ -99,8 +103,8 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void setExtension(Extension extension) {
-        mExtension = extension;
+    public void setExtensions(List<Extension> extensions) {
+        mExtensions = extensions;
     }
 
     private void sendFrameAsync(byte opcode, ByteBuffer payload) {

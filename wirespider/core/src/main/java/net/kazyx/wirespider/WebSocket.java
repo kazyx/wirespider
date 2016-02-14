@@ -274,12 +274,8 @@ public abstract class WebSocket {
                     mIsConnected = true;
                     List<Extension> extensions = mHandshake.extensions();
 
-                    for (Extension ext : extensions) {
-                        WsLog.d(TAG, "Extension accepted: " + ext.name());
-                        mFrameTx.setExtension(ext);
-                        mFrameRx.setExtension(ext);
-                        // TODO multiple extensions
-                    }
+                    mFrameTx.setExtensions(extensions);
+                    mFrameRx.setExtensions(extensions);
 
                     onHandshakeCompleted();
 

@@ -24,7 +24,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.List;
 import java.util.zip.ZipException;
 
 class Rfc6455Rx implements FrameRx {
@@ -32,7 +34,7 @@ class Rfc6455Rx implements FrameRx {
 
     private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
-    private Extension mExtension;
+    private List<Extension> mExtensions = Collections.emptyList();
     private final boolean mIsClient;
 
     Rfc6455Rx(FrameRx.Listener listener, int maxPayload, boolean isClient) {
@@ -42,8 +44,8 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void setExtension(Extension extension) {
-        mExtension = extension;
+    public void setExtensions(List<Extension> extensions) {
+        mExtensions = extensions;
     }
 
     private boolean isFinal;
@@ -58,10 +60,13 @@ class Rfc6455Rx implements FrameRx {
                 isFinal = BitMask.isFlagMatched(first, (byte) 0x80);
 
                 int maskedRsvBits = first & 0x70;
-                if ((mExtension == null && maskedRsvBits != 0)
-                        || (mExtension != null && (maskedRsvBits ^ mExtension.reservedBits()) != 0)) {
+                for (Extension ext : mExtensions) {
+                    maskedRsvBits = maskedRsvBits ^ ext.reservedBits();
+                }
+                if (maskedRsvBits != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
                 }
+
                 opcode = (byte) (first & 0x0f);
                 mSecondByteOperation.run();
             } catch (PayloadUnderflowException e) {
@@ -220,15 +225,9 @@ class Rfc6455Rx implements FrameRx {
                     ByteBuffer binary = ByteBuffer.wrap(mContinuationBuffer.toByteArray());
                     mContinuationBuffer.reset();
                     if (mContinuation == ContinuationMode.BINARY) {
-                        if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
-                            binary = mExtension.filter().onReceivingBinary(binary);
-                        }
-                        mListener.onBinaryMessage(binary);
+                        handleBinaryFrame(binary);
                     } else {
-                        if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
-                            binary = mExtension.filter().onReceivingText(binary);
-                        }
-                        mListener.onTextMessage(ByteArrayUtil.toTextAll(binary));
+                        handleTextFrame(binary);
                     }
                     mContinuation = ContinuationMode.UNSET;
                 }
@@ -236,11 +235,7 @@ class Rfc6455Rx implements FrameRx {
             }
             case OpCode.TEXT: {
                 if (isFinal) {
-                    if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
-                        payload = mExtension.filter().onReceivingText(payload);
-                    }
-                    String text = ByteArrayUtil.toTextAll(payload);
-                    mListener.onTextMessage(text);
+                    handleTextFrame(payload);
                 } else {
                     int length = payload.remaining();
                     mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
@@ -250,10 +245,7 @@ class Rfc6455Rx implements FrameRx {
             }
             case OpCode.BINARY: {
                 if (isFinal) {
-                    if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
-                        payload = mExtension.filter().onReceivingBinary(payload);
-                    }
-                    mListener.onBinaryMessage(payload);
+                    handleBinaryFrame(payload);
                 } else {
                     int length = payload.remaining();
                     mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
@@ -287,6 +279,25 @@ class Rfc6455Rx implements FrameRx {
             default:
                 throw new ProtocolViolationException("Bad opcode: " + opcode);
         }
+    }
+
+    private void handleBinaryFrame(ByteBuffer buffer) throws IOException {
+        for (Extension ext : mExtensions) {
+            if (BitMask.isFlagMatched(first, ext.reservedBits())) {
+                buffer = ext.filter().onReceivingBinary(buffer);
+            }
+        }
+        mListener.onBinaryMessage(buffer);
+    }
+
+    private void handleTextFrame(ByteBuffer buffer) throws IOException {
+        for (Extension ext : mExtensions) {
+            if (BitMask.isFlagMatched(first, ext.reservedBits())) {
+                buffer = ext.filter().onReceivingText(buffer);
+            }
+        }
+        String text = ByteArrayUtil.toTextAll(buffer);
+        mListener.onTextMessage(text);
     }
 
     @Override

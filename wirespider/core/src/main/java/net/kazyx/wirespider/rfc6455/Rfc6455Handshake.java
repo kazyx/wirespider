@@ -256,6 +256,7 @@ class Rfc6455Handshake implements Handshake {
                 if (ext.name().equals(name)) {
                     if (ext.accept(split)) {
                         acceptedExtensions.add(ext);
+                        WsLog.d(TAG, "Extension accepted: " + ext.name());
                         itr.remove();
                         break;
                     } else {

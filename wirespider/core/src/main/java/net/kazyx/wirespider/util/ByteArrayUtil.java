@@ -54,10 +54,14 @@ public final class ByteArrayUtil {
      * Convert UTF-8 String to byte array expression.
      *
      * @param text Source String.
-     * @return Byte array expression of the String.
+     * @return Byte array expression of the String. Empty array if given text is {@code null}.
      */
     public static byte[] fromText(String text) {
-        return text.getBytes(UTF8);
+        if (text == null) {
+            return new byte[0];
+        } else {
+            return text.getBytes(UTF8);
+        }
     }
 
     /**
