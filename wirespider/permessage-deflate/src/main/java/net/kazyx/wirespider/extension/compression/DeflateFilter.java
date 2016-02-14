@@ -10,7 +10,6 @@
 package net.kazyx.wirespider.extension.compression;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
-import net.kazyx.wirespider.util.BitMask;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,13 +32,13 @@ class DeflateFilter implements PayloadFilter {
     }
 
     @Override
-    public ByteBuffer onReceivingText(ByteBuffer data, byte extensionBits) throws IOException {
-        return onReceivingMessage(data, extensionBits);
+    public ByteBuffer onReceivingText(ByteBuffer data) throws IOException {
+        return onReceivingMessage(data);
     }
 
     @Override
-    public ByteBuffer onReceivingBinary(ByteBuffer data, byte extensionBits) throws IOException {
-        return onReceivingMessage(data, extensionBits);
+    public ByteBuffer onReceivingBinary(ByteBuffer data) throws IOException {
+        return onReceivingMessage(data);
     }
 
     private ByteBuffer onSendingMessage(ByteBuffer data, byte[] extensionBits) throws IOException {
@@ -56,10 +55,7 @@ class DeflateFilter implements PayloadFilter {
         return data;
     }
 
-    private ByteBuffer onReceivingMessage(ByteBuffer data, byte extensionBits) throws IOException {
-        if (BitMask.isFlagMatched(extensionBits, PerMessageCompression.RESERVED_BIT_FLAGS)) {
-            return mDeflater.decompress(data);
-        }
-        return data;
+    private ByteBuffer onReceivingMessage(ByteBuffer data) throws IOException {
+        return mDeflater.decompress(data);
     }
 }

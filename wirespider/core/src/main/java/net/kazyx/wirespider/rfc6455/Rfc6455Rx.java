@@ -15,7 +15,7 @@ import net.kazyx.wirespider.OpCode;
 import net.kazyx.wirespider.exception.PayloadOverflowException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.exception.ProtocolViolationException;
-import net.kazyx.wirespider.extension.PayloadFilter;
+import net.kazyx.wirespider.extension.Extension;
 import net.kazyx.wirespider.util.BitMask;
 import net.kazyx.wirespider.util.ByteArrayUtil;
 import net.kazyx.wirespider.util.WsLog;
@@ -32,7 +32,7 @@ class Rfc6455Rx implements FrameRx {
 
     private final FrameRx.Listener mListener;
     private final int mMaxPayloadSize;
-    private PayloadFilter mFilter;
+    private Extension mExtension;
     private final boolean mIsClient;
 
     Rfc6455Rx(FrameRx.Listener listener, int maxPayload, boolean isClient) {
@@ -42,8 +42,8 @@ class Rfc6455Rx implements FrameRx {
     }
 
     @Override
-    public void setPayloadFilter(PayloadFilter compression) {
-        mFilter = compression;
+    public void setExtension(Extension extension) {
+        mExtension = extension;
     }
 
     private boolean isFinal;
@@ -57,7 +57,9 @@ class Rfc6455Rx implements FrameRx {
                 first = readBytes(1).array()[0];
                 isFinal = BitMask.isFlagMatched(first, (byte) 0x80);
 
-                if (mFilter == null && (first & 0x70) != 0) {
+                int maskedRsvBits = first & 0x70;
+                if ((mExtension == null && maskedRsvBits != 0)
+                        || (mExtension != null && (maskedRsvBits ^ mExtension.reservedBits()) != 0)) {
                     throw new ProtocolViolationException("Reserved bits invalid");
                 }
                 opcode = (byte) (first & 0x0f);
@@ -218,13 +220,13 @@ class Rfc6455Rx implements FrameRx {
                     ByteBuffer binary = ByteBuffer.wrap(mContinuationBuffer.toByteArray());
                     mContinuationBuffer.reset();
                     if (mContinuation == ContinuationMode.BINARY) {
-                        if (mFilter != null) {
-                            binary = mFilter.onReceivingBinary(binary, first);
+                        if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
+                            binary = mExtension.filter().onReceivingBinary(binary);
                         }
                         mListener.onBinaryMessage(binary);
                     } else {
-                        if (mFilter != null) {
-                            binary = mFilter.onReceivingText(binary, first);
+                        if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
+                            binary = mExtension.filter().onReceivingText(binary);
                         }
                         mListener.onTextMessage(ByteArrayUtil.toTextAll(binary));
                     }
@@ -234,8 +236,8 @@ class Rfc6455Rx implements FrameRx {
             }
             case OpCode.TEXT: {
                 if (isFinal) {
-                    if (mFilter != null) {
-                        payload = mFilter.onReceivingText(payload, first);
+                    if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
+                        payload = mExtension.filter().onReceivingText(payload);
                     }
                     String text = ByteArrayUtil.toTextAll(payload);
                     mListener.onTextMessage(text);
@@ -248,8 +250,8 @@ class Rfc6455Rx implements FrameRx {
             }
             case OpCode.BINARY: {
                 if (isFinal) {
-                    if (mFilter != null) {
-                        payload = mFilter.onReceivingBinary(payload, first);
+                    if (mExtension != null && BitMask.isFlagMatched(first, mExtension.reservedBits())) {
+                        payload = mExtension.filter().onReceivingBinary(payload);
                     }
                     mListener.onBinaryMessage(payload);
                 } else {

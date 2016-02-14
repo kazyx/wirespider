@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.PayloadFilter;
+import net.kazyx.wirespider.extension.Extension;
 
 import java.nio.ByteBuffer;
 
@@ -21,7 +21,12 @@ public interface FrameRx {
      */
     void onDataReceived(ByteBuffer data);
 
-    void setPayloadFilter(PayloadFilter filter);
+    /**
+     * Set WebSocket extension to be used on this session.
+     *
+     * @param extension Negotiated extension.
+     */
+    void setExtension(Extension extension);
 
     interface Listener {
         /**

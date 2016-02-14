@@ -34,22 +34,20 @@ public interface PayloadFilter {
     ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException;
 
     /**
-     * Called before the message is restored from the frame.
+     * Called when the message is being restored and the registered reserved bits are {@code true}.
      *
      * @param data Original data. This might be modified after this method.
-     * @param extensionBits Reserved bits of the frame header.
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    ByteBuffer onReceivingText(ByteBuffer data, byte extensionBits) throws IOException;
+    ByteBuffer onReceivingText(ByteBuffer data) throws IOException;
 
     /**
-     * Called before the message is restored from the frame.
+     * Called when the message is being restored and the registered reserved bits are {@code true}.
      *
      * @param data Original data. This might be modified after this method.
-     * @param extensionBits Reserved bits of the frame header.
      * @return Filtered data.
      * @throws IOException Any filtering error detected.
      */
-    ByteBuffer onReceivingBinary(ByteBuffer data, byte extensionBits) throws IOException;
+    ByteBuffer onReceivingBinary(ByteBuffer data) throws IOException;
 }

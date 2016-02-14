@@ -277,7 +277,7 @@ public abstract class WebSocket {
                     for (Extension ext : extensions) {
                         WsLog.d(TAG, "Extension accepted: " + ext.name());
                         mFrameTx.setPayloadFilter(ext.filter());
-                        mFrameRx.setPayloadFilter(ext.filter());
+                        mFrameRx.setExtension(ext);
                         // TODO multiple extensions
                     }
 
