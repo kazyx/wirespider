@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.extension.PayloadFilter;
+import net.kazyx.wirespider.extension.Extension;
 
 public interface FrameTx {
     void sendTextAsync(String data);
@@ -22,5 +22,5 @@ public interface FrameTx {
 
     void sendCloseAsync(CloseStatusCode code, String reason);
 
-    void setPayloadFilter(PayloadFilter filter);
+    void setExtension(Extension extension);
 }

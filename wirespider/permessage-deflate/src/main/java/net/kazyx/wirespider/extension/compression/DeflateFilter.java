@@ -22,13 +22,13 @@ class DeflateFilter implements PayloadFilter {
     }
 
     @Override
-    public ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException {
-        return onSendingMessage(data, extensionBits);
+    public ByteBuffer onSendingText(ByteBuffer data) throws IOException {
+        return onSendingMessage(data);
     }
 
     @Override
-    public ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException {
-        return onSendingMessage(data, extensionBits);
+    public ByteBuffer onSendingBinary(ByteBuffer data) throws IOException {
+        return onSendingMessage(data);
     }
 
     @Override
@@ -41,18 +41,24 @@ class DeflateFilter implements PayloadFilter {
         return onReceivingMessage(data);
     }
 
-    private ByteBuffer onSendingMessage(ByteBuffer data, byte[] extensionBits) throws IOException {
+    private ByteBuffer onSendingMessage(ByteBuffer data) throws IOException {
         int pos = data.position();
         int limit = data.limit();
         int remaining = data.remaining();
-        ByteBuffer compressed = mDeflater.compress(data);
-        if (compressed.remaining() < remaining) {
-            extensionBits[0] = (byte) (extensionBits[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
-            return compressed;
+        try {
+            ByteBuffer compressed = mDeflater.compress(data);
+            if (compressed.remaining() <= remaining) {
+                return compressed;
+            }
+        } catch (IOException e) {
+            data.position(pos);
+            data.limit(limit);
+            throw e;
         }
+
         data.position(pos);
         data.limit(limit);
-        return data;
+        throw new IOException("Original data is smaller than compressed.");
     }
 
     private ByteBuffer onReceivingMessage(ByteBuffer data) throws IOException {

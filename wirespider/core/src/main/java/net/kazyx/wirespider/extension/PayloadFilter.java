@@ -17,21 +17,19 @@ public interface PayloadFilter {
      * Called before the frame is created.
      *
      * @param data Original data. This might be modified after this method.
-     * @param extensionBits Reserved bits of the frame header can be updated with the 0th element of this.
      * @return Filtered data.
-     * @throws IOException Any filtering error detected.
+     * @throws IOException Any filtering error detected or filtering is skipped.
      */
-    ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingText(ByteBuffer data) throws IOException;
 
     /**
      * Called before the frame is created.
      *
      * @param data Original data. This might be modified after this method.
-     * @param extensionBits Reserved bits of the frame header can be updated with the 0th element of this.
      * @return Filtered data.
-     * @throws IOException Any filtering error detected.
+     * @throws IOException Any filtering error detected or filtering is skipped.
      */
-    ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException;
+    ByteBuffer onSendingBinary(ByteBuffer data) throws IOException;
 
     /**
      * Called when the message is being restored and the registered reserved bits are {@code true}.
