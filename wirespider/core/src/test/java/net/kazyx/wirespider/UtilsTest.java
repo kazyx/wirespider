@@ -9,7 +9,7 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
 import org.junit.Test;
@@ -54,42 +54,42 @@ public class UtilsTest {
         }
     }
 
-    public static class ByteArrayUtilTest {
+    public static class BinaryUtilTest {
         @Test(expected = IllegalArgumentException.class)
         public void bit72ToLong() {
             byte[] _9BytesZero = new byte[9];
-            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_9BytesZero));
+            BinaryUtil.toUnsignedLong(ByteBuffer.wrap(_9BytesZero));
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void bit64ToLongSignedBitOn() {
             byte[] _8BytesZero = new byte[8];
             _8BytesZero[0] = (byte) 0b10000000;
-            ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero));
+            BinaryUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero));
         }
 
         @Test
         public void bit64ToLong() {
             byte[] _8BytesZero = new byte[8];
-            assertThat(ByteArrayUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero)), is(0L));
+            assertThat(BinaryUtil.toUnsignedLong(ByteBuffer.wrap(_8BytesZero)), is(0L));
         }
 
         @Test
         public void bit32ToInteger() {
             byte[] _4BytesZero = {(byte) 0x7f, (byte) 0xff, (byte) 0xff, (byte) 0xff};
-            assertThat(ByteArrayUtil.toUnsignedInteger(ByteBuffer.wrap(_4BytesZero)), is(Integer.MAX_VALUE));
+            assertThat(BinaryUtil.toUnsignedInteger(ByteBuffer.wrap(_4BytesZero)), is(Integer.MAX_VALUE));
         }
 
         @Test
         public void hex() {
             byte[] original = {(byte) 0x01, (byte) 0x23, (byte) 0x45, (byte) 0x67, (byte) 0x89, (byte) 0xab, (byte) 0xcd, (byte) 0xef};
-            assertThat(ByteArrayUtil.toHex(original), is("0x0123456789ABCDEF"));
+            assertThat(BinaryUtil.toHex(original), is("0x0123456789ABCDEF"));
         }
 
         @Test
         public void nullText() {
             byte[] empty = {};
-            assertThat(Arrays.equals(ByteArrayUtil.fromText(null), empty), is(true));
+            assertThat(Arrays.equals(BinaryUtil.fromText(null), empty), is(true));
         }
     }
 

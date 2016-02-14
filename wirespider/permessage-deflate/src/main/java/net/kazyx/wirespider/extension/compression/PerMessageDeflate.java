@@ -10,7 +10,7 @@
 package net.kazyx.wirespider.extension.compression;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -100,7 +100,7 @@ public class PerMessageDeflate extends PerMessageCompression {
 
             DeflaterOutputStream dos = new DeflaterOutputStream(buffer, mCompressor, DEFLATE_BUFFER);
             OutputStream os = new BufferedOutputStream(dos);
-            os.write(ByteArrayUtil.toBytesRemaining(source));
+            os.write(BinaryUtil.toBytesRemaining(source));
             os.flush();
             dos.finish();
 

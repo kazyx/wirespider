@@ -137,7 +137,7 @@ public class WsLog {
 
     public static void v(String tag, String message, byte[] detail) {
         if (sLevel == Level.VERBOSE) {
-            sWriter.v(tag, message + ": " + ByteArrayUtil.toHex(detail));
+            sWriter.v(tag, message + ": " + BinaryUtil.toHex(detail));
         }
     }
 

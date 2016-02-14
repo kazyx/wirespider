@@ -11,8 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.Base64;
-import net.kazyx.wirespider.util.BitMask;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.SelectionKeyUtil;
@@ -43,13 +42,8 @@ public class PrivateConstructors {
     }
 
     @Test
-    public void bitMask() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(BitMask.class);
-    }
-
-    @Test
-    public void byteArrayUtil() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        constructor(ByteArrayUtil.class);
+    public void binaryUtil() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        constructor(BinaryUtil.class);
     }
 
     @Test

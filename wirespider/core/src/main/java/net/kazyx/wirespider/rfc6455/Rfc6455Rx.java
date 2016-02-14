@@ -16,8 +16,7 @@ import net.kazyx.wirespider.exception.PayloadOverflowException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.exception.ProtocolViolationException;
 import net.kazyx.wirespider.extension.Extension;
-import net.kazyx.wirespider.util.BitMask;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.WsLog;
 
 import java.io.ByteArrayOutputStream;
@@ -57,7 +56,7 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 first = readBytes(1).array()[0];
-                isFinal = BitMask.isFlagMatched(first, (byte) 0x80);
+                isFinal = BinaryUtil.isFlagMatched(first, (byte) 0x80);
 
                 int maskedRsvBits = first & 0x70;
                 for (Extension ext : mExtensions) {
@@ -90,7 +89,7 @@ class Rfc6455Rx implements FrameRx {
         public void run() {
             try {
                 byte second = readBytes(1).array()[0];
-                isMasked = BitMask.isFlagMatched(second, (byte) 0x80);
+                isMasked = BinaryUtil.isFlagMatched(second, (byte) 0x80);
 
                 if (mIsClient == isMasked) {
                     throw new ProtocolViolationException("Masked payload from server or unmasked payload from client");
@@ -134,7 +133,7 @@ class Rfc6455Rx implements FrameRx {
             int size = payloadLength == 126 ? 2 : 8;
             try {
                 // TODO support large payload over 2GB
-                payloadLength = ByteArrayUtil.toUnsignedInteger(readBytes(size));
+                payloadLength = BinaryUtil.toUnsignedInteger(readBytes(size));
                 if (payloadLength > mMaxPayloadSize) {
                     throw new PayloadOverflowException("Payload size exceeds " + mMaxPayloadSize);
                 }
@@ -178,7 +177,7 @@ class Rfc6455Rx implements FrameRx {
             try {
                 ByteBuffer payload = readBytes(payloadLength);
                 if (isMasked) {
-                    BitMask.maskAll(payload, mask);
+                    BinaryUtil.maskAll(payload, mask);
                 }
 
                 handleFrame(opcode, payload, isFinal);
@@ -220,7 +219,7 @@ class Rfc6455Rx implements FrameRx {
                     throw new ProtocolViolationException("Sudden continuation opcode");
                 }
                 int length = payload.remaining();
-                mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
+                mContinuationBuffer.write(BinaryUtil.toBytesRemaining(payload), 0, length);
                 if (isFinal) {
                     ByteBuffer binary = ByteBuffer.wrap(mContinuationBuffer.toByteArray());
                     mContinuationBuffer.reset();
@@ -238,7 +237,7 @@ class Rfc6455Rx implements FrameRx {
                     handleTextFrame(payload);
                 } else {
                     int length = payload.remaining();
-                    mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
+                    mContinuationBuffer.write(BinaryUtil.toBytesRemaining(payload), 0, length);
                     mContinuation = ContinuationMode.TEXT;
                 }
                 break;
@@ -248,7 +247,7 @@ class Rfc6455Rx implements FrameRx {
                     handleBinaryFrame(payload);
                 } else {
                     int length = payload.remaining();
-                    mContinuationBuffer.write(ByteArrayUtil.toBytesRemaining(payload), 0, length);
+                    mContinuationBuffer.write(BinaryUtil.toBytesRemaining(payload), 0, length);
                     mContinuation = ContinuationMode.BINARY;
                 }
                 break;
@@ -260,20 +259,20 @@ class Rfc6455Rx implements FrameRx {
                 if (payload.remaining() > 125) {
                     throw new ProtocolViolationException("Ping payload too large");
                 }
-                mListener.onPingFrame(ByteArrayUtil.toTextAll(payload));
+                mListener.onPingFrame(BinaryUtil.toTextAll(payload));
                 break;
             case OpCode.PONG:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for pong opcode");
                 }
-                mListener.onPongFrame(ByteArrayUtil.toTextAll(payload));
+                mListener.onPongFrame(BinaryUtil.toTextAll(payload));
                 break;
             case OpCode.CONNECTION_CLOSE:
                 if (!isFinal) {
                     throw new ProtocolViolationException("Non-final flag for close opcode");
                 }
                 int code = (payload.remaining() >= 2) ? (payload.get() << 8) + (payload.get() & 0xFF) : CloseStatusCode.NO_STATUS_RECEIVED.asNumber();
-                String reason = (payload.remaining() > 2) ? ByteArrayUtil.toTextRemaining(payload) : "";
+                String reason = (payload.remaining() > 2) ? BinaryUtil.toTextRemaining(payload) : "";
                 mListener.onCloseFrame(code, reason);
                 break;
             default:
@@ -283,7 +282,7 @@ class Rfc6455Rx implements FrameRx {
 
     private void handleBinaryFrame(ByteBuffer buffer) throws IOException {
         for (Extension ext : mExtensions) {
-            if (BitMask.isFlagMatched(first, ext.reservedBits())) {
+            if (BinaryUtil.isFlagMatched(first, ext.reservedBits())) {
                 buffer = ext.filter().onReceivingBinary(buffer);
             }
         }
@@ -292,11 +291,11 @@ class Rfc6455Rx implements FrameRx {
 
     private void handleTextFrame(ByteBuffer buffer) throws IOException {
         for (Extension ext : mExtensions) {
-            if (BitMask.isFlagMatched(first, ext.reservedBits())) {
+            if (BinaryUtil.isFlagMatched(first, ext.reservedBits())) {
                 buffer = ext.filter().onReceivingText(buffer);
             }
         }
-        String text = ByteArrayUtil.toTextAll(buffer);
+        String text = BinaryUtil.toTextAll(buffer);
         mListener.onTextMessage(text);
     }
 

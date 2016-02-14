@@ -14,8 +14,7 @@ import net.kazyx.wirespider.FrameTx;
 import net.kazyx.wirespider.OpCode;
 import net.kazyx.wirespider.SocketChannelWriter;
 import net.kazyx.wirespider.extension.Extension;
-import net.kazyx.wirespider.util.BitMask;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
@@ -44,7 +43,7 @@ class Rfc6455Tx implements FrameTx {
     @Override
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
-        ByteBuffer buff = ByteBuffer.wrap(ByteArrayUtil.fromText(data));
+        ByteBuffer buff = ByteBuffer.wrap(BinaryUtil.fromText(data));
         byte extensionBits = 0;
         for (Extension ext : mExtensions) {
             try {
@@ -80,19 +79,19 @@ class Rfc6455Tx implements FrameTx {
     @Override
     public void sendPingAsync(String message) {
         // WsLog.v(TAG, "sendPingAsync");
-        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(ByteArrayUtil.fromText(message)));
+        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(BinaryUtil.fromText(message)));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
         // WsLog.v(TAG, "sendPongAsync", pingMessage);
-        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(ByteArrayUtil.fromText(pingMessage)));
+        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(BinaryUtil.fromText(pingMessage)));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
         // WsLog.v(TAG, "sendCloseAsync");
-        byte[] messageBytes = ByteArrayUtil.fromText(reason);
+        byte[] messageBytes = BinaryUtil.fromText(reason);
         ByteBuffer payload = ByteBuffer.allocate(2 + messageBytes.length);
         payload.put((byte) (code.asNumber() >>> 8));
         payload.put((byte) (code.asNumber()));
@@ -169,7 +168,7 @@ class Rfc6455Tx implements FrameTx {
                     (byte) (mask >>> 24)
             };
             buffer.put(maskingKey);
-            BitMask.maskAll(payload, maskingKey);
+            BinaryUtil.maskAll(payload, maskingKey);
         }
 
         buffer.put(payload);
