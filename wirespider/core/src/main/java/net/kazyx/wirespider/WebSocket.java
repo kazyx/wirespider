@@ -133,6 +133,7 @@ public abstract class WebSocket {
      * Send text message asynchronously.
      *
      * @param message Text message to send.
+     * @throws IllegalStateException {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
      */
     public void sendTextMessageAsync(String message) {
         ArgumentCheck.rejectNull(message);
@@ -148,6 +149,7 @@ public abstract class WebSocket {
      * Note that byte array argument might be changed to the masked data in case of client side.
      *
      * @param message Binary message to send.
+     * @throws IllegalStateException {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
      */
     public void sendBinaryMessageAsync(byte[] message) {
         ArgumentCheck.rejectNull(message);
@@ -156,6 +158,24 @@ public abstract class WebSocket {
         }
 
         mFrameTx.sendBinaryAsync(message);
+    }
+
+    /**
+     * Partial message writer is holding lock for other data frame operations.
+     * <p>
+     * <b>Note: {@link PartialMessageWriter} is designed to be used only on the thread which crated the instance.</b>
+     * </p>
+     * <p>
+     * While {@link PartialMessageWriter} is holding a lock, {@link #sendTextMessageAsync(String)} and {@link #sendBinaryMessageAsync(byte[])} throw {@link IllegalStateException}.<br>
+     * While another {@link PartialMessageWriter} is holding lock, this method throws {@link IllegalStateException}.<br>
+     * The lock is cleared by calling {@link PartialMessageWriter#close()} or {@link PartialMessageWriter#sendPartialFrameAsync(byte[], boolean)} with {@code true}.
+     * </p>
+     *
+     * @return Writer to send partial message frames.
+     * @throws IllegalStateException Another {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
+     */
+    public PartialMessageWriter getPartialMessageWriter() {
+        return new PartialMessageWriter(mFrameTx);
     }
 
     /**
