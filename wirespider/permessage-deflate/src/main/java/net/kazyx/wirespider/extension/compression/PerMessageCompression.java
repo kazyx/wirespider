@@ -34,4 +34,9 @@ public abstract class PerMessageCompression implements Extension {
      * @throws IOException Failed to decompress data.
      */
     public abstract ByteBuffer decompress(ByteBuffer source) throws IOException;
+
+    @Override
+    public final byte reservedBits() {
+        return RESERVED_BIT_FLAGS;
+    }
 }

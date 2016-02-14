@@ -12,8 +12,8 @@ package net.kazyx.wirespider.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-public final class ByteArrayUtil {
-    private ByteArrayUtil() {
+public final class BinaryUtil {
+    private BinaryUtil() {
     }
 
     private static final Charset UTF8 = Charset.forName("UTF-8");
@@ -54,10 +54,14 @@ public final class ByteArrayUtil {
      * Convert UTF-8 String to byte array expression.
      *
      * @param text Source String.
-     * @return Byte array expression of the String.
+     * @return Byte array expression of the String. Empty array if given text is {@code null}.
      */
     public static byte[] fromText(String text) {
-        return text.getBytes(UTF8);
+        if (text == null) {
+            return new byte[0];
+        } else {
+            return text.getBytes(UTF8);
+        }
     }
 
     /**
@@ -114,5 +118,29 @@ public final class ByteArrayUtil {
                     .append(HEX_SOURCE[v & 0x0F]);
         }
         return sb.toString();
+    }
+
+    /**
+     * Check bit flags
+     *
+     * @param source Source byte.
+     * @param flag Flags byte.
+     * @return {@code true} if all flags are active.
+     */
+    public static boolean isFlagMatched(byte source, byte flag) {
+        return (source & flag) == flag;
+    }
+
+    /**
+     * Mask payload to send data from client.
+     *
+     * @param payload Source raw payload.
+     * @param maskingKey Masking key
+     */
+    public static void maskAll(ByteBuffer payload, byte[] maskingKey) {
+        byte[] array = payload.array();
+        for (int i = 0; i < array.length; i++) {
+            array[i] = (byte) (array[i] ^ maskingKey[i & 3]); // MOD 4
+        }
     }
 }

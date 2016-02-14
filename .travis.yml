@@ -11,7 +11,7 @@ before_script:
 
 script:
 - ./gradlew assemble
-- ./gradlew check --debug
+- ./gradlew check
 
 after_success:
 - ./gradlew jacocoTestReport coveralls

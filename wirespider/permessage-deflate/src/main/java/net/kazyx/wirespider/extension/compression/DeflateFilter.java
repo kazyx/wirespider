@@ -10,7 +10,6 @@
 package net.kazyx.wirespider.extension.compression;
 
 import net.kazyx.wirespider.extension.PayloadFilter;
-import net.kazyx.wirespider.util.BitMask;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,43 +22,46 @@ class DeflateFilter implements PayloadFilter {
     }
 
     @Override
-    public ByteBuffer onSendingText(ByteBuffer data, byte[] extensionBits) throws IOException {
-        return onSendingMessage(data, extensionBits);
+    public ByteBuffer onSendingText(ByteBuffer data) throws IOException {
+        return onSendingMessage(data);
     }
 
     @Override
-    public ByteBuffer onSendingBinary(ByteBuffer data, byte[] extensionBits) throws IOException {
-        return onSendingMessage(data, extensionBits);
+    public ByteBuffer onSendingBinary(ByteBuffer data) throws IOException {
+        return onSendingMessage(data);
     }
 
     @Override
-    public ByteBuffer onReceivingText(ByteBuffer data, byte extensionBits) throws IOException {
-        return onReceivingMessage(data, extensionBits);
+    public ByteBuffer onReceivingText(ByteBuffer data) throws IOException {
+        return onReceivingMessage(data);
     }
 
     @Override
-    public ByteBuffer onReceivingBinary(ByteBuffer data, byte extensionBits) throws IOException {
-        return onReceivingMessage(data, extensionBits);
+    public ByteBuffer onReceivingBinary(ByteBuffer data) throws IOException {
+        return onReceivingMessage(data);
     }
 
-    private ByteBuffer onSendingMessage(ByteBuffer data, byte[] extensionBits) throws IOException {
+    private ByteBuffer onSendingMessage(ByteBuffer data) throws IOException {
         int pos = data.position();
         int limit = data.limit();
         int remaining = data.remaining();
-        ByteBuffer compressed = mDeflater.compress(data);
-        if (compressed.remaining() < remaining) {
-            extensionBits[0] = (byte) (extensionBits[0] | PerMessageCompression.RESERVED_BIT_FLAGS);
-            return compressed;
+        try {
+            ByteBuffer compressed = mDeflater.compress(data);
+            if (compressed.remaining() <= remaining) {
+                return compressed;
+            }
+        } catch (IOException e) {
+            data.position(pos);
+            data.limit(limit);
+            throw e;
         }
+
         data.position(pos);
         data.limit(limit);
-        return data;
+        throw new IOException("Original data is smaller than compressed.");
     }
 
-    private ByteBuffer onReceivingMessage(ByteBuffer data, byte extensionBits) throws IOException {
-        if (BitMask.isFlagMatched(extensionBits, PerMessageCompression.RESERVED_BIT_FLAGS)) {
-            return mDeflater.decompress(data);
-        }
-        return data;
+    private ByteBuffer onReceivingMessage(ByteBuffer data) throws IOException {
+        return mDeflater.decompress(data);
     }
 }

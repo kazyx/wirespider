@@ -21,7 +21,7 @@ import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.http.HttpHeaderReader;
 import net.kazyx.wirespider.http.HttpStatusLine;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import net.kazyx.wirespider.util.WsLog;
 
@@ -136,7 +136,7 @@ class Rfc6455Handshake implements Handshake {
 
         sb.append("\r\n");
 
-        mWriter.writeAsync(ByteBuffer.wrap(ByteArrayUtil.fromText(sb.toString())), true);
+        mWriter.writeAsync(ByteBuffer.wrap(BinaryUtil.fromText(sb.toString())), true);
     }
 
     private final ByteArrayOutputStream mBuffer = new ByteArrayOutputStream();
@@ -145,19 +145,19 @@ class Rfc6455Handshake implements Handshake {
     public void onHandshakeResponse(ByteBuffer ba) throws PayloadUnderflowException, HandshakeFailureException {
         int pos = ba.position();
         int limit = ba.limit();
-        String str = ByteArrayUtil.toTextRemaining(ba);
+        String str = BinaryUtil.toTextRemaining(ba);
         ba.position(pos);
         ba.limit(limit);
         // Log.d(TAG, str);
 
         int index = str.indexOf("\r\n\r\n");
         if (index == -1) {
-            mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, ba.remaining());
+            mBuffer.write(BinaryUtil.toBytesRemaining(ba), 0, ba.remaining());
 
             WsLog.d(TAG, "Header unsatisfied");
             throw new PayloadUnderflowException();
         } else {
-            mBuffer.write(ByteArrayUtil.toBytesRemaining(ba), 0, index + 4);
+            mBuffer.write(BinaryUtil.toBytesRemaining(ba), 0, index + 4);
 
             byte[] header = mBuffer.toByteArray();
             mBuffer.reset();
@@ -256,6 +256,7 @@ class Rfc6455Handshake implements Handshake {
                 if (ext.name().equals(name)) {
                     if (ext.accept(split)) {
                         acceptedExtensions.add(ext);
+                        WsLog.d(TAG, "Extension accepted: " + ext.name());
                         itr.remove();
                         break;
                     } else {

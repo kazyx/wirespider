@@ -28,4 +28,15 @@ public interface Extension {
      * @return Payload filter of this extension.
      */
     PayloadFilter filter();
+
+    /**
+     * Informs the usage of RSV1, RSV2 and RSV3 bits of this extension.
+     * <p>
+     * Note that other bits must be {@code false}.<br>
+     * As a result, returned value must be expressed by {@code 0b0***0000}
+     * </p>
+     *
+     * @return Reserved bits used by this extension.
+     */
+    byte reservedBits();
 }

@@ -13,13 +13,14 @@ import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.FrameTx;
 import net.kazyx.wirespider.OpCode;
 import net.kazyx.wirespider.SocketChannelWriter;
-import net.kazyx.wirespider.extension.PayloadFilter;
-import net.kazyx.wirespider.util.BitMask;
-import net.kazyx.wirespider.util.ByteArrayUtil;
+import net.kazyx.wirespider.extension.Extension;
+import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 class Rfc6455Tx implements FrameTx {
@@ -27,7 +28,7 @@ class Rfc6455Tx implements FrameTx {
 
     private static final int MAX_CLIENT_HEADER_LENGTH = 14; // Max server header length is 10
 
-    private PayloadFilter mFilter;
+    private List<Extension> mExtensions = Collections.emptyList();
     private final boolean mIsClient;
     private final SocketChannelWriter mWriter;
 
@@ -42,55 +43,55 @@ class Rfc6455Tx implements FrameTx {
     @Override
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
-        ByteBuffer buff = ByteBuffer.wrap(ByteArrayUtil.fromText(data));
-        if (mFilter != null) {
-            byte[] flags = new byte[]{(byte) 0x00};
+        ByteBuffer buff = ByteBuffer.wrap(BinaryUtil.fromText(data));
+        byte extensionBits = 0;
+        for (Extension ext : mExtensions) {
             try {
-                buff = mFilter.onSendingText(buff, flags);
-                sendFrameAsync(OpCode.TEXT, buff, flags[0]);
-                return;
+                buff = ext.filter().onSendingText(buff);
+                extensionBits = (byte) (extensionBits | ext.reservedBits());
             } catch (IOException e) {
                 // Filtering error. Send original data.
-                WsLog.printStackTrace(TAG, e);
+                WsLog.v(TAG, e.getMessage());
             }
         }
-        sendFrameAsync(OpCode.TEXT, buff);
+
+        sendFrameAsync(OpCode.TEXT, buff, extensionBits);
     }
 
     @Override
     public void sendBinaryAsync(byte[] data) {
         // WsLog.v(TAG, "sendBinaryAsync");
         ByteBuffer buff = ByteBuffer.wrap(data);
-        if (mFilter != null) {
-            byte[] flags = new byte[]{(byte) 0x00};
+        byte extensionBits = 0;
+        for (Extension ext : mExtensions) {
             try {
-                buff = mFilter.onSendingBinary(buff, flags);
-                sendFrameAsync(OpCode.BINARY, buff, flags[0]);
-                return;
+                buff = ext.filter().onSendingBinary(buff);
+                extensionBits = (byte) (extensionBits | ext.reservedBits());
             } catch (IOException e) {
                 // Filtering error. Send original data.
-                WsLog.printStackTrace(TAG, e);
+                WsLog.v(TAG, e.getMessage());
             }
         }
-        sendFrameAsync(OpCode.BINARY, buff);
+
+        sendFrameAsync(OpCode.BINARY, buff, extensionBits);
     }
 
     @Override
     public void sendPingAsync(String message) {
         // WsLog.v(TAG, "sendPingAsync");
-        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(ByteArrayUtil.fromText(message)));
+        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(BinaryUtil.fromText(message)));
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
         // WsLog.v(TAG, "sendPongAsync", pingMessage);
-        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(ByteArrayUtil.fromText(pingMessage)));
+        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(BinaryUtil.fromText(pingMessage)));
     }
 
     @Override
     public void sendCloseAsync(CloseStatusCode code, String reason) {
         // WsLog.v(TAG, "sendCloseAsync");
-        byte[] messageBytes = ByteArrayUtil.fromText(reason);
+        byte[] messageBytes = BinaryUtil.fromText(reason);
         ByteBuffer payload = ByteBuffer.allocate(2 + messageBytes.length);
         payload.put((byte) (code.asNumber() >>> 8));
         payload.put((byte) (code.asNumber()));
@@ -101,8 +102,8 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void setPayloadFilter(PayloadFilter compression) {
-        mFilter = compression;
+    public void setExtensions(List<Extension> extensions) {
+        mExtensions = extensions;
     }
 
     private void sendFrameAsync(byte opcode, ByteBuffer payload) {
@@ -167,7 +168,7 @@ class Rfc6455Tx implements FrameTx {
                     (byte) (mask >>> 24)
             };
             buffer.put(maskingKey);
-            BitMask.maskAll(payload, maskingKey);
+            BinaryUtil.maskAll(payload, maskingKey);
         }
 
         buffer.put(payload);
