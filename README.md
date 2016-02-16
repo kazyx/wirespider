@@ -141,7 +141,7 @@ WebSocket extensions can be implemented with `net.kazyx.wirespider.extension.Ext
 [ ![Download](https://api.bintray.com/packages/kazyx/maven/net.kazyx%3Awirespider-pmdeflate/images/download.svg) ](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-pmdeflate/_latestVersion)
 
 Per-Message Deflate extension ([RFC7692](https://tools.ietf.org/html/rfc7692)) is provided by `wirespider-pmdeflate` placed under `wirespider/permessage-deflate`.  
-Downloaded [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-pmdeflate)
+Download [JAR](https://bintray.com/kazyx/maven/net.kazyx%3Awirespider-pmdeflate)
 or write Gradle dependency as follows.
 
 ```groovy
