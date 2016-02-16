@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 
 class Rfc6455Tx implements FrameTx {
     private static final String TAG = Rfc6455Tx.class.getSimpleName();
@@ -35,14 +36,31 @@ class Rfc6455Tx implements FrameTx {
     private final Object mCloseFlagLock = new Object();
     private boolean mIsCloseSent = false;
 
+    private ReentrantLock mDataLock = new ReentrantLock();
+
     Rfc6455Tx(SocketChannelWriter writer, boolean isClient) {
         mIsClient = isClient;
         mWriter = writer;
     }
 
+    /**
+     * @throws IllegalStateException {@inheritDoc}
+     */
     @Override
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
+        if (mDataLock.isLocked()) {
+            throw new IllegalStateException("PartialMessageWriter is holding a lock");
+        }
+        sendTextFrame(data, OpCode.TEXT, true);
+    }
+
+    @Override
+    public void sendTextAsyncPrivileged(String data, boolean continuation, boolean isFinal) {
+        sendTextFrame(data, continuation ? OpCode.CONTINUATION : OpCode.TEXT, isFinal);
+    }
+
+    private void sendTextFrame(String data, byte opcode, boolean isFinal) {
         ByteBuffer buff = ByteBuffer.wrap(BinaryUtil.fromText(data));
         byte extensionBits = 0;
         for (Extension ext : mExtensions) {
@@ -55,12 +73,27 @@ class Rfc6455Tx implements FrameTx {
             }
         }
 
-        sendFrameAsync(OpCode.TEXT, buff, extensionBits);
+        sendFrameAsync(opcode, buff, extensionBits, isFinal);
     }
 
+    /**
+     * @throws IllegalStateException {@inheritDoc}
+     */
     @Override
     public void sendBinaryAsync(byte[] data) {
         // WsLog.v(TAG, "sendBinaryAsync");
+        if (mDataLock.isLocked()) {
+            throw new IllegalStateException("PartialMessageWriter is holding a lock");
+        }
+        sendBinaryFrame(data, OpCode.BINARY, true);
+    }
+
+    @Override
+    public void sendBinaryAsyncPrivileged(byte[] data, boolean continuation, boolean isFinal) {
+        sendBinaryFrame(data, continuation ? OpCode.CONTINUATION : OpCode.BINARY, isFinal);
+    }
+
+    private void sendBinaryFrame(byte[] data, byte opcode, boolean isFinal) {
         ByteBuffer buff = ByteBuffer.wrap(data);
         byte extensionBits = 0;
         for (Extension ext : mExtensions) {
@@ -73,19 +106,19 @@ class Rfc6455Tx implements FrameTx {
             }
         }
 
-        sendFrameAsync(OpCode.BINARY, buff, extensionBits);
+        sendFrameAsync(opcode, buff, extensionBits, isFinal);
     }
 
     @Override
     public void sendPingAsync(String message) {
         // WsLog.v(TAG, "sendPingAsync");
-        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(BinaryUtil.fromText(message)));
+        sendFrameAsync(OpCode.PING, ByteBuffer.wrap(BinaryUtil.fromText(message)), (byte) 0, true);
     }
 
     @Override
     public void sendPongAsync(String pingMessage) {
         // WsLog.v(TAG, "sendPongAsync", pingMessage);
-        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(BinaryUtil.fromText(pingMessage)));
+        sendFrameAsync(OpCode.PONG, ByteBuffer.wrap(BinaryUtil.fromText(pingMessage)), (byte) 0, true);
     }
 
     @Override
@@ -98,7 +131,7 @@ class Rfc6455Tx implements FrameTx {
         payload.put(messageBytes);
         payload.flip();
 
-        sendFrameAsync(OpCode.CONNECTION_CLOSE, payload);
+        sendFrameAsync(OpCode.CONNECTION_CLOSE, payload, (byte) 0, true);
     }
 
     @Override
@@ -106,11 +139,27 @@ class Rfc6455Tx implements FrameTx {
         mExtensions = extensions;
     }
 
-    private void sendFrameAsync(byte opcode, ByteBuffer payload) {
-        sendFrameAsync(opcode, payload, (byte) 0);
+    /**
+     * @throws IllegalStateException {@inheritDoc}
+     */
+    @Override
+    public void lock() {
+        if (mDataLock.isLocked()) {
+            throw new IllegalStateException("Another PartialMessageWriter is holding a lock");
+        }
+        mDataLock.lock();
     }
 
-    private void sendFrameAsync(byte opcode, ByteBuffer payload, byte extensionFlags) {
+    /**
+     * @throws IllegalMonitorStateException {@inheritDoc}
+     */
+    @Override
+    public void unlock() {
+        mDataLock.unlock();
+    }
+
+    private void sendFrameAsync(byte opcode, ByteBuffer payload, byte extensionFlags, boolean isFinal) {
+        WsLog.v(TAG, "SendFrameAsync: " + opcode + " - " + isFinal);
         synchronized (mCloseFlagLock) {
             if (mIsCloseSent) {
                 return;
@@ -124,7 +173,8 @@ class Rfc6455Tx implements FrameTx {
         int headerLength = (payloadLength <= 125) ? 2 : (payloadLength <= 65535 ? 4 : 10);
         byte[] header = new byte[headerLength];
 
-        header[0] = (byte) (0x80 | opcode | extensionFlags);
+        byte firstBase = isFinal ? (byte) (0x80) : 0;
+        header[0] = (byte) (firstBase | opcode | extensionFlags);
 
         if (headerLength == 2) {
             if (mIsClient) {

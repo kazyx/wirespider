@@ -16,6 +16,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.WsLog;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -133,6 +134,7 @@ public abstract class WebSocket {
      * Send text message asynchronously.
      *
      * @param message Text message to send.
+     * @throws IllegalStateException {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
      */
     public void sendTextMessageAsync(String message) {
         ArgumentCheck.rejectNull(message);
@@ -148,6 +150,7 @@ public abstract class WebSocket {
      * Note that byte array argument might be changed to the masked data in case of client side.
      *
      * @param message Binary message to send.
+     * @throws IllegalStateException {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
      */
     public void sendBinaryMessageAsync(byte[] message) {
         ArgumentCheck.rejectNull(message);
@@ -156,6 +159,24 @@ public abstract class WebSocket {
         }
 
         mFrameTx.sendBinaryAsync(message);
+    }
+
+    /**
+     * Partial message writer is holding lock for other data frame operations.
+     * <p>
+     * <b>Note: {@link PartialMessageWriter} is designed to be used only on the thread which crated the instance.</b>
+     * </p>
+     * <p>
+     * While {@link PartialMessageWriter} is holding a lock, {@link #sendTextMessageAsync(String)} and {@link #sendBinaryMessageAsync(byte[])} throw {@link IllegalStateException}.<br>
+     * While another {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock, this method throws {@link IllegalStateException}.<br>
+     * The lock is cleared by calling {@link PartialMessageWriter#close()}.
+     * </p>
+     *
+     * @return Newly created writer to send partial message frames.
+     * @throws IllegalStateException Another {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
+     */
+    public PartialMessageWriter newPartialMessageWriter() {
+        return new PartialMessageWriter(mFrameTx);
     }
 
     /**
@@ -324,6 +345,18 @@ public abstract class WebSocket {
             }
             // TODO Wait for a minute to send close frame?
             closeAndRaiseEvent(code, reason);
+        }
+
+        @Override
+        public void onInvalidPayloadError(IOException e) {
+            if (!isConnected()) {
+                return;
+            }
+            WsLog.d(TAG, "Received invalid payload");
+            sendCloseFrame(CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA, "Invalid payload", false);
+
+            // TODO Wait for a minute to send close frame?
+            closeAndRaiseEvent(CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA, "Invalid payload");
         }
 
         @Override

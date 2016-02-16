@@ -11,6 +11,7 @@ package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.Extension;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -51,6 +52,13 @@ public interface FrameRx {
          * @param reason Close reason phrase.
          */
         void onCloseFrame(int code, String reason);
+
+        /**
+         * Called when a error is thrown while reading message.
+         *
+         * @param e Exception thrown by message reader.
+         */
+        void onInvalidPayloadError(IOException e);
 
         /**
          * Called when received binary message.

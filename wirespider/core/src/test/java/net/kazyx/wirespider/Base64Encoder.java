@@ -19,7 +19,7 @@ public class Base64Encoder implements Base64.Encoder {
         try {
             Class<?> c = Class.forName("android.util.Base64");
             Method m = c.getDeclaredMethod("encodeToString", byte[].class, int.class);
-            return (String) m.invoke(null, source, 2);
+            return (String) m.invoke(null, source, 0);
         } catch (Exception e) { // ReflectiveOperationException is added since Android API 19.
             // This is not android device;
         }

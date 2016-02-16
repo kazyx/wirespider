@@ -41,8 +41,9 @@ Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/core/build/libs`
 Base64.setEncoder(new Base64.Encoder() {
     @Override
     public String encode(byte[] source) {
-        // Please use apache-commons or Android Base64 etc.
-        // Required for opening handshake.
+        // Please use commons-codec or Android Base64 etc.
+        // return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
+        return android.util.Base64.encodeToString(source, android.util.Base64.DEFAULT);
     }
 });
 ```
@@ -76,9 +77,18 @@ WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS);
 ### Send messages
 ```java
 websocket.sendTextMessageAsync("Hello");
-```
-```java
+
 websocket.sendBinaryMessageAsync(new byte[]{0x01, 0x02, 0x03, 0x04});
+```
+
+### Send partial messages
+
+```java
+try (PartialMessageWriter writer = websocket.newPartialMessageWriter()) {
+    writer.sendPartialFrameAsync("H", false);
+    writer.sendPartialFrameAsync("e", false);
+    writer.sendPartialFrameAsync("llo", true/*isFinal*/);
+} // Don't forget to close PartialMessageWriter
 ```
 
 ### Close connection
@@ -94,12 +104,7 @@ factory.destroy();
 
 ### WebSocket over TLS
 
-```java
-URI uri = URI.create("wss://host:port/path"); // wss scheme
-SessionRequest req = new SessionRequest.Builder(uri, handler).build();
-
-WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS); // This is a WebSocket over TLS
-```
+Use `URI` created with `wss` scheme instead of `ws`.
 
 #### TLSv1.1 and TLSv1.2 on JDK7
 
