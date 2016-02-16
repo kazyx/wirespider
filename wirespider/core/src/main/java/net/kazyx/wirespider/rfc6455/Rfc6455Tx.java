@@ -56,7 +56,7 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void sendTextAsync(String data, boolean continuation, boolean isFinal) {
+    public void sendTextAsyncPrivileged(String data, boolean continuation, boolean isFinal) {
         sendTextFrame(data, continuation ? OpCode.CONTINUATION : OpCode.TEXT, isFinal);
     }
 
@@ -89,7 +89,7 @@ class Rfc6455Tx implements FrameTx {
     }
 
     @Override
-    public void sendBinaryAsync(byte[] data, boolean continuation, boolean isFinal) {
+    public void sendBinaryAsyncPrivileged(byte[] data, boolean continuation, boolean isFinal) {
         sendBinaryFrame(data, continuation ? OpCode.CONTINUATION : OpCode.BINARY, isFinal);
     }
 

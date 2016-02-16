@@ -15,7 +15,7 @@ import java.util.List;
 
 public interface FrameTx {
     /**
-     * Send non-partial TEXT data frame.
+     * Send non-partial TEXT data frame <b>under the rule of lock state</b>.
      *
      * @param data Application data.
      * @throws IllegalStateException If lock is held somewhere.
@@ -23,19 +23,16 @@ public interface FrameTx {
     void sendTextAsync(String data);
 
     /**
-     * Send TEXT data frame.
+     * Send TEXT data frame <b>regardless of lock state</b>.
      *
      * @param data Application data.
      * @param continuation {@code false} if this frame is the leading frame of the partial messages.
      * @param isFinal {@code false} if this is the initial part of partial message, otherwise {true}.
      */
-    void sendTextAsync(String data, boolean continuation, boolean isFinal);
+    void sendTextAsyncPrivileged(String data, boolean continuation, boolean isFinal);
 
     /**
-     * Send non-partial BINARY data frame.
-     * <p>
-     * Equivalent to {@code sendBinaryAsync(data, false, true)}
-     * </p>
+     * Send non-partial BINARY data frame <b>under the rule of lock state</b>.
      *
      * @param data Application data.
      * @throws IllegalStateException If lock is held somewhere.
@@ -43,13 +40,13 @@ public interface FrameTx {
     void sendBinaryAsync(byte[] data);
 
     /**
-     * Send BINARY data frame.
+     * Send BINARY data frame <b>regardless of lock state</b>.
      *
      * @param data Application data.
      * @param continuation {@code false} if this frame is the leading frame of the partial messages.
      * @param isFinal {@code false} if this is the initial part of partial message, otherwise {true}.
      */
-    void sendBinaryAsync(byte[] data, boolean continuation, boolean isFinal);
+    void sendBinaryAsyncPrivileged(byte[] data, boolean continuation, boolean isFinal);
 
     /**
      * Send PING frame for keep-alive or check of peer's activity.

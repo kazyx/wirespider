@@ -96,7 +96,7 @@ public class PartialFrameTest {
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            PartialMessageWriter writer = ws.getPartialMessageWriter();
+            PartialMessageWriter writer = ws.newPartialMessageWriter();
             writer.sendPartialFrameAsync(first, false);
             writer.sendPartialFrameAsync(second, true);
 
@@ -131,7 +131,7 @@ public class PartialFrameTest {
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            writer = ws.getPartialMessageWriter();
+            writer = ws.newPartialMessageWriter();
             writer.sendPartialFrameAsync(first, true);
 
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -170,7 +170,7 @@ public class PartialFrameTest {
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            PartialMessageWriter writer = ws.getPartialMessageWriter();
+            PartialMessageWriter writer = ws.newPartialMessageWriter();
             writer.sendPartialFrameAsync(first, false);
             writer.sendPartialFrameAsync(second, true);
 
@@ -206,7 +206,7 @@ public class PartialFrameTest {
         try {
             ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            writer = ws.getPartialMessageWriter();
+            writer = ws.newPartialMessageWriter();
             writer.sendPartialFrameAsync(first, true);
 
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -222,13 +222,13 @@ public class PartialFrameTest {
     @Test
     public void getDuplicateWriterOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         new Thread(new Runnable() {
             @Override
             public void run() {
                 PartialMessageWriter writer = null;
                 try {
-                    writer = copy.getPartialMessageWriter();
+                    writer = copy.newPartialMessageWriter();
                     mLatch.unlockByFailure();
                 } catch (IllegalStateException e) {
                     mLatch.countDown();
@@ -244,8 +244,8 @@ public class PartialFrameTest {
     public void getDuplicateWriterOnSameThread() {
         PartialMessageWriter writer2 = null;
         try {
-            mWriter = mWs.getPartialMessageWriter();
-            writer2 = mWs.getPartialMessageWriter();
+            mWriter = mWs.newPartialMessageWriter();
+            writer2 = mWs.newPartialMessageWriter();
         } finally {
             IOUtil.close(writer2);
         }
@@ -254,7 +254,7 @@ public class PartialFrameTest {
     @Test
     public void writerLocksOtherTextFramesOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -271,14 +271,14 @@ public class PartialFrameTest {
 
     @Test(expected = IllegalStateException.class)
     public void writerLocksOtherTextFramesOnSameThread() {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWs.sendTextMessageAsync("error");
     }
 
     @Test
     public void writerLocksOtherBinaryFramesOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -295,14 +295,14 @@ public class PartialFrameTest {
 
     @Test(expected = IllegalStateException.class)
     public void writerLocksOtherBinaryFramesOnSameThread() {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWs.sendBinaryMessageAsync(new byte[0x00]);
     }
 
     @Test
     public void controlFrameIsNotLockedOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -315,20 +315,20 @@ public class PartialFrameTest {
 
     @Test
     public void controlFrameIsNotLockedOnSameThread() {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWs.sendPingAsync("ping");
     }
 
     @Test
     public void closingWriterUnlocks() {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         IOUtil.close(mWriter);
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
     }
 
     @Test(expected = IllegalStateException.class)
     public void sendFinalFrameDoesNotUnlockBinary() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
         mWs.sendTextMessageAsync("hello");
@@ -336,7 +336,7 @@ public class PartialFrameTest {
 
     @Test(expected = IllegalStateException.class)
     public void sendFinalFrameDoesNotUnlockText() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync("Hello", false);
         mWriter.sendPartialFrameAsync("Hello", true);
         mWs.sendTextMessageAsync("hello");
@@ -344,7 +344,7 @@ public class PartialFrameTest {
 
     @Test
     public void reuseNonClosedWriterBinary() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
@@ -353,7 +353,7 @@ public class PartialFrameTest {
 
     @Test
     public void reuseNonClosedWriterText() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync("Hello", false);
         mWriter.sendPartialFrameAsync("Hello", true);
         mWriter.sendPartialFrameAsync("Hello", false);
@@ -362,21 +362,21 @@ public class PartialFrameTest {
 
     @Test(expected = IllegalStateException.class)
     public void typeConflict() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
         mWriter.sendPartialFrameAsync("Hello", false);
     }
 
     @Test(expected = IllegalStateException.class)
     public void typeConflictReverse() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync("Hello", false);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
     }
 
     @Test
     public void sendFinalFrameClearsDataType() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
         mWriter.sendPartialFrameAsync("Hello", false);
@@ -386,7 +386,7 @@ public class PartialFrameTest {
 
     @Test(expected = IOException.class)
     public void closedWriterThrowsIOExceptionBinary() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         IOUtil.close(mWriter);
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         mWriter.sendPartialFrameAsync(first, false);
@@ -394,21 +394,21 @@ public class PartialFrameTest {
 
     @Test(expected = IOException.class)
     public void closedWriterThrowsIOExceptionText() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         IOUtil.close(mWriter);
         mWriter.sendPartialFrameAsync("hello", false);
     }
 
     @Test(expected = IOException.class)
     public void closeClosedWriter() throws IOException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         IOUtil.close(mWriter);
         mWriter.close();
     }
 
     @Test
     public void closeOnOtherThread() throws InterruptedException {
-        mWriter = mWs.getPartialMessageWriter();
+        mWriter = mWs.newPartialMessageWriter();
         new Thread(new Runnable() {
             @Override
             public void run() {

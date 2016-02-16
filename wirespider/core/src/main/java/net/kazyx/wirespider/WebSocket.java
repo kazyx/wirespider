@@ -168,14 +168,14 @@ public abstract class WebSocket {
      * </p>
      * <p>
      * While {@link PartialMessageWriter} is holding a lock, {@link #sendTextMessageAsync(String)} and {@link #sendBinaryMessageAsync(byte[])} throw {@link IllegalStateException}.<br>
-     * While another {@link PartialMessageWriter} is holding lock, this method throws {@link IllegalStateException}.<br>
-     * The lock is cleared by calling {@link PartialMessageWriter#close()} or {@link PartialMessageWriter#sendPartialFrameAsync(byte[], boolean)} with {@code true}.
+     * While another {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock, this method throws {@link IllegalStateException}.<br>
+     * The lock is cleared by calling {@link PartialMessageWriter#close()}.
      * </p>
      *
-     * @return Writer to send partial message frames.
+     * @return Newly created writer to send partial message frames.
      * @throws IllegalStateException Another {@link PartialMessageWriter} derived from this {@link WebSocket} is holding lock.
      */
-    public PartialMessageWriter getPartialMessageWriter() {
+    public PartialMessageWriter newPartialMessageWriter() {
         return new PartialMessageWriter(mFrameTx);
     }
 

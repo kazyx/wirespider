@@ -43,10 +43,10 @@ public class PartialMessageWriter implements Closeable {
             throw new IOException("PartialMessageWriter is closed");
         }
         if (mDataType == null) {
-            mTx.sendTextAsync(data, false, isFinal);
+            mTx.sendTextAsyncPrivileged(data, false, isFinal);
             mDataType = FrameType.TEXT;
         } else {
-            mTx.sendTextAsync(data, true, isFinal);
+            mTx.sendTextAsyncPrivileged(data, true, isFinal);
         }
         if (isFinal) {
             mDataType = null;
@@ -70,10 +70,10 @@ public class PartialMessageWriter implements Closeable {
             throw new IOException("PartialMessageWriter is closed");
         }
         if (mDataType == null) {
-            mTx.sendBinaryAsync(data, false, isFinal);
+            mTx.sendBinaryAsyncPrivileged(data, false, isFinal);
             mDataType = FrameType.BINARY;
         } else {
-            mTx.sendBinaryAsync(data, true, isFinal);
+            mTx.sendBinaryAsyncPrivileged(data, true, isFinal);
         }
         if (isFinal) {
             mDataType = null;
