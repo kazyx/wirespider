@@ -258,6 +258,42 @@ public class WebSocketClientTest {
         }
     }
 
+    @Test
+    public void closedByInvalidPayload() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
+        final CustomLatch latch = new CustomLatch(1);
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            @Override
+            public void onClosed(int code, String reason) {
+                if (code == CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA.asNumber()) {
+                    latch.countDown();
+                } else {
+                    latch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketFactory factory = new WebSocketFactory();
+        WebSocket ws = null;
+        try {
+            Future<WebSocket> future = factory.openAsync(seed);
+            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+            Field f = WebSocket.class.getDeclaredField("mRxListener");
+            f.setAccessible(true);
+            FrameRx.Listener listener = (FrameRx.Listener) f.get(ws);
+            listener.onInvalidPayloadError(new IOException("invalid payload error!!"));
+
+            assertThat(latch.await(200, TimeUnit.MILLISECONDS), is(true));
+            assertThat(latch.isUnlockedByCountDown(), is(true));
+            assertThat(ws.isConnected(), is(false));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
     static void callbackAssert() {
         if (sAssertLatch != null) {
             sAssertLatch.unlockByFailure();

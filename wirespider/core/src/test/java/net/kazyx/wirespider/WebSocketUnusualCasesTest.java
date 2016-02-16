@@ -140,6 +140,11 @@ public class WebSocketUnusualCasesTest {
         }
 
         @Test
+        public void onInvalidPayload() {
+            mListener.onInvalidPayloadError(new IOException("io error!!"));
+        }
+
+        @Test
         public void onBinaryMessage() {
             mListener.onBinaryMessage(ByteBuffer.wrap(new byte[0]));
         }

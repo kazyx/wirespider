@@ -27,7 +27,6 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.zip.ZipException;
 
 class Rfc6455Rx implements FrameRx {
     private static final String TAG = Rfc6455Rx.class.getSimpleName();
@@ -194,11 +193,9 @@ class Rfc6455Rx implements FrameRx {
             } catch (ProtocolViolationException | IllegalArgumentException e) {
                 WsLog.d(TAG, "Protocol violation", e.getMessage());
                 mListener.onProtocolViolation();
-            } catch (ZipException e) {
-                mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Invalid compressed data");
             } catch (IOException e) {
-                // Never happens.
-                mListener.onCloseFrame(CloseStatusCode.ABNORMAL_CLOSURE.asNumber(), "Unexpected IOException");
+                WsLog.printStackTrace(TAG, e);
+                mListener.onInvalidPayloadError(e);
             }
         }
     };

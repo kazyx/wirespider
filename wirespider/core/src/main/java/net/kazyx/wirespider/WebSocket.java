@@ -16,6 +16,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.WsLog;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -344,6 +345,18 @@ public abstract class WebSocket {
             }
             // TODO Wait for a minute to send close frame?
             closeAndRaiseEvent(code, reason);
+        }
+
+        @Override
+        public void onInvalidPayloadError(IOException e) {
+            if (!isConnected()) {
+                return;
+            }
+            WsLog.d(TAG, "Received invalid payload");
+            sendCloseFrame(CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA, "Invalid payload", false);
+
+            // TODO Wait for a minute to send close frame?
+            closeAndRaiseEvent(CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA, "Invalid payload");
         }
 
         @Override

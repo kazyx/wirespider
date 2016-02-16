@@ -9,6 +9,7 @@
 
 package net.kazyx.wirespider;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.fail;
@@ -29,6 +30,11 @@ public class FailOnCallbackRxListener implements FrameRx.Listener {
 
     @Override
     public void onCloseFrame(int code, String reason) {
+        fail();
+    }
+
+    @Override
+    public void onInvalidPayloadError(IOException e) {
         fail();
     }
 
