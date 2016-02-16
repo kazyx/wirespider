@@ -60,7 +60,7 @@ class Rfc6455Rx implements FrameRx {
 
                 int maskedRsvBits = first & 0x70;
                 for (Extension ext : mExtensions) {
-                    maskedRsvBits = maskedRsvBits ^ ext.reservedBits();
+                    maskedRsvBits = maskedRsvBits & ~ext.reservedBits();
                 }
                 if (maskedRsvBits != 0) {
                     throw new ProtocolViolationException("Reserved bits invalid");
