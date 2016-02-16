@@ -43,9 +43,24 @@ class Rfc6455Tx implements FrameTx {
         mWriter = writer;
     }
 
+    /**
+     * @throws IllegalStateException {@inheritDoc}
+     */
     @Override
     public void sendTextAsync(String data) {
         // WsLog.v(TAG, "sendTextAsync");
+        if (mDataLock.isLocked()) {
+            throw new IllegalStateException("PartialMessageWriter is holding a lock");
+        }
+        sendTextFrame(data, OpCode.TEXT, true);
+    }
+
+    @Override
+    public void sendTextAsync(String data, boolean continuation, boolean isFinal) {
+        sendTextFrame(data, continuation ? OpCode.CONTINUATION : OpCode.TEXT, isFinal);
+    }
+
+    private void sendTextFrame(String data, byte opcode, boolean isFinal) {
         ByteBuffer buff = ByteBuffer.wrap(BinaryUtil.fromText(data));
         byte extensionBits = 0;
         for (Extension ext : mExtensions) {
@@ -58,29 +73,24 @@ class Rfc6455Tx implements FrameTx {
             }
         }
 
-        if (mDataLock.isLocked()) {
-            throw new IllegalStateException("PartialMessageWriter is holding a lock");
-        }
-        sendFrameAsync(OpCode.TEXT, buff, extensionBits, true);
+        sendFrameAsync(opcode, buff, extensionBits, isFinal);
     }
 
+    /**
+     * @throws IllegalStateException {@inheritDoc}
+     */
     @Override
     public void sendBinaryAsync(byte[] data) {
         // WsLog.v(TAG, "sendBinaryAsync");
         if (mDataLock.isLocked()) {
             throw new IllegalStateException("PartialMessageWriter is holding a lock");
         }
-        sendBinaryAsync(data, true);
+        sendBinaryFrame(data, OpCode.BINARY, true);
     }
 
     @Override
-    public void sendBinaryAsync(byte[] data, boolean isFinal) {
-        sendBinaryFrame(data, OpCode.BINARY, isFinal);
-    }
-
-    @Override
-    public void sendContinuationAsync(byte[] data, boolean isFinal) {
-        sendBinaryFrame(data, OpCode.CONTINUATION, isFinal);
+    public void sendBinaryAsync(byte[] data, boolean continuation, boolean isFinal) {
+        sendBinaryFrame(data, continuation ? OpCode.CONTINUATION : OpCode.BINARY, isFinal);
     }
 
     private void sendBinaryFrame(byte[] data, byte opcode, boolean isFinal) {

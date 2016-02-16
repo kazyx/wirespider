@@ -74,7 +74,78 @@ public class PartialFrameTest {
     }
 
     @Test
-    public void partialBinaries() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public void checkEchoPartialText() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final CustomLatch latch = new CustomLatch(1);
+        final String first = "hello1";
+        final String second = "hello2";
+
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+            @Override
+            public void onTextMessage(String message) {
+                System.out.println("onBinaryMessage: " + message);
+                if ((first + second).equals(message)) {
+                    latch.countDown();
+                } else {
+                    latch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketFactory factory = new WebSocketFactory();
+        WebSocket ws = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+
+            PartialMessageWriter writer = ws.getPartialMessageWriter();
+            writer.sendPartialFrameAsync(first, false);
+            writer.sendPartialFrameAsync(second, true);
+
+            assertThat(latch.await(1000, TimeUnit.MILLISECONDS), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void checkEchoNonPartialText() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final CustomLatch latch = new CustomLatch(1);
+        final String first = "hello";
+
+        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+            @Override
+            public void onTextMessage(String message) {
+                if (first.equals(message)) {
+                    latch.countDown();
+                } else {
+                    latch.unlockByFailure();
+                }
+            }
+        }).build();
+
+        WebSocketFactory factory = new WebSocketFactory();
+        WebSocket ws = null;
+        PartialMessageWriter writer = null;
+        try {
+            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+
+            writer = ws.getPartialMessageWriter();
+            writer.sendPartialFrameAsync(first, true);
+
+            assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            IOUtil.close(writer);
+            factory.destroy();
+        }
+    }
+
+    @Test
+    public void checkEchoPartialBinaries() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         byte[] second = {(byte) 0xbc, (byte) 0xde, (byte) 0xf0, 0x12, 0x34};
@@ -113,7 +184,7 @@ public class PartialFrameTest {
     }
 
     @Test
-    public void nonPartialBinaries() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public void checkEchoNonPartialBinaries() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         final byte[] whole = Arrays.copyOf(first, first.length);
@@ -255,20 +326,77 @@ public class PartialFrameTest {
         mWriter = mWs.getPartialMessageWriter();
     }
 
-    @Test
-    public void sendFinalFrameUnlocks() throws IOException {
+    @Test(expected = IllegalStateException.class)
+    public void sendFinalFrameDoesNotUnlockBinary() throws IOException {
         mWriter = mWs.getPartialMessageWriter();
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
         mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
         mWs.sendTextMessageAsync("hello");
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void sendFinalFrameDoesNotUnlockText() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync("Hello", false);
+        mWriter.sendPartialFrameAsync("Hello", true);
+        mWs.sendTextMessageAsync("hello");
+    }
+
+    @Test
+    public void reuseNonClosedWriterBinary() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
+    }
+
+    @Test
+    public void reuseNonClosedWriterText() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync("Hello", false);
+        mWriter.sendPartialFrameAsync("Hello", true);
+        mWriter.sendPartialFrameAsync("Hello", false);
+        mWriter.sendPartialFrameAsync("Hello", true);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void typeConflict() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
+        mWriter.sendPartialFrameAsync("Hello", false);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void typeConflictReverse() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync("Hello", false);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
+    }
+
+    @Test
+    public void sendFinalFrameClearsDataType() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, false);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
+        mWriter.sendPartialFrameAsync("Hello", false);
+        mWriter.sendPartialFrameAsync("Hello", true);
+        mWriter.sendPartialFrameAsync(new byte[]{0x00}, true);
+    }
+
     @Test(expected = IOException.class)
-    public void sendClosedWriter() throws IOException {
+    public void closedWriterThrowsIOExceptionBinary() throws IOException {
         mWriter = mWs.getPartialMessageWriter();
         IOUtil.close(mWriter);
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         mWriter.sendPartialFrameAsync(first, false);
+    }
+
+    @Test(expected = IOException.class)
+    public void closedWriterThrowsIOExceptionText() throws IOException {
+        mWriter = mWs.getPartialMessageWriter();
+        IOUtil.close(mWriter);
+        mWriter.sendPartialFrameAsync("hello", false);
     }
 
     @Test(expected = IOException.class)

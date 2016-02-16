@@ -11,6 +11,7 @@ package net.kazyx.wirespider.rfc6455;
 
 import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.FrameType;
 import net.kazyx.wirespider.OpCode;
 import net.kazyx.wirespider.exception.PayloadOverflowException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
@@ -202,20 +203,14 @@ class Rfc6455Rx implements FrameRx {
         }
     };
 
-    private enum ContinuationMode {
-        TEXT,
-        BINARY,
-        UNSET,
-    }
-
-    private ContinuationMode mContinuation = ContinuationMode.UNSET;
+    private FrameType mContinuationType = null;
     private final ByteArrayOutputStream mContinuationBuffer = new ByteArrayOutputStream();
 
     private void handleFrame(byte opcode, ByteBuffer payload, boolean isFinal) throws ProtocolViolationException, IOException {
         // WsLog.v(TAG, "handleFrame", opcode);
         switch (opcode) {
             case OpCode.CONTINUATION: {
-                if (mContinuation == ContinuationMode.UNSET) {
+                if (mContinuationType == null) {
                     throw new ProtocolViolationException("Sudden continuation opcode");
                 }
                 int length = payload.remaining();
@@ -223,12 +218,12 @@ class Rfc6455Rx implements FrameRx {
                 if (isFinal) {
                     ByteBuffer binary = ByteBuffer.wrap(mContinuationBuffer.toByteArray());
                     mContinuationBuffer.reset();
-                    if (mContinuation == ContinuationMode.BINARY) {
+                    if (mContinuationType == FrameType.BINARY) {
                         handleBinaryFrame(binary);
                     } else {
                         handleTextFrame(binary);
                     }
-                    mContinuation = ContinuationMode.UNSET;
+                    mContinuationType = null;
                 }
                 break;
             }
@@ -238,7 +233,7 @@ class Rfc6455Rx implements FrameRx {
                 } else {
                     int length = payload.remaining();
                     mContinuationBuffer.write(BinaryUtil.toBytesRemaining(payload), 0, length);
-                    mContinuation = ContinuationMode.TEXT;
+                    mContinuationType = FrameType.TEXT;
                 }
                 break;
             }
@@ -248,7 +243,7 @@ class Rfc6455Rx implements FrameRx {
                 } else {
                     int length = payload.remaining();
                     mContinuationBuffer.write(BinaryUtil.toBytesRemaining(payload), 0, length);
-                    mContinuation = ContinuationMode.BINARY;
+                    mContinuationType = FrameType.BINARY;
                 }
                 break;
             }

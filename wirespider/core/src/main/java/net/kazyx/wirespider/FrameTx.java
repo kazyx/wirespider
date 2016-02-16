@@ -15,16 +15,30 @@ import java.util.List;
 
 public interface FrameTx {
     /**
-     * Send TEXT data frame.
+     * Send non-partial TEXT data frame.
      *
      * @param data Application data.
+     * @throws IllegalStateException If lock is held somewhere.
      */
     void sendTextAsync(String data);
 
     /**
-     * Send non-partial BINARY data frame.
+     * Send TEXT data frame.
      *
      * @param data Application data.
+     * @param continuation {@code false} if this frame is the leading frame of the partial messages.
+     * @param isFinal {@code false} if this is the initial part of partial message, otherwise {true}.
+     */
+    void sendTextAsync(String data, boolean continuation, boolean isFinal);
+
+    /**
+     * Send non-partial BINARY data frame.
+     * <p>
+     * Equivalent to {@code sendBinaryAsync(data, false, true)}
+     * </p>
+     *
+     * @param data Application data.
+     * @throws IllegalStateException If lock is held somewhere.
      */
     void sendBinaryAsync(byte[] data);
 
@@ -32,11 +46,10 @@ public interface FrameTx {
      * Send BINARY data frame.
      *
      * @param data Application data.
+     * @param continuation {@code false} if this frame is the leading frame of the partial messages.
      * @param isFinal {@code false} if this is the initial part of partial message, otherwise {true}.
      */
-    void sendBinaryAsync(byte[] data, boolean isFinal);
-
-    void sendContinuationAsync(byte[] data, boolean isFinal);
+    void sendBinaryAsync(byte[] data, boolean continuation, boolean isFinal);
 
     /**
      * Send PING frame for keep-alive or check of peer's activity.
