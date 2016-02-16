@@ -159,7 +159,6 @@ class Rfc6455Tx implements FrameTx {
     }
 
     private void sendFrameAsync(byte opcode, ByteBuffer payload, byte extensionFlags, boolean isFinal) {
-        WsLog.v(TAG, "SendFrameAsync: " + opcode + " - " + isFinal);
         synchronized (mCloseFlagLock) {
             if (mIsCloseSent) {
                 return;

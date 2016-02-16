@@ -149,6 +149,12 @@ public class ExtensionDeflateTest {
             final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(windowSize)
+                    .setStrategy(new CompressionStrategy() {
+                        @Override
+                        public int minSizeInBytes() {
+                            return 100;
+                        }
+                    })
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -262,6 +268,12 @@ public class ExtensionDeflateTest {
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(serverWindowSize)
+                    .setStrategy(new CompressionStrategy() {
+                        @Override
+                        public int minSizeInBytes() {
+                            return 100;
+                        }
+                    })
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override

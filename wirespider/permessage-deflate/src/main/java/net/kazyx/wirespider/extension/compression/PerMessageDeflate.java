@@ -87,10 +87,12 @@ public class PerMessageDeflate extends PerMessageCompression {
     private final Deflater mCompressor = new Deflater(Deflater.BEST_COMPRESSION, true);
     private static final int DEFLATE_BUFFER = 512;
 
+    private static final IOException MESSAGE_TOO_SMALL = new IOException("Avoid deflate for small message");
+
     @Override
     public ByteBuffer compress(ByteBuffer source) throws IOException {
         if (source.remaining() < mStrategy.minSizeInBytes()) {
-            return source;
+            throw MESSAGE_TOO_SMALL;
         }
 
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(source.remaining());

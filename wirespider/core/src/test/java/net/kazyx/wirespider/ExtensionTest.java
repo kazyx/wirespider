@@ -149,6 +149,12 @@ public class ExtensionTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
+                    .setStrategy(new CompressionStrategy() {
+                        @Override
+                        public int minSizeInBytes() {
+                            return 100; // If sending message size is over 100 byte, compression will be performed.
+                        }
+                    })
                     .setMaxServerWindowBits(windowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -262,6 +268,12 @@ public class ExtensionTest {
             final byte[] data = TestUtil.fixedLengthFixedByteArray(msgSize);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
+                    .setStrategy(new CompressionStrategy() {
+                        @Override
+                        public int minSizeInBytes() {
+                            return 100; // If sending message size is over 100 byte, compression will be performed.
+                        }
+                    })
                     .setMaxServerWindowBits(serverWindowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -372,12 +384,10 @@ public class ExtensionTest {
             });
         }
 
-        @Test
+        @Test(expected = IOException.class)
         public void dataSizeSmallerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE - 1);
-            final byte[] copy = Arrays.copyOf(original, original.length);
-            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
-            assertThat(Arrays.equals(copy, compressed.array()), is(true)); // If data size is smaller than min, it should not be compressed.
+            mCompression.compress(ByteBuffer.wrap(original));
         }
 
         @Test
