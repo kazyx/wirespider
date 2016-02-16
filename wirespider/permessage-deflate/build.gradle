@@ -1,4 +1,4 @@
-archivesBaseName = 'wirespider-permessage-deflate'
+archivesBaseName = 'wirespider-pmdeflate'
 
 dependencies {
     compile project(':wirespider')
@@ -14,5 +14,5 @@ dependencies {
 }
 
 bintray {
-    pkg.name = 'net.kazyx:wirespider-permessage-deflate'
+    pkg.name = 'net.kazyx:wirespider-pmdeflate'
 }

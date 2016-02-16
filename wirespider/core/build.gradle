@@ -8,7 +8,7 @@ dependencies {
     testCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.13.v20150730'
     testCompile 'commons-codec:commons-codec:1.10'
     testCompile 'org.apache.commons:commons-lang3:3.4'
-    testCompile project(':wirespider-permessage-deflate') // For test coverage...
+    testCompile project(':wirespider-pmdeflate') // For test coverage...
 }
 
 bintray {

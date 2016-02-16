@@ -1,4 +1,4 @@
-include 'wirespider', 'wirespider-permessage-deflate'
+include 'wirespider', 'wirespider-pmdeflate'
 
 project(':wirespider').projectDir = new File(settingsDir, 'core')
-project(':wirespider-permessage-deflate').projectDir = new File(settingsDir, 'permessage-deflate')
+project(':wirespider-pmdeflate').projectDir = new File(settingsDir, 'permessage-deflate')
