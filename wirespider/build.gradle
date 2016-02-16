@@ -4,7 +4,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
     }
 }
 
@@ -88,6 +88,7 @@ subprojects {
             websiteUrl = 'https://github.com/kazyx/wirespider'
             issueTrackerUrl = 'https://github.com/kazyx/wirespider/issues'
             vcsUrl = 'https://github.com/kazyx/wirespider.git'
+            githubRepo = 'kazyx/wirespider'
             version {
                 name = project.version
                 released = new Date()
