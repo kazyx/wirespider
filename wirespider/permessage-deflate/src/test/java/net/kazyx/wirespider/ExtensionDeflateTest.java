@@ -383,12 +383,10 @@ public class ExtensionDeflateTest {
             });
         }
 
-        @Test
+        @Test(expected = IOException.class)
         public void dataSizeSmallerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE - 1);
-            final byte[] copy = Arrays.copyOf(original, original.length);
-            byte[] compressed = mCompression.compress(ByteBuffer.wrap(original)).array();
-            assertThat(Arrays.equals(copy, compressed), is(true)); // If data size is smaller than min, it should not be compressed.
+            mCompression.compress(ByteBuffer.wrap(original)).array();
         }
 
         @Test
@@ -407,24 +405,21 @@ public class ExtensionDeflateTest {
             assertThat(Arrays.equals(copy, compressed), is(false));
         }
 
-        @Test
+        @Test(expected = IOException.class)
         public void requestBuilder() throws IOException {
-            CompressionStrategy storategy = new CompressionStrategy() {
+            CompressionStrategy strategy = new CompressionStrategy() {
                 @Override
                 public int minSizeInBytes() {
                     return 2;
                 }
             };
             DeflateRequest req = new DeflateRequest.Builder()
-                    .setStrategy(storategy)
+                    .setStrategy(strategy)
                     .build();
             PerMessageDeflate deflate = ((PerMessageDeflate) req.extension());
 
             byte[] one = {(byte) 0x11};
             assertThat(Arrays.equals(deflate.compress(ByteBuffer.wrap(one)).array(), one), is(true));
-
-            byte[] two = {(byte) 0x11, (byte) 0x11};
-            assertThat(Arrays.equals(deflate.compress(ByteBuffer.wrap(two)).array(), two), is(false));
         }
     }
 }
