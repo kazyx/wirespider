@@ -10,7 +10,6 @@
 package net.kazyx.wirespider.sampleapp;
 
 import android.app.FragmentTransaction;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
@@ -18,10 +17,6 @@ import android.widget.Toast;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.security.ProviderInstaller;
-
-import net.kazyx.wirespider.sampleapp.echoserver.DummyServerManager;
-import net.kazyx.wirespider.sampleapp.echoserver.JettyServerManager;
-import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.io.IOException;
 
@@ -47,12 +42,6 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
             Toast.makeText(getApplicationContext(), R.string.play_service_error, Toast.LENGTH_LONG).show();
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            mLocalServerManager = new JettyServerManager();
-        } else {
-            mLocalServerManager = new DummyServerManager();
-        }
-
         getFragmentManager().beginTransaction()
                 .replace(R.id.contentRoot, FirstFragment.newInstance())
                 .commit();
@@ -61,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
     @Override
     protected void onDestroy() {
         mManager.dispose();
-        mLocalServerManager.shutdownAsync();
         super.onDestroy();
     }
 
@@ -125,12 +113,5 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
                 }
             }
         });
-    }
-
-    private LocalServerManager mLocalServerManager;
-
-    @Override
-    public LocalServerManager getLocalServerManager() {
-        return mLocalServerManager;
     }
 }

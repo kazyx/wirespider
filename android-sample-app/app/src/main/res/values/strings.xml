@@ -1,18 +1,13 @@
 <resources>
     <string name="app_name">WireSpider Sample</string>
-
     <string name="url_box_title">Remote server URL:</string>
     <string name="url_hint">wss://echo.websocket.org</string>
-    <string name="url_hint_local">ws://localhost:%s</string>
     <string name="open_connection">Connect</string>
-    <string name="launch_server">Use local echo server</string>
-    <string name="listening">Listening on port %s</string>
     <string name="message_hint">Enter message to send here</string>
     <string name="hello">Hello!!</string>
     <string name="ready">Connection established.\nReady to send/receive messages.</string>
     <string name="client_to_server">Sent:\u0020</string>
     <string name="server_to_client">Received:\u0020</string>
     <string name="connection_closed">Connection closed</string>
-    <string name="local_server_restriction">Local echo server is supported only on Android 4.4 or newer</string>
     <string name="play_service_error">Google Play Services error</string>
 </resources>

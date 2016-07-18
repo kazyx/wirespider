@@ -20,14 +20,6 @@ android {
     dataBinding {
         enabled = true
     }
-
-    lintOptions {
-        disable 'InvalidPackage' // butter knife
-    }
-    packagingOptions {
-        exclude 'META-INF/services/javax.annotation.processing.Processor' // butter knife
-        exclude 'about.html' // jetty
-    }
 }
 
 dependencies {
@@ -43,7 +35,4 @@ dependencies {
     compile 'com.android.support:cardview-v7:24.0.0'
     compile 'com.android.support:design:24.0.0'
     compile 'com.google.android.gms:play-services-basement:+' // For newer version of TLS on Android 4.4 and lower
-
-    // For local echo server
-    compile 'org.eclipse.jetty.websocket:websocket-server:9.2.13.v20150730'
 }

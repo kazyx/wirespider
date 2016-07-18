@@ -27,14 +27,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import net.kazyx.wirespider.CloseStatusCode;
 import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.sampleapp.databinding.FirstFragmentBinding;
-import net.kazyx.wirespider.sampleapp.echoserver.JettyServerManager;
-import net.kazyx.wirespider.sampleapp.echoserver.LocalServerManager;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -81,12 +78,6 @@ public class FirstFragment extends Fragment {
         View v = inflater.inflate(R.layout.first_fragment, container, false);
         mBinding = DataBindingUtil.bind(v);
 
-        mBinding.launchServerSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                FirstFragment.this.onServerSwitchChanged(buttonView, isChecked);
-            }
-        });
         mBinding.connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -114,73 +105,13 @@ public class FirstFragment extends Fragment {
         }
         mViewWidth = container.getWidth();
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            mBinding.launchServerDescription.setText(R.string.local_server_restriction);
-            mBinding.launchServerSwitch.setVisibility(View.GONE);
-        }
         return v;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        onServerStatusChanged(mActivityProxy.getLocalServerManager().isRunning());
     }
 
     @Override
     public void onDestroyView() {
         mBinding.unbind();
         super.onDestroyView();
-    }
-
-    void onServerSwitchChanged(final CompoundButton sw, boolean isChecked) {
-        if (isChecked) {
-            if (!mActivityProxy.getLocalServerManager().isRunning()) {
-                sw.setEnabled(false);
-                mActivityProxy.getLocalServerManager().bootAsync(new LocalServerManager.ServerLifeCycle() {
-                    @Override
-                    public void onLaunched() {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                onServerStatusChanged(true);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onStopped() {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                onServerStatusChanged(false);
-                            }
-                        });
-                    }
-                });
-            } else {
-                onServerStatusChanged(true);
-            }
-        } else if (mActivityProxy.getLocalServerManager().isRunning()) {
-            mActivityProxy.getLocalServerManager().shutdownAsync();
-            onServerStatusChanged(false);
-        }
-    }
-
-    private void onServerStatusChanged(boolean enabled) {
-        if (isResumed()) {
-            if (enabled) {
-                mBinding.launchServerSwitch.setEnabled(true);
-                mBinding.launchServerSwitch.setChecked(true);
-                mBinding.portIndicator.setText(String.format(SampleApp.getTextRes(R.string.listening), JettyServerManager.PORT));
-                mBinding.portIndicator.setVisibility(View.VISIBLE);
-                mBinding.urlEditBox.setText(String.format(SampleApp.getTextRes(R.string.url_hint_local), JettyServerManager.PORT));
-            } else {
-                mBinding.launchServerSwitch.setEnabled(true);
-                mBinding.launchServerSwitch.setChecked(false);
-                mBinding.portIndicator.setVisibility(View.INVISIBLE);
-            }
-        }
     }
 
     void onConnectClicked() {
