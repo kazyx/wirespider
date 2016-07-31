@@ -35,7 +35,7 @@
             android:layout_marginRight="0dp"
             android:layout_alignParentBottom="true"
             android:layout_toLeftOf="@+id/sendButton">
-            <EditText
+            <android.support.design.widget.TextInputEditText
                 android:id="@+id/message_edit_box"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

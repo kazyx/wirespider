@@ -105,7 +105,7 @@ public class SecondFragment extends Fragment {
     }
 
     void onSendClicked() {
-        String text = mBinding.messageEditBox.getText().toString();
+        String text = mBinding.messageEditBox.getEditableText().toString();
         if (text.length() == 0) {
             text = SampleApp.getTextRes(R.string.hello);
         }
