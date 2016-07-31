@@ -46,25 +46,15 @@ public class PerMessageDeflate extends PerMessageCompression {
 
     // static final String CLIENT_MAX_WINDOW_BITS = "client_max_window_bits";
 
-    private static final CompressionStrategy ALL_COMPRESSION_STRATEGY = new CompressionStrategy() {
-        @Override
-        public int minSizeInBytes() {
-            return 0; // Try compression for any data
-        }
-    };
-
-    private final CompressionStrategy mStrategy;
+    private int mCompressionThreshold;
 
     private final DeflateFilter mFilter;
 
     /**
-     * @param strategy Strategy to be applied for this instance. If {@code null} is set, {@link #ALL_COMPRESSION_STRATEGY} is applied by default.
+     * @param threshold Minimum size of messages to enable compression in bytes.
      */
-    public PerMessageDeflate(CompressionStrategy strategy) {
-        if (strategy == null) {
-            strategy = ALL_COMPRESSION_STRATEGY;
-        }
-        mStrategy = strategy;
+    PerMessageDeflate(int threshold) {
+        mCompressionThreshold = threshold;
         mFilter = new DeflateFilter(this);
     }
 
@@ -91,7 +81,7 @@ public class PerMessageDeflate extends PerMessageCompression {
 
     @Override
     public ByteBuffer compress(ByteBuffer source) throws IOException {
-        if (source.remaining() < mStrategy.minSizeInBytes()) {
+        if (source.remaining() < mCompressionThreshold) {
             throw MESSAGE_TOO_SMALL;
         }
 

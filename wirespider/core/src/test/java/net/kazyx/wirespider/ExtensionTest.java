@@ -10,9 +10,9 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.ExtensionRequest;
-import net.kazyx.wirespider.extension.compression.CompressionStrategy;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
+import net.kazyx.wirespider.extension.compression.PerMessageDeflateCreator;
 import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class ExtensionTest {
 
         @Before
         public void setup() {
-            mCompression = new PerMessageDeflate(null);
+            mCompression = PerMessageDeflateCreator.create(0);
         }
 
         @Test
@@ -149,12 +149,7 @@ public class ExtensionTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setStrategy(new CompressionStrategy() {
-                        @Override
-                        public int minSizeInBytes() {
-                            return 100; // If sending message size is over 100 byte, compression will be performed.
-                        }
-                    })
+                    .setCompressionThreshold(100)
                     .setMaxServerWindowBits(windowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -268,12 +263,7 @@ public class ExtensionTest {
             final byte[] data = TestUtil.fixedLengthFixedByteArray(msgSize);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setStrategy(new CompressionStrategy() {
-                        @Override
-                        public int minSizeInBytes() {
-                            return 100; // If sending message size is over 100 byte, compression will be performed.
-                        }
-                    })
+                    .setCompressionThreshold(100)
                     .setMaxServerWindowBits(serverWindowSize)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
@@ -376,12 +366,7 @@ public class ExtensionTest {
 
         @Before
         public void setup() {
-            mCompression = new PerMessageDeflate(new CompressionStrategy() {
-                @Override
-                public int minSizeInBytes() {
-                    return SIZE_BASE;
-                }
-            });
+            mCompression = PerMessageDeflateCreator.create(SIZE_BASE);
         }
 
         @Test(expected = IOException.class)

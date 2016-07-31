@@ -21,12 +21,12 @@ public class DeflateRequest implements ExtensionRequest {
 
     private final int mMaxServerWindowBits;
 
-    private final CompressionStrategy mStrategy;
+    private int mCompressionThreshold;
 
     private DeflateRequest(Builder builder) {
         // mMaxClientWindowBits = builder.mMaxClientWindowBits;
         mMaxServerWindowBits = builder.mMaxServerWindowBits;
-        mStrategy = builder.mStrategy;
+        mCompressionThreshold = builder.mCompressionThreshold;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class DeflateRequest implements ExtensionRequest {
 
     @Override
     public Extension extension() {
-        return new PerMessageDeflate(mStrategy);
+        return new PerMessageDeflate(mCompressionThreshold);
     }
 
     public static class Builder {
@@ -103,14 +103,17 @@ public class DeflateRequest implements ExtensionRequest {
             return this;
         }
 
-        private CompressionStrategy mStrategy;
+        /**
+         * 0 means compress any messages.
+         */
+        private int mCompressionThreshold = 0;
 
         /**
-         * @param strategy Strategy to define which message to be compressed.
-         * @return This builder.
+         * @param sizeInBytes Minimum size of messages to enable compression in bytes.
+         * @return This builder
          */
-        public Builder setStrategy(CompressionStrategy strategy) {
-            mStrategy = strategy;
+        public Builder setCompressionThreshold(int sizeInBytes) {
+            mCompressionThreshold = sizeInBytes;
             return this;
         }
 

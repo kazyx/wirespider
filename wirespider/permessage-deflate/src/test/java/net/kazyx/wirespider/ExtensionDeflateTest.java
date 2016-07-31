@@ -10,9 +10,7 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.ExtensionRequest;
-import net.kazyx.wirespider.extension.compression.CompressionStrategy;
-import net.kazyx.wirespider.extension.compression.DeflateRequest;
-import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
+import net.kazyx.wirespider.extension.compression.*;
 import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -39,7 +37,7 @@ public class ExtensionDeflateTest {
 
         @Before
         public void setup() {
-            mCompression = new PerMessageDeflate(null);
+            mCompression = net.kazyx.wirespider.extension.compression.PerMessageDeflateCreator.create(0);
         }
 
         @Test
@@ -149,12 +147,7 @@ public class ExtensionDeflateTest {
             final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(windowSize)
-                    .setStrategy(new CompressionStrategy() {
-                        @Override
-                        public int minSizeInBytes() {
-                            return 100;
-                        }
-                    })
+                    .setCompressionThreshold(100)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -268,12 +261,7 @@ public class ExtensionDeflateTest {
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(serverWindowSize)
-                    .setStrategy(new CompressionStrategy() {
-                        @Override
-                        public int minSizeInBytes() {
-                            return 100;
-                        }
-                    })
+                    .setCompressionThreshold(100)
                     .build();
             SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
@@ -375,12 +363,7 @@ public class ExtensionDeflateTest {
 
         @Before
         public void setup() {
-            mCompression = new PerMessageDeflate(new CompressionStrategy() {
-                @Override
-                public int minSizeInBytes() {
-                    return SIZE_BASE;
-                }
-            });
+            mCompression = net.kazyx.wirespider.extension.compression.PerMessageDeflateCreator.create(SIZE_BASE);
         }
 
         @Test(expected = IOException.class)
@@ -407,14 +390,8 @@ public class ExtensionDeflateTest {
 
         @Test(expected = IOException.class)
         public void requestBuilder() throws IOException {
-            CompressionStrategy strategy = new CompressionStrategy() {
-                @Override
-                public int minSizeInBytes() {
-                    return 2;
-                }
-            };
             DeflateRequest req = new DeflateRequest.Builder()
-                    .setStrategy(strategy)
+                    .setCompressionThreshold(2)
                     .build();
             PerMessageDeflate deflate = ((PerMessageDeflate) req.extension());
 
