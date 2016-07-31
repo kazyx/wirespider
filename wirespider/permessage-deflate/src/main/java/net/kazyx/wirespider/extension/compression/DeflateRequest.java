@@ -53,35 +53,7 @@ public class DeflateRequest implements ExtensionRequest {
     }
 
     public static class Builder {
-        // private int mMaxClientWindowBits = 8;
-
         private int mMaxServerWindowBits = 8;
-
-        /**
-         * Inform server that client supports {@code "client_max_window_bits"} parameter and
-         * hint that client will use up to representable unsigned integer with given bits
-         * if negotiation response from server does not contain {@code "client_max_window_bits"} parameter.
-         * <p>
-         * <b>Note: This method always throws {@link UnsupportedOperationException}.</b>
-         * </p>
-         *
-         * @param bits From 8 to 15. Number of bits to express an unsigned integer, which represents default maximum LZ77 sliding window size of client side.
-         * @return This builder.
-         * @throws UnsupportedOperationException Always.
-         * @see <a href="https://tools.ietf.org/html/rfc7692#section-7.1.2.2">RFC 7692 Section 7.1.2.2</a>
-         * @deprecated This method should not be used since LZ77 sliding window size is not exposed in Java.
-         */
-        @Deprecated
-        public Builder setMaxClientWindowBits(int bits) {
-            throw new UnsupportedOperationException("");
-            /*
-            if (bits < 8 || 15 < bits) {
-                throw new IllegalArgumentException("Windows bits must be between 8 to 15.");
-            }
-            mMaxClientWindowBits = bits;
-            return this;
-            */
-        }
 
         /**
          * Request server to use LZ77 sliding window size up to representable unsigned integer with given bits.<br>

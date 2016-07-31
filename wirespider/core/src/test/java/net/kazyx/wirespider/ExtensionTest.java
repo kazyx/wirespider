@@ -85,12 +85,6 @@ public class ExtensionTest {
     }
 
     public static class BuilderTest {
-
-        @Test(expected = UnsupportedOperationException.class)
-        public void maxClientWindowBits() {
-            new DeflateRequest.Builder().setMaxClientWindowBits(10);
-        }
-
         @Test(expected = IllegalArgumentException.class)
         public void maxServerWindowBitsLow() {
             new DeflateRequest.Builder().setMaxServerWindowBits(7);
