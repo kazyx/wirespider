@@ -26,7 +26,7 @@ class WebSocketClientTestUtil {
     static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
@@ -44,10 +44,8 @@ class WebSocketClientTestUtil {
         }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             ws.sendBinaryMessageAsync(TestUtil.fixedLengthRandomByteArray(size - 1));
             ws.sendBinaryMessageAsync(TestUtil.fixedLengthRandomByteArray(size));
             assertThat(messageLatch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -56,9 +54,6 @@ class WebSocketClientTestUtil {
             assertThat(closeLatch.await(500, TimeUnit.MILLISECONDS), is(true));
             assertThat(closeLatch.isUnlockedByFailure(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -67,7 +62,7 @@ class WebSocketClientTestUtil {
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = TestUtil.fixedLengthRandomByteArray(size);
         final byte[] copy = Arrays.copyOf(data, data.length);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.unlockByFailure();
@@ -85,16 +80,12 @@ class WebSocketClientTestUtil {
         }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             ws.sendBinaryMessageAsync(data);
             assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
             assertThat(latch.isUnlockedByFailure(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -102,7 +93,7 @@ class WebSocketClientTestUtil {
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         final String data = TestUtil.fixedLengthFixedString(size);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.unlockByFailure();
@@ -120,16 +111,12 @@ class WebSocketClientTestUtil {
         }).setMaxResponsePayloadSizeInBytes(size).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             ws.sendTextMessageAsync(data);
             assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
             assertThat(latch.isUnlockedByFailure(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }

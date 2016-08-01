@@ -10,7 +10,8 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.extension.ExtensionRequest;
-import net.kazyx.wirespider.extension.compression.*;
+import net.kazyx.wirespider.extension.compression.DeflateRequest;
+import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
 import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -23,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -143,7 +143,7 @@ public class ExtensionDeflateTest {
                     .setMaxServerWindowBits(windowSize)
                     .setCompressionThreshold(100)
                     .build();
-            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -163,19 +163,14 @@ public class ExtensionDeflateTest {
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
                 assertThat(ws.extensions().size(), is(1));
                 assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendTextMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }
@@ -197,7 +192,7 @@ public class ExtensionDeflateTest {
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(size)
                     .build();
-            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -217,19 +212,14 @@ public class ExtensionDeflateTest {
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
                 assertThat(ws.extensions().size(), is(1));
                 assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendTextMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }
@@ -257,7 +247,7 @@ public class ExtensionDeflateTest {
                     .setMaxServerWindowBits(serverWindowSize)
                     .setCompressionThreshold(100)
                     .build();
-            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -277,19 +267,14 @@ public class ExtensionDeflateTest {
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
                 assertThat(ws.handshake().extensions().size(), is(1));
                 assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendBinaryMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }
@@ -312,7 +297,7 @@ public class ExtensionDeflateTest {
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(size)
                     .build();
-            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
                 @Override
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
@@ -332,19 +317,14 @@ public class ExtensionDeflateTest {
                     .build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
                 assertThat(ws.handshake().extensions().size(), is(1));
                 assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendBinaryMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }

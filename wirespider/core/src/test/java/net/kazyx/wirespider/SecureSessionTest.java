@@ -21,7 +21,6 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -45,7 +44,7 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
             final CustomLatch latch = new CustomLatch(1);
-            SessionRequest seed = new SessionRequest.Builder(URI.create(url), new WebSocketHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create(url), new WebSocketHandler() {
                 @Override
                 public void onTextMessage(String message) {
                     WsLog.d(TAG, "Received: " + message);
@@ -69,18 +68,13 @@ public class SecureSessionTest {
             }).build();
 
             WebSocketFactory factory = new WebSocketFactory();
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(5, TimeUnit.SECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(5, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: " + echoMessage);
                 ws.sendTextMessageAsync(echoMessage);
                 assertThat(latch.awaitSuccess(5, TimeUnit.SECONDS), is(true));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }
@@ -119,7 +113,7 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String protocol) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException, KeyManagementException {
             final CustomLatch latch = new CustomLatch(1);
-            SessionRequest seed = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), new WebSocketHandler() {
+            SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), new WebSocketHandler() {
                 @Override
                 public void onTextMessage(String message) {
                     WsLog.d(TAG, "Received: " + message);
@@ -146,18 +140,13 @@ public class SecureSessionTest {
             SSLContext context = SSLContext.getInstance(protocol);
             context.init(null, null, null);
             WebSocketFactory.setSslContext(context);
-            WebSocket ws = null;
-            try {
-                Future<WebSocket> future = factory.openAsync(seed);
-                ws = future.get(5, TimeUnit.SECONDS);
+
+            try (WebSocket ws = factory.openAsync(req).get(5, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: hello");
                 ws.sendTextMessageAsync("hello");
                 assertThat(latch.awaitSuccess(5, TimeUnit.SECONDS), is(true));
             } finally {
-                if (ws != null) {
-                    ws.closeNow();
-                }
                 factory.destroy();
             }
         }

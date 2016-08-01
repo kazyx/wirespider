@@ -12,6 +12,7 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.WsLog;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -36,7 +37,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -75,18 +75,13 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             assertThat(ws.isConnected(), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -96,15 +91,10 @@ public class WebSocketClientTest {
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
 
-        try {
-            ws = factory.open(req);
+        try (WebSocket ws = factory.open(req)) {
             assertThat(ws.isConnected(), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -112,7 +102,7 @@ public class WebSocketClientTest {
     @Test
     public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(2);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketHandler() {
             @Override
             public void onTextMessage(String message) {
                 latch.countDown();
@@ -135,11 +125,9 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
-            ws.closeNow();
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+            ws.close();
             Thread.sleep(200);
             ws.sendTextMessageAsync("test");
             ws.sendBinaryMessageAsync("test".getBytes("UTF-8"));
@@ -148,9 +136,6 @@ public class WebSocketClientTest {
             Thread.sleep(500);
             assertThat(latch.getCount(), is(1L));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -166,19 +151,14 @@ public class WebSocketClientTest {
     @Test
     public void gracefulClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sCloseFrameLatch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.closeAsync();
             assertThat(sCloseFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -186,7 +166,7 @@ public class WebSocketClientTest {
     @Test
     public void suddenShutdownOfSocketEngine() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
@@ -198,16 +178,11 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             factory.destroy();
             assertThat(latch.awaitSuccess(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -215,7 +190,7 @@ public class WebSocketClientTest {
     @Test
     public void shutdownSoonAfterCloseSent() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 latch.countDown();
@@ -223,19 +198,14 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.closeAsync(CloseStatusCode.GOING_AWAY, "Going away");
             factory.destroy();
             assertThat(latch.await(200, TimeUnit.MILLISECONDS), is(true));
             assertThat(latch.isUnlockedByCountDown(), is(true));
             assertThat(ws.isConnected(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -243,7 +213,7 @@ public class WebSocketClientTest {
     @Test
     public void closedByAbnormalClosure() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
@@ -255,11 +225,8 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             Field f = WebSocket.class.getDeclaredField("mRxListener");
             f.setAccessible(true);
             FrameRx.Listener listener = (FrameRx.Listener) f.get(ws);
@@ -269,9 +236,6 @@ public class WebSocketClientTest {
             assertThat(latch.isUnlockedByCountDown(), is(true));
             assertThat(ws.isConnected(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -279,7 +243,7 @@ public class WebSocketClientTest {
     @Test
     public void closedByInvalidPayload() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (code == CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA.asNumber()) {
@@ -291,11 +255,8 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             Field f = WebSocket.class.getDeclaredField("mRxListener");
             f.setAccessible(true);
             FrameRx.Listener listener = (FrameRx.Listener) f.get(ws);
@@ -305,9 +266,6 @@ public class WebSocketClientTest {
             assertThat(latch.isUnlockedByCountDown(), is(true));
             assertThat(ws.isConnected(), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -323,20 +281,15 @@ public class WebSocketClientTest {
     @Test
     public void requestSendAfterClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sAssertLatch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.closeAsync();
             ws.sendTextMessageAsync(JettyWebSocketServlet.ASSERT_REQUEST);
             assertThat(sAssertLatch.await(500, TimeUnit.MILLISECONDS), is(false));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -353,7 +306,7 @@ public class WebSocketClientTest {
     public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPingFrameLatch = new CustomLatch(2);
         final String msg = "ping";
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (sPingFrameLatch != null) {
@@ -370,17 +323,11 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.sendPingAsync(msg);
             assertThat(sPingFrameLatch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -389,7 +336,7 @@ public class WebSocketClientTest {
     public void nothingInvokedByDefaultOnPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPingFrameLatch = new CustomLatch(2);
         final String msg = "ping";
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (sPingFrameLatch != null) {
@@ -399,18 +346,12 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.sendPingAsync(msg);
             assertThat(sPingFrameLatch.await(500, TimeUnit.MILLISECONDS), is(false));
             assertThat(sPingFrameLatch.getCount(), is(1L));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -426,7 +367,7 @@ public class WebSocketClientTest {
     @Test
     public void receivePing() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPongFrameLatch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 if (sPongFrameLatch != null) {
@@ -436,18 +377,13 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             ws.sendTextMessageAsync(JettyWebSocketServlet.PING_REQUEST);
 
             assertThat(sPongFrameLatch.await(1000, TimeUnit.MILLISECONDS), is(true));
             assertThat(ws.isConnected(), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -455,7 +391,7 @@ public class WebSocketClientTest {
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 System.out.println("WebSocketHandler onClosed");
@@ -468,16 +404,11 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             factory.destroy();
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -499,9 +430,8 @@ public class WebSocketClientTest {
                     @Override
                     public void run() {
                         try {
-                            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
-                            Future<WebSocket> future = factory.openAsync(seed);
-                            WebSocket ws = future.get(1000, TimeUnit.MILLISECONDS);
+                            SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
+                            WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
                             set.add(ws);
                         } catch (InterruptedException | ExecutionException | TimeoutException e) {
                             throw new RuntimeException(e);
@@ -514,7 +444,7 @@ public class WebSocketClientTest {
             assertThat(latch.await(5000, TimeUnit.MILLISECONDS), is(true));
         } finally {
             for (WebSocket ws : set) {
-                ws.closeNow();
+                IOUtil.close(ws);
             }
             es.shutdownNow();
             factory.destroy();
@@ -527,7 +457,7 @@ public class WebSocketClientTest {
     public void x100000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onTextMessage(String message) {
                 // System.out.println("onTextMessage");
@@ -538,10 +468,8 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             System.out.println("Start sending messages");
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 ws.sendTextMessageAsync(MESSAGE);
@@ -549,9 +477,6 @@ public class WebSocketClientTest {
 
             assertThat(latch.await(40000, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -559,7 +484,7 @@ public class WebSocketClientTest {
     @Test
     public void handleCloseOpcode() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onClosed(int code, String reason) {
                 System.out.println("onClosed: " + code);
@@ -570,16 +495,12 @@ public class WebSocketClientTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             ws.sendTextMessageAsync(JettyWebSocketServlet.CLOSE_REQUEST);
 
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -686,7 +607,7 @@ public class WebSocketClientTest {
     @Test
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
                 .setSocketBinder(new SocketBinder() {
                     @Override
                     public void bind(Socket socket) throws IOException {
@@ -695,34 +616,25 @@ public class WebSocketClientTest {
                 }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             assertThat(latch.isUnlockedByCountDown(), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
 
     @Test
     public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(10000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(10000, TimeUnit.MILLISECONDS)) {
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(IOException.class)));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -763,21 +675,16 @@ public class WebSocketClientTest {
         th.start();
         latch.await(500, TimeUnit.MILLISECONDS);
 
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10001"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10001"), new SilentEventHandler()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), instanceOf(IOException.class));
         } finally {
             th.interrupt();
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -785,20 +692,15 @@ public class WebSocketClientTest {
     @Test
     public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Collections.singletonList(reject)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Collections.singletonList(reject)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(500, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(500, TimeUnit.MILLISECONDS)) {
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(IOException.class)));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -825,17 +727,14 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(new ArrayList<HttpHeader>()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(new ArrayList<HttpHeader>()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
         try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
+            ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
+            IOUtil.close(ws);
             factory.destroy();
         }
     }
@@ -847,22 +746,17 @@ public class WebSocketClientTest {
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             sHeaderCbLatch.await(500, TimeUnit.MILLISECONDS);
 
             assertThat(sHeaders.keySet(), hasItems("single", "multi"));
             assertThat(sHeaders.get("single"), is(contains("value")));
             assertThat(sHeaders.get("multi"), is(contains("value1,value2", "value3")));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -872,13 +766,11 @@ public class WebSocketClientTest {
         sCookieCbLatch = new CustomLatch(1);
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            Future<WebSocket> future = factory.openAsync(seed);
-            ws = future.get(1000, TimeUnit.MILLISECONDS);
+
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             sCookieCbLatch.await(500, TimeUnit.MILLISECONDS);
 
             assertThat(sCookies, is(notNullValue()));
@@ -897,9 +789,6 @@ public class WebSocketClientTest {
                 }
             }
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }

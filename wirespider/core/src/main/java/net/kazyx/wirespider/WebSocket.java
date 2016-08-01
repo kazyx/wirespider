@@ -16,6 +16,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
 import net.kazyx.wirespider.util.WsLog;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -25,7 +26,7 @@ import java.util.List;
 /**
  * Generic WebSocket connection.
  */
-public abstract class WebSocket {
+public abstract class WebSocket implements Closeable {
     private static final String TAG = WebSocket.class.getSimpleName();
 
     public static final String WSS_SCHEME = "wss";
@@ -238,9 +239,10 @@ public abstract class WebSocket {
     }
 
     /**
-     * Close TCP connection without WebSocket closing handshake.
+     * Close TCP connection without close handshake.
      */
-    public void closeNow() {
+    @Override
+    public void close() {
         closeAndRaiseEvent(CloseStatusCode.NORMAL_CLOSURE, "Normal closure");
     }
 

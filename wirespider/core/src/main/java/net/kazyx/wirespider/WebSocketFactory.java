@@ -85,7 +85,7 @@ public class WebSocketFactory {
             ws.connect();
             return ws;
         } catch (IOException e) {
-            ws.closeNow();
+            IOUtil.close(ws);
             IOUtil.close(ch);
             throw e;
         }

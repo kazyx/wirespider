@@ -10,6 +10,7 @@
 package net.kazyx.wirespider;
 
 import net.kazyx.wirespider.util.Base64;
+import net.kazyx.wirespider.util.IOUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -106,17 +107,15 @@ public class WebSocketUnusualCasesTest {
 
         @Before
         public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
-            SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
 
             mWs = null;
             try {
-                Future<WebSocket> future = factory.openAsync(seed);
+                Future<WebSocket> future = factory.openAsync(req);
                 mWs = future.get(500, TimeUnit.MILLISECONDS);
                 assertThat(mWs.isConnected(), is(true));
             } finally {
-                if (mWs != null) {
-                    mWs.closeNow();
-                }
+                IOUtil.close(mWs);
             }
 
             Field field = WebSocket.class.getDeclaredField("mRxListener");

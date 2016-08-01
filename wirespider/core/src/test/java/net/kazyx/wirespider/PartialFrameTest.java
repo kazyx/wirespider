@@ -51,7 +51,7 @@ public class PartialFrameTest {
 
     @Before
     public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onBinaryMessage(byte[] message) {
                 mLatch.countDown();
@@ -61,14 +61,12 @@ public class PartialFrameTest {
         mLatch = new CustomLatch(1);
         mWriter = null;
         mFactory = new WebSocketFactory();
-        mWs = mFactory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
+        mWs = mFactory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
     }
 
     @After
     public void tearDown() {
-        if (mWs != null) {
-            mWs.closeNow();
-        }
+        IOUtil.close(mWs);
         IOUtil.close(mWriter);
         mFactory.destroy();
     }
@@ -79,7 +77,7 @@ public class PartialFrameTest {
         final String first = "hello1";
         final String second = "hello2";
 
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onTextMessage(String message) {
                 System.out.println("onBinaryMessage: " + message);
@@ -92,19 +90,14 @@ public class PartialFrameTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            PartialMessageWriter writer = ws.newPartialMessageWriter();
-            writer.sendPartialFrameAsync(first, false);
-            writer.sendPartialFrameAsync(second, true);
-
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+            try (PartialMessageWriter writer = ws.newPartialMessageWriter()) {
+                writer.sendPartialFrameAsync(first, false);
+                writer.sendPartialFrameAsync(second, true);
+            }
             assertThat(latch.await(1000, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -114,7 +107,7 @@ public class PartialFrameTest {
         final CustomLatch latch = new CustomLatch(1);
         final String first = "hello";
 
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onTextMessage(String message) {
                 if (first.equals(message)) {
@@ -126,20 +119,13 @@ public class PartialFrameTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        PartialMessageWriter writer = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            writer = ws.newPartialMessageWriter();
-            writer.sendPartialFrameAsync(first, true);
-
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+            try (PartialMessageWriter writer = ws.newPartialMessageWriter()) {
+                writer.sendPartialFrameAsync(first, true);
+            }
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            IOUtil.close(writer);
             factory.destroy();
         }
     }
@@ -153,7 +139,7 @@ public class PartialFrameTest {
         System.arraycopy(first, 0, whole, 0, first.length);
         System.arraycopy(second, 0, whole, first.length, second.length);
 
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onBinaryMessage(byte[] message) {
                 System.out.println("onBinaryMessage: " + BinaryUtil.toHex(message));
@@ -166,19 +152,14 @@ public class PartialFrameTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            PartialMessageWriter writer = ws.newPartialMessageWriter();
-            writer.sendPartialFrameAsync(first, false);
-            writer.sendPartialFrameAsync(second, true);
-
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+            try (PartialMessageWriter writer = ws.newPartialMessageWriter()) {
+                writer.sendPartialFrameAsync(first, false);
+                writer.sendPartialFrameAsync(second, true);
+            }
             assertThat(latch.await(1000, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
             factory.destroy();
         }
     }
@@ -189,7 +170,7 @@ public class PartialFrameTest {
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         final byte[] whole = Arrays.copyOf(first, first.length);
 
-        SessionRequest seed = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
             @Override
             public void onBinaryMessage(byte[] message) {
                 if (Arrays.equals(whole, message)) {
@@ -201,20 +182,13 @@ public class PartialFrameTest {
         }).build();
 
         WebSocketFactory factory = new WebSocketFactory();
-        WebSocket ws = null;
-        PartialMessageWriter writer = null;
-        try {
-            ws = factory.openAsync(seed).get(1000, TimeUnit.MILLISECONDS);
 
-            writer = ws.newPartialMessageWriter();
-            writer.sendPartialFrameAsync(first, true);
-
+        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+            try (PartialMessageWriter writer = ws.newPartialMessageWriter()) {
+                writer.sendPartialFrameAsync(first, true);
+            }
             assertThat(latch.await(500, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            if (ws != null) {
-                ws.closeNow();
-            }
-            IOUtil.close(writer);
             factory.destroy();
         }
     }
