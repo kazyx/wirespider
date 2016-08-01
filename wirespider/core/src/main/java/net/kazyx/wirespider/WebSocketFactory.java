@@ -48,7 +48,19 @@ public class WebSocketFactory {
     private WebSocketSpec mSpec = new Rfc6455();
 
     /**
-     * Open WebSocket connection to the specified remote server.
+     * Open client WebSocket connection to the remote server.
+     *
+     * @param req Request to be used for opening handshake.
+     * @return Future of WebSocket instance.
+     * @throws IOException Failed to open connection.
+     */
+    public WebSocket open(SessionRequest req) throws IOException {
+        ArgumentCheck.rejectNullArgs(req);
+        return openSync(req);
+    }
+
+    /**
+     * Open WebSocket connection to the remote server asynchronously.
      *
      * @param req Request to be used for opening handshake.
      * @return Future of WebSocket instance.
@@ -60,20 +72,23 @@ public class WebSocketFactory {
         return mExecutor.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
-                SocketChannel ch = mProvider.openSocketChannel();
-                ch.configureBlocking(false);
-
-                ClientWebSocket ws = mSpec.newClientWebSocket(req, mSelectorLoop, ch);
-                try {
-                    ws.connect();
-                    return ws;
-                } catch (IOException e) {
-                    ws.closeNow();
-                    IOUtil.close(ch);
-                    throw e;
-                }
+                return openSync(req);
             }
         });
+    }
+
+    private WebSocket openSync(SessionRequest req) throws IOException {
+        SocketChannel ch = mProvider.openSocketChannel();
+        ch.configureBlocking(false);
+        ClientWebSocket ws = mSpec.newClientWebSocket(req, mSelectorLoop, ch);
+        try {
+            ws.connect();
+            return ws;
+        } catch (IOException e) {
+            ws.closeNow();
+            IOUtil.close(ch);
+            throw e;
+        }
     }
 
     /**

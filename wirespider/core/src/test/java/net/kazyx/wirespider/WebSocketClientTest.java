@@ -92,6 +92,24 @@ public class WebSocketClientTest {
     }
 
     @Test
+    public void connectJetty9Sync() throws IOException {
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+
+        WebSocketFactory factory = new WebSocketFactory();
+        WebSocket ws = null;
+
+        try {
+            ws = factory.open(req);
+            assertThat(ws.isConnected(), is(true));
+        } finally {
+            if (ws != null) {
+                ws.closeNow();
+            }
+            factory.destroy();
+        }
+    }
+
+    @Test
     public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(2);
         SessionRequest seed = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketHandler() {

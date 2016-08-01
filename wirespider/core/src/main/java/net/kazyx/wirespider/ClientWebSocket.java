@@ -13,6 +13,7 @@ import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.util.WsLog;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
@@ -56,12 +57,15 @@ public abstract class ClientWebSocket extends WebSocket {
     }
 
     /**
-     * Synchronously open WebSocket connection.
+     * Synchronously open client WebSocket connection.
      *
      * @throws IOException Failed to open connection.
-     * @throws InterruptedException Awaiting thread interrupted.
      */
-    void connect() throws IOException, InterruptedException {
+    void connect() throws IOException {
+        if (mConnectLatch.getCount() == 0) {
+            throw new IOException("ClientWebSocket is not reusable");
+        }
+
         final Socket socket = socketChannel().socket();
         if (mSocketBinder != null) {
             mSocketBinder.bind(socket);
@@ -72,7 +76,11 @@ public abstract class ClientWebSocket extends WebSocket {
         socketChannel().connect(new InetSocketAddress(uri.getHost(), getPort(uri)));
         selectorLoop().register(this, SelectionKey.OP_CONNECT);
 
-        mConnectLatch.await();
+        try {
+            mConnectLatch.await();
+        } catch (InterruptedException e) {
+            throw new InterruptedIOException(e.getMessage());
+        }
 
         if (!isConnected()) {
             throw new IOException("Socket connection or handshake failure");
