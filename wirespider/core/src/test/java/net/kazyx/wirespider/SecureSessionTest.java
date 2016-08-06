@@ -39,7 +39,7 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
             final CustomLatch latch = new CustomLatch(1);
-            SessionRequest req = new SessionRequest.Builder(URI.create(url), new WebSocketHandler() {
+            WebSocketHandler handler = new WebSocketHandler() {
                 @Override
                 public void onTextMessage(String message) {
                     WsLog.d(TAG, "Received: " + message);
@@ -60,11 +60,14 @@ public class SecureSessionTest {
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
                 }
-            }).build();
+            };
+            SessionRequest req = new SessionRequest.Builder(URI.create(url), handler)
+                    .setConnectionTimeout(5, TimeUnit.SECONDS)
+                    .build();
 
             WebSocketFactory factory = new WebSocketFactory();
 
-            try (WebSocket ws = factory.openAsync(req).get(20, TimeUnit.SECONDS)) {
+            try (WebSocket ws = factory.openAsync(req, true).get(20, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: " + echoMessage);
                 ws.sendTextMessageAsync(echoMessage);
@@ -113,7 +116,7 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String protocol) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException, KeyManagementException {
             final CustomLatch latch = new CustomLatch(1);
-            SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), new WebSocketHandler() {
+            WebSocketHandler handler = new WebSocketHandler() {
                 @Override
                 public void onTextMessage(String message) {
                     WsLog.d(TAG, "Received: " + message);
@@ -134,14 +137,17 @@ public class SecureSessionTest {
                 public void onClosed(int code, String reason) {
                     latch.unlockByFailure();
                 }
-            }).build();
+            };
+            SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), handler)
+                    .setConnectionTimeout(5, TimeUnit.SECONDS)
+                    .build();
 
             WebSocketFactory factory = new WebSocketFactory();
             SSLContext context = SSLContext.getInstance(protocol);
             context.init(null, null, null);
             WebSocketFactory.setSslContext(context);
 
-            try (WebSocket ws = factory.openAsync(req).get(20, TimeUnit.SECONDS)) {
+            try (WebSocket ws = factory.openAsync(req, true).get(20, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: hello");
                 ws.sendTextMessageAsync("hello");

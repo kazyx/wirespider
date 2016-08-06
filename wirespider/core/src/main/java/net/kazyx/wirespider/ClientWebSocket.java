@@ -19,7 +19,9 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Client flavor of WebSocket.
@@ -47,7 +49,7 @@ public abstract class ClientWebSocket extends WebSocket {
 
     @Override
     void onHandshakeFailed(IOException e) {
-        WsLog.d(TAG, "WebSocket handshake failure");
+        WsLog.e(TAG, "WebSocket handshake failure");
         mHandshakeFailure = e;
         mConnectLatch.countDown();
     }
@@ -61,9 +63,11 @@ public abstract class ClientWebSocket extends WebSocket {
     /**
      * Synchronously open client WebSocket connection.
      *
+     * @param timeout Timeout to complete opening handshake
+     * @param unit Timeout unit
      * @throws IOException Failed to open connection.
      */
-    void connect() throws IOException {
+    void connect(int timeout, TimeUnit unit) throws IOException {
         if (mConnectLatch.getCount() == 0) {
             throw new IOException("ClientWebSocket is not reusable");
         }
@@ -75,12 +79,22 @@ public abstract class ClientWebSocket extends WebSocket {
         socket.setTcpNoDelay(true);
 
         URI uri = remoteUri();
+
+        WsLog.d(TAG, "Start connection");
         socketChannel().connect(new InetSocketAddress(uri.getHost(), getPort(uri)));
         selectorLoop().register(this, SelectionKey.OP_CONNECT);
 
         try {
-            mConnectLatch.await();
+            if (timeout == 0) {
+                mConnectLatch.await();
+            } else {
+                if (!mConnectLatch.await(timeout, unit)) {
+                    WsLog.e(TAG, "Connection timeout");
+                    throw new IOException(String.format(Locale.US, "Connection timeout: %d msec", unit.toMillis(timeout)));
+                }
+            }
         } catch (InterruptedException e) {
+            WsLog.e(TAG, "Connection interrupted");
             throw new InterruptedIOException(e.getMessage());
         }
 

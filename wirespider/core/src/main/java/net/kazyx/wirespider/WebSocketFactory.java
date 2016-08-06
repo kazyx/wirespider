@@ -78,7 +78,7 @@ public class WebSocketFactory {
      * Open WebSocket connection to the remote server asynchronously.
      *
      * @param req Request to be used for opening handshake.
-     * @param enableRetrial Enable retrial of opening handshake for recovery against socket error.
+     * @param enableRetrial Enable retrial of opening handshake for recovery against a socket error.
      * @return Future of WebSocket instance.
      * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
@@ -106,7 +106,7 @@ public class WebSocketFactory {
         ch.configureBlocking(false);
         ClientWebSocket ws = mSpec.newClientWebSocket(req, mSelectorLoop, ch);
         try {
-            ws.connect();
+            ws.connect(req.connectionTimeout(), req.connectionTimeoutUnit());
             return ws;
         } catch (IOException e) {
             IOUtil.close(ws);

@@ -18,6 +18,7 @@ import net.kazyx.wirespider.util.ArgumentCheck;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public final class SessionRequest {
 
@@ -34,6 +35,8 @@ public final class SessionRequest {
         }
         mProtocols = builder.protocols;
         mHsHandler = builder.hsHandler;
+        mConnectionTimeout = builder.connTimeout;
+        mConnTimeoutUnit = builder.connTimeoutUnit;
     }
 
     private URI mUri;
@@ -82,6 +85,18 @@ public final class SessionRequest {
 
     public HandshakeResponseHandler handshakeHandler() {
         return mHsHandler;
+    }
+
+    private int mConnectionTimeout;
+
+    public int connectionTimeout() {
+        return mConnectionTimeout;
+    }
+
+    private TimeUnit mConnTimeoutUnit;
+
+    public TimeUnit connectionTimeoutUnit() {
+        return mConnTimeoutUnit;
     }
 
     public static class Builder {
@@ -168,6 +183,28 @@ public final class SessionRequest {
          */
         public Builder setHandshakeHandler(HandshakeResponseHandler handler) {
             this.hsHandler = handler;
+            return this;
+        }
+
+        private int connTimeout = 0;
+        private TimeUnit connTimeoutUnit = TimeUnit.MILLISECONDS;
+
+        /**
+         * Set timeout to complete opening handshake. It is set infinite by default.
+         *
+         * @param timeout Timeout value.
+         * @param unit Timeout unit.
+         * @return This builder
+         * @throws IllegalArgumentException If {@code timeout} is zero or negative value, or {@code unit} is {@code null}.
+         */
+        public Builder setConnectionTimeout(int timeout, TimeUnit unit) {
+            if (timeout <= 0) {
+                throw new IllegalArgumentException("Timeout value must be positive");
+            }
+            ArgumentCheck.rejectNull(unit);
+
+            this.connTimeout = timeout;
+            this.connTimeoutUnit = unit;
             return this;
         }
 
