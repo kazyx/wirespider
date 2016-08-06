@@ -17,7 +17,6 @@ import net.kazyx.wirespider.WebSocket;
 import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.WebSocketHandler;
 import net.kazyx.wirespider.extension.ExtensionRequest;
-import net.kazyx.wirespider.extension.compression.CompressionStrategy;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 
 import java.io.IOException;
@@ -25,9 +24,7 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class ClientManager {
     private static final String TAG = ClientManager.class.getSimpleName();
@@ -48,15 +45,13 @@ public class ClientManager {
     }
 
     public void open(URI uri, final ConnectionListener listener) {
+        ExtensionRequest pmdeflate = new DeflateRequest.Builder()
+                .setCompressionThreshold(100)
+                .build();
         List<ExtensionRequest> extensionRequests = new ArrayList<>();
-        extensionRequests.add(new DeflateRequest.Builder().setStrategy(new CompressionStrategy() {
-            @Override
-            public int minSizeInBytes() {
-                return 100; // If sending message size is over 100 byte, compression will be performed.
-            }
-        }).build());
+        extensionRequests.add(pmdeflate);
 
-        final SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
+        WebSocketHandler handler = new WebSocketHandler() {
             @Override
             public void onTextMessage(String message) {
                 if (mHandlerRef != null) {
@@ -86,15 +81,20 @@ public class ClientManager {
                     }
                 }
             }
-        }).setExtensions(extensionRequests).build();
+        };
+
+        final SessionRequest req = new SessionRequest.Builder(uri, handler)
+                .setExtensions(extensionRequests)
+                .setConnectionTimeout(10, TimeUnit.SECONDS)
+                .build();
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    mWebSocket = mFactory.openAsync(req).get(5, TimeUnit.SECONDS);
+                    mWebSocket = mFactory.open(req);
                     listener.onConnected();
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                } catch (IOException e) {
                     Log.w(TAG, e);
                     listener.onConnectionFailed(e);
                 }
