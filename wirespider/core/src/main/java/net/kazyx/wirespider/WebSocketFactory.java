@@ -55,7 +55,9 @@ public class WebSocketFactory {
      * Open client WebSocket connection to the remote server.
      *
      * @param req Request to be used for opening handshake.
-     * @return Future of WebSocket instance.
+     * @return Connected client WebSocket.
+     * @throws HandshakeFailureException Remote server violated WebSocket opening handshake protocol.
+     * @throws java.io.InterruptedIOException The thread which invoked this method is interrupted.
      * @throws IOException Failed to open connection.
      */
     public WebSocket open(SessionRequest req) throws IOException {
