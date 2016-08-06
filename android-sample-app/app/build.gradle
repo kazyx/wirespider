@@ -36,5 +36,5 @@ dependencies {
     compile 'com.android.support:design:24.1.1'
 
     // For newer version of TLS on Android 4.4 and lower
-    compile 'com.google.android.gms:play-services-basement:9.2.1'
+    compile 'com.google.android.gms:play-services-basement:9.4.0'
 }
