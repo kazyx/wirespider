@@ -23,7 +23,7 @@ buildscript {
 }
 
 dependencies {
-    compile 'net.kazyx:wirespider:1.3.0'
+    compile 'net.kazyx:wirespider:1.3.1'
 }
 ```
 
@@ -37,15 +37,18 @@ Now you can find `wirespider-x.y.z.jar` at `<root>/wirespider/core/build/libs`
 ## Usage
 
 ### Set-up
+
+Set external Base64 conversion function at first.
+The following snippets are the samples for Java 8 and Android.
+
+**Java 8**
 ```java
-Base64.setEncoder(new Base64.Encoder() {
-    @Override
-    public String encode(byte[] source) {
-        // Please use commons-codec or Android Base64 etc.
-        // return org.apache.commons.codec.binary.Base64.encodeBase64String(source);
-        return android.util.Base64.encodeToString(source, android.util.Base64.DEFAULT);
-    }
-});
+Base64.setEncoder(source -> java.util.Base64.getEncoder().encodeToString(source));
+```
+
+**Android**
+```java
+Base64.setEncoder(source -> android.util.Base64.encodeToString(source, android.util.Base64.DEFAULT));
 ```
 
 ### Open WebSocket connection
@@ -54,7 +57,7 @@ WebSocketFactory factory = new WebSocketFactory();
 // It is recommended to use this WebSocketFactory while your process is alive.
 
 URI uri = URI.create("ws://host:port/path"); // ws scheme
-SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
+WebSocketHandler handler = new WebSocketHandler() {
     @Override
     public void onTextMessage(String message) {
         // Received text message.
@@ -69,9 +72,24 @@ SessionRequest req = new SessionRequest.Builder(uri, new WebSocketHandler() {
     public void onClosed(int code, String reason) {
         // Connection is closed.
     }
-}).build();
+};
+```
 
-WebSocket websocket = factory.openAsync(req).get(5, TimeUnit.SECONDS);
+**Blocking style**
+```
+SessionRequest req = new SessionRequest.Builder(uri, handler)
+        .setConnectionTimeout(5, TimeUnit.SECONDS)
+        .build();
+
+WebSocket websocket = factory.open(req);
+```
+
+**Async style**
+```
+SessionRequest req = new SessionRequest.Builder(uri, handler)
+        .build();
+
+WebSocket websocket = factory.openAsync(req);
 ```
 
 ### Send messages
@@ -105,6 +123,10 @@ factory.destroy();
 ### WebSocket over TLS
 
 Use `URI` created with `wss` scheme instead of `ws`.
+
+```java
+URI uri = URI.create("wss://host:port/path");
+```
 
 #### TLSv1.1 and TLSv1.2 on JDK7
 
@@ -146,20 +168,18 @@ or write Gradle dependency as follows.
 
 ```groovy
 dependencies {
-    compile 'net.kazyx:wirespider-pmdeflate:1.3.0'
+    compile 'net.kazyx:wirespider-pmdeflate:1.3.1'
 }
 ```
 
-Set `DeflateRequest` in the `SessionRequest`.
+Set `DeflateRequest` into the `SessionRequest`.
 
 ```java
+ExtensionRequest deflate = new DeflateRequest.Builder()
+        .setCompressionThreshold(100)
+        .build();
 List<ExtensionRequest> extensions = new ArrayList<>();
-extensions.add(new DeflateRequest.Builder().setStrategy(new CompressionStrategy() {
-    @Override
-    public int minSizeInBytes() {
-        return 200; // Threshold message size to perform compression.
-    }
-}).build());
+extensions.add(deflate);
 
 SessionRequest req = new SessionRequest.Builder(uri, handler)
         .setExtensions(extensions)
