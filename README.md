@@ -89,7 +89,7 @@ WebSocket websocket = factory.open(req);
 SessionRequest req = new SessionRequest.Builder(uri, handler)
         .build();
 
-WebSocket websocket = factory.openAsync(req);
+Future<WebSocket> futureWebSocket = factory.openAsync(req);
 ```
 
 ### Send messages
