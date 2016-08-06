@@ -11,6 +11,7 @@ package net.kazyx.wirespider.sampleapp;
 
 import android.app.FragmentTransaction;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
@@ -28,7 +29,10 @@ public class MainActivity extends AppCompatActivity implements ActivityProxy {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportActionBar().setTitle(R.string.app_name);
+        ActionBar bar = getSupportActionBar();
+        if (bar != null) {
+            bar.setTitle(R.string.app_name);
+        }
 
         try {
             mManager = new ClientManager();

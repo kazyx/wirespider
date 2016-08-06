@@ -47,6 +47,7 @@ public class FirstFragment extends Fragment {
 
     private ActivityProxy mActivityProxy;
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);

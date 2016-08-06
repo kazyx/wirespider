@@ -42,11 +42,7 @@ public class SecondFragment extends Fragment {
 
     private final MessageAdapter mAdapter = new MessageAdapter();
 
-    @Override
-    public void onCreate(Bundle b) {
-        super.onCreate(b);
-    }
-
+    @SuppressWarnings("deprecation")
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);

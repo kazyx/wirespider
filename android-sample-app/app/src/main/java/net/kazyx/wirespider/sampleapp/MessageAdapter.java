@@ -42,7 +42,7 @@ public class MessageAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
-            convertView = mInflater.inflate(R.layout.console_row, null);
+            convertView = mInflater.inflate(R.layout.console_row, parent, false);
         }
 
         TextView view = (TextView) convertView;
