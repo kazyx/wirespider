@@ -9,7 +9,9 @@
 
 package net.kazyx.wirespider.exception;
 
-public class HandshakeFailureException extends Exception {
+import java.io.IOException;
+
+public class HandshakeFailureException extends IOException {
     public HandshakeFailureException(String message) {
         super(message);
     }

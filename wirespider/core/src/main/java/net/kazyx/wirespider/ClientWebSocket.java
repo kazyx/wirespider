@@ -31,6 +31,7 @@ public abstract class ClientWebSocket extends WebSocket {
     private final SocketBinder mSocketBinder;
 
     private final CountDownLatch mConnectLatch = new CountDownLatch(1);
+    private IOException mHandshakeFailure;
 
     protected ClientWebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
         super(req, loop, ch);
@@ -45,8 +46,9 @@ public abstract class ClientWebSocket extends WebSocket {
     }
 
     @Override
-    void onHandshakeFailed() {
+    void onHandshakeFailed(IOException e) {
         WsLog.d(TAG, "WebSocket handshake failure");
+        mHandshakeFailure = e;
         mConnectLatch.countDown();
     }
 
@@ -82,8 +84,8 @@ public abstract class ClientWebSocket extends WebSocket {
             throw new InterruptedIOException(e.getMessage());
         }
 
-        if (!isConnected()) {
-            throw new IOException("Socket connection or handshake failure");
+        if (mHandshakeFailure != null) {
+            throw mHandshakeFailure;
         }
     }
 

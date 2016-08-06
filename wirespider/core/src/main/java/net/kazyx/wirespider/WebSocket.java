@@ -113,7 +113,7 @@ public abstract class WebSocket implements Closeable {
 
     abstract void onSocketConnected();
 
-    abstract void onHandshakeFailed();
+    abstract void onHandshakeFailed(IOException e);
 
     abstract void onHandshakeCompleted();
 
@@ -283,7 +283,7 @@ public abstract class WebSocket implements Closeable {
                 closeAndRaiseEvent(CloseStatusCode.ABNORMAL_CLOSURE, "Socket error detected");
             } else {
                 WsLog.d(TAG, "Socket error detected while opening handshake");
-                onHandshakeFailed();
+                onHandshakeFailed(new IOException("Socket connection error while opening handshake"));
             }
         }
 
@@ -309,7 +309,7 @@ public abstract class WebSocket implements Closeable {
                     // wait for the next data.
                 } catch (HandshakeFailureException e) {
                     WsLog.d(TAG, "HandshakeFailureException: " + e.getMessage());
-                    onHandshakeFailed();
+                    onHandshakeFailed(e);
                 }
             } else {
                 mFrameRx.onDataReceived(data);

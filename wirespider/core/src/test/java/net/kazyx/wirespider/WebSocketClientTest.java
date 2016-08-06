@@ -469,7 +469,7 @@ public class WebSocketClientTest {
 
         WebSocketFactory factory = new WebSocketFactory();
 
-        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+        try (WebSocket ws = factory.openAsync(req).get(10000, TimeUnit.MILLISECONDS)) {
             System.out.println("Start sending messages");
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 ws.sendTextMessageAsync(MESSAGE);
@@ -630,7 +630,7 @@ public class WebSocketClientTest {
 
         WebSocketFactory factory = new WebSocketFactory();
 
-        try (WebSocket ws = factory.openAsync(req).get(10000, TimeUnit.MILLISECONDS)) {
+        try (WebSocket ws = factory.openAsync(req, false).get(10000, TimeUnit.MILLISECONDS)) {
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(instanceOf(IOException.class)));
@@ -679,7 +679,7 @@ public class WebSocketClientTest {
 
         WebSocketFactory factory = new WebSocketFactory();
 
-        try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
+        try (WebSocket ws = factory.openAsync(req, false).get(1000, TimeUnit.MILLISECONDS)) {
             fail();
         } catch (ExecutionException e) {
             assertThat(e.getCause(), instanceOf(IOException.class));

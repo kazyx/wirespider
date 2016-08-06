@@ -9,10 +9,12 @@
 
 package net.kazyx.wirespider;
 
+import net.kazyx.wirespider.exception.HandshakeFailureException;
 import net.kazyx.wirespider.rfc6455.Rfc6455;
 import net.kazyx.wirespider.secure.SecureSessionFactory;
 import net.kazyx.wirespider.util.ArgumentCheck;
 import net.kazyx.wirespider.util.IOUtil;
+import net.kazyx.wirespider.util.WsLog;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -27,6 +29,8 @@ import java.util.concurrent.Future;
  * Factory of the WebSocket client connections.
  */
 public class WebSocketFactory {
+    private static final String TAG = WebSocketFactory.class.getSimpleName();
+
     private final SelectorProvider mProvider;
     private final SelectorLoop mSelectorLoop;
     private final ExecutorService mExecutor = Executors.newCachedThreadPool();
@@ -66,12 +70,32 @@ public class WebSocketFactory {
      * @return Future of WebSocket instance.
      * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
      */
-    public synchronized Future<WebSocket> openAsync(final SessionRequest req) {
+    public Future<WebSocket> openAsync(final SessionRequest req) {
+        return openAsync(req, false);
+    }
+
+    /**
+     * Open WebSocket connection to the remote server asynchronously.
+     *
+     * @param req Request to be used for opening handshake.
+     * @param enableRetrial Enable retrial of opening handshake for recovery against socket error.
+     * @return Future of WebSocket instance.
+     * @throws java.util.concurrent.RejectedExecutionException if this factory is already destroyed.
+     */
+    public synchronized Future<WebSocket> openAsync(final SessionRequest req, final boolean enableRetrial) {
         ArgumentCheck.rejectNullArgs(req);
 
         return mExecutor.submit(new Callable<WebSocket>() {
             @Override
             public WebSocket call() throws Exception {
+                try {
+                    return openSync(req);
+                } catch (IOException e) {
+                    if (!enableRetrial || e instanceof HandshakeFailureException) {
+                        throw e;
+                    }
+                    WsLog.d(TAG, "Retry connection");
+                }
                 return openSync(req);
             }
         });

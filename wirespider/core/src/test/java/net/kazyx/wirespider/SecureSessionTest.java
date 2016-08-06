@@ -37,11 +37,6 @@ public class SecureSessionTest {
             WsLog.logLevel(WsLog.Level.DEBUG);
         }
 
-        @After
-        public void tearDown() throws NoSuchAlgorithmException {
-            WebSocketFactory.setSslContext(null);
-        }
-
         private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
             final CustomLatch latch = new CustomLatch(1);
             SessionRequest req = new SessionRequest.Builder(URI.create(url), new WebSocketHandler() {
@@ -69,7 +64,7 @@ public class SecureSessionTest {
 
             WebSocketFactory factory = new WebSocketFactory();
 
-            try (WebSocket ws = factory.openAsync(req).get(5, TimeUnit.SECONDS)) {
+            try (WebSocket ws = factory.openAsync(req).get(20, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: " + echoMessage);
                 ws.sendTextMessageAsync(echoMessage);
@@ -111,6 +106,11 @@ public class SecureSessionTest {
             WsLog.logLevel(WsLog.Level.DEBUG);
         }
 
+        @After
+        public void tearDown() throws NoSuchAlgorithmException {
+            WebSocketFactory.setSslContext(null);
+        }
+
         private void echoExternalServer(String protocol) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException, KeyManagementException {
             final CustomLatch latch = new CustomLatch(1);
             SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), new WebSocketHandler() {
@@ -141,7 +141,7 @@ public class SecureSessionTest {
             context.init(null, null, null);
             WebSocketFactory.setSslContext(context);
 
-            try (WebSocket ws = factory.openAsync(req).get(5, TimeUnit.SECONDS)) {
+            try (WebSocket ws = factory.openAsync(req).get(20, TimeUnit.SECONDS)) {
                 assertThat(ws.isConnected(), is(true));
                 WsLog.d(TAG, "Send: hello");
                 ws.sendTextMessageAsync("hello");
