@@ -39,29 +39,18 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String url, final String echoMessage) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException {
             final CustomLatch latch = new CustomLatch(1);
-            WebSocketHandler handler = new WebSocketHandler() {
-                @Override
-                public void onTextMessage(String message) {
-                    WsLog.d(TAG, "Received: " + message);
-                    if (message.equals(echoMessage)) {
-                        latch.countDown();
-                    } else {
-                        WsLog.d(TAG, "Message not matched: length " + echoMessage.length() + " -> " + message.length());
-                        latch.unlockByFailure();
-                    }
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-            };
-            SessionRequest req = new SessionRequest.Builder(URI.create(url), handler)
+            SessionRequest req = new SessionRequest.Builder(URI.create(url))
+                    .setTextHandler(message -> {
+                        WsLog.d(TAG, "Received: " + message);
+                        if (message.equals(echoMessage)) {
+                            latch.countDown();
+                        } else {
+                            WsLog.d(TAG, "Message not matched: length " + echoMessage.length() + " -> " + message.length());
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setBinaryHandler(message -> latch.unlockByFailure())
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
                     .setConnectionTimeout(5, TimeUnit.SECONDS)
                     .build();
 
@@ -116,29 +105,18 @@ public class SecureSessionTest {
 
         private void echoExternalServer(String protocol) throws ExecutionException, InterruptedException, TimeoutException, IOException, NoSuchAlgorithmException, KeyManagementException {
             final CustomLatch latch = new CustomLatch(1);
-            WebSocketHandler handler = new WebSocketHandler() {
-                @Override
-                public void onTextMessage(String message) {
-                    WsLog.d(TAG, "Received: " + message);
-                    if (message.equals("hello")) {
-                        latch.countDown();
-                    } else {
-                        WsLog.d(TAG, "Message not matched: " + message);
-                        latch.unlockByFailure();
-                    }
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-            };
-            SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"), handler)
+            SessionRequest req = new SessionRequest.Builder(URI.create("wss://echo.websocket.org"))
+                    .setTextHandler(message -> {
+                        WsLog.d(TAG, "Received: " + message);
+                        if (message.equals("hello")) {
+                            latch.countDown();
+                        } else {
+                            WsLog.d(TAG, "Message not matched: " + message);
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setBinaryHandler(message -> latch.unlockByFailure())
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
                     .setConnectionTimeout(5, TimeUnit.SECONDS)
                     .build();
 

@@ -51,12 +51,9 @@ public class PartialFrameTest {
 
     @Before
     public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                mLatch.countDown();
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setBinaryHandler(message -> mLatch.countDown())
+                .build();
 
         mLatch = new CustomLatch(1);
         mWriter = null;
@@ -77,17 +74,16 @@ public class PartialFrameTest {
         final String first = "hello1";
         final String second = "hello2";
 
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onTextMessage(String message) {
-                System.out.println("onBinaryMessage: " + message);
-                if ((first + second).equals(message)) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setTextHandler(message -> {
+                    System.out.println("onBinaryMessage: " + message);
+                    if ((first + second).equals(message)) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                })
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -107,16 +103,15 @@ public class PartialFrameTest {
         final CustomLatch latch = new CustomLatch(1);
         final String first = "hello";
 
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onTextMessage(String message) {
-                if (first.equals(message)) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setTextHandler(message -> {
+                    if (first.equals(message)) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                })
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -139,17 +134,16 @@ public class PartialFrameTest {
         System.arraycopy(first, 0, whole, 0, first.length);
         System.arraycopy(second, 0, whole, first.length, second.length);
 
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                System.out.println("onBinaryMessage: " + BinaryUtil.toHex(message));
-                if (Arrays.equals(whole, message)) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setBinaryHandler(message -> {
+                    System.out.println("onBinaryMessage: " + BinaryUtil.toHex(message));
+                    if (Arrays.equals(whole, message)) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                })
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -170,16 +164,15 @@ public class PartialFrameTest {
         byte[] first = {0x12, 0x34, 0x56, 0x78, (byte) 0x9a};
         final byte[] whole = Arrays.copyOf(first, first.length);
 
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                if (Arrays.equals(whole, message)) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setBinaryHandler(message -> {
+                    if (Arrays.equals(whole, message)) {
+                        latch.countDown();
+                    } else {
+                        latch.unlockByFailure();
+                    }
+                })
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 

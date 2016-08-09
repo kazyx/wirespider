@@ -9,7 +9,6 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.IOUtil;
@@ -75,7 +74,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -88,7 +87,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9Sync() throws IOException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -102,27 +101,12 @@ public class WebSocketClientTest {
     @Test
     public void nothingHappensAfterClosed() throws ExecutionException, InterruptedException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(2);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new WebSocketHandler() {
-            @Override
-            public void onTextMessage(String message) {
-                latch.countDown();
-            }
-
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                latch.countDown();
-            }
-
-            @Override
-            public void onPong(String message) {
-                latch.countDown();
-            }
-
-            @Override
-            public void onClosed(int code, String reason) {
-                latch.countDown();
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setTextHandler(message -> latch.countDown())
+                .setBinaryHandler(message -> latch.countDown())
+                .setPongHandler(message -> latch.countDown())
+                .setCloseHandler((code, reason) -> latch.countDown())
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -151,7 +135,7 @@ public class WebSocketClientTest {
     @Test
     public void gracefulClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sCloseFrameLatch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -166,16 +150,15 @@ public class WebSocketClientTest {
     @Test
     public void suddenShutdownOfSocketEngine() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (code == CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                            if (code == CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
+                                latch.countDown();
+                            } else {
+                                latch.unlockByFailure();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -190,12 +173,9 @@ public class WebSocketClientTest {
     @Test
     public void shutdownSoonAfterCloseSent() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                latch.countDown();
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> latch.countDown())
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -213,16 +193,15 @@ public class WebSocketClientTest {
     @Test
     public void closedByAbnormalClosure() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                            if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
+                                latch.countDown();
+                            } else {
+                                latch.unlockByFailure();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -243,16 +222,15 @@ public class WebSocketClientTest {
     @Test
     public void closedByInvalidPayload() throws IOException, InterruptedException, ExecutionException, TimeoutException, NoSuchFieldException, IllegalAccessException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (code == CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA.asNumber()) {
-                    latch.countDown();
-                } else {
-                    latch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                            if (code == CloseStatusCode.INVALID_FRAME_PAYLOAD_DATA.asNumber()) {
+                                latch.countDown();
+                            } else {
+                                latch.unlockByFailure();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -281,7 +259,7 @@ public class WebSocketClientTest {
     @Test
     public void requestSendAfterClose() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         sAssertLatch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -306,21 +284,17 @@ public class WebSocketClientTest {
     public void sendPingAndReceivePong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPingFrameLatch = new CustomLatch(2);
         final String msg = "ping";
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (sPingFrameLatch != null) {
-                    sPingFrameLatch.unlockByFailure();
-                }
-            }
-
-            @Override
-            public void onPong(String message) {
-                if (message.equals(msg)) {
-                    sPingFrameLatch.countDown();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                    if (sPingFrameLatch != null) {
+                        sPingFrameLatch.unlockByFailure();
+                    }
+                }).setPongHandler(message -> {
+                            if (message.equals(msg)) {
+                                sPingFrameLatch.countDown();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -336,14 +310,13 @@ public class WebSocketClientTest {
     public void nothingInvokedByDefaultOnPong() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPingFrameLatch = new CustomLatch(2);
         final String msg = "ping";
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (sPingFrameLatch != null) {
-                    sPingFrameLatch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                            if (sPingFrameLatch != null) {
+                                sPingFrameLatch.unlockByFailure();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -367,14 +340,13 @@ public class WebSocketClientTest {
     @Test
     public void receivePing() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         sPongFrameLatch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (sPongFrameLatch != null) {
-                    sPongFrameLatch.unlockByFailure();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setCloseHandler((code, reason) -> {
+                            if (sPongFrameLatch != null) {
+                                sPongFrameLatch.unlockByFailure();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -391,17 +363,16 @@ public class WebSocketClientTest {
     @Test
     public void onCloseIsCalledIfFactoryIsDestroyed() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                System.out.println("WebSocketHandler onClosed");
-                if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
-                    latch.countDown();
-                } else {
-                    throw new IllegalStateException("Invalid close status code");
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setCloseHandler((code, reason) -> {
+                            System.out.println("WebSocketHandler onClosed");
+                            if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
+                                latch.countDown();
+                            } else {
+                                throw new IllegalStateException("Invalid close status code");
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -428,7 +399,7 @@ public class WebSocketClientTest {
             for (int i = 0; i < NUM_CONNECTIONS; i++) {
                 es.submit(() -> {
                     try {
-                        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
+                        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000")).build();
                         WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
                         set.add(ws);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -440,9 +411,7 @@ public class WebSocketClientTest {
 
             assertThat(latch.await(5000, TimeUnit.MILLISECONDS), is(true));
         } finally {
-            for (WebSocket ws : set) {
-                IOUtil.close(ws);
-            }
+            set.forEach(IOUtil::close);
             es.shutdownNow();
             factory.destroy();
         }
@@ -454,15 +423,14 @@ public class WebSocketClientTest {
     public void x100000TextMessagesEcho() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final int NUM_MESSAGES = 100000;
         final CountDownLatch latch = new CountDownLatch(NUM_MESSAGES);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onTextMessage(String message) {
-                // System.out.println("onTextMessage");
-                if (message.equals(MESSAGE)) {
-                    latch.countDown();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setTextHandler(message -> {
+                            // System.out.println("onTextMessage");
+                            if (message.equals(MESSAGE)) {
+                                latch.countDown();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -481,15 +449,14 @@ public class WebSocketClientTest {
     @Test
     public void handleCloseOpcode() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CountDownLatch latch = new CountDownLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                System.out.println("onClosed: " + code);
-                if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
-                    latch.countDown();
-                }
-            }
-        }).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setCloseHandler((code, reason) -> {
+                            System.out.println("onClosed: " + code);
+                            if (code == CloseStatusCode.NORMAL_CLOSURE.asNumber()) {
+                                latch.countDown();
+                            }
+                        }
+                ).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -504,7 +471,7 @@ public class WebSocketClientTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void payloadLimitNonPositive() throws IOException {
-        new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).setMaxResponsePayloadSizeInBytes(0);
+        new SessionRequest.Builder(URI.create("ws://127.0.0.1")).setMaxResponsePayloadSizeInBytes(0);
     }
 
     @Test
@@ -604,8 +571,9 @@ public class WebSocketClientTest {
     @Test
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
-                .setSocketBinder(socket -> latch.countDown()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setSocketBinder(socket -> latch.countDown())
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -618,7 +586,7 @@ public class WebSocketClientTest {
 
     @Test
     public void connectToInvalidPort() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -664,7 +632,7 @@ public class WebSocketClientTest {
         th.start();
         latch.await(500, TimeUnit.MILLISECONDS);
 
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10001"), new SilentEventHandler()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10001")).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -681,7 +649,9 @@ public class WebSocketClientTest {
     @Test
     public void handleUpgradeRequestRejection() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         HttpHeader reject = new HttpHeader.Builder(JettyWebSocketServlet.REJECT_KEY).appendValue("reject").build();
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Collections.singletonList(reject)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setHeaders(Collections.singletonList(reject))
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -716,7 +686,9 @@ public class WebSocketClientTest {
 
     @Test
     public void connectWithEmptyExtraHeader() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(new ArrayList<HttpHeader>()).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setHeaders(new ArrayList<>())
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
         WebSocket ws = null;
@@ -735,7 +707,9 @@ public class WebSocketClientTest {
         HttpHeader multi = new HttpHeader.Builder("multi").appendValue("value1").appendValue("value2").build();
         HttpHeader multi2 = new HttpHeader.Builder("multi").appendValue("value3").build();
         HttpHeader[] headers = {single, multi, multi2};
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setHeaders(Arrays.asList(headers))
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -755,7 +729,9 @@ public class WebSocketClientTest {
         sCookieCbLatch = new CustomLatch(1);
         HttpHeader cookie = new HttpHeader.Builder("Cookie").appendValue("name1=value1").appendValue("name2=value2").build();
         HttpHeader[] headers = {cookie};
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler()).setHeaders(Arrays.asList(headers)).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setHeaders(Arrays.asList(headers))
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 

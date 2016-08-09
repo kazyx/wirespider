@@ -71,21 +71,27 @@ public class JettyWebSocketServlet {
 
     @OnWebSocketMessage
     public void onTextMessage(String message) throws InterruptedException, IOException {
-        if (message.equals(CLOSE_REQUEST)) {
-            System.out.println("JettyWebSocketServlet: close request received");
-            mSession.close(1000, "Normal closure");
-        } else if (message.equals(SLEEP_REQUEST)) {
-            System.out.println("JettyWebSocketServlet: sleep request received. Start sleep for 2 sec");
-            Thread.sleep(2000);
-        } else if (message.equals(PING_REQUEST)) {
-            String pingMsg = "hello";
-            ByteBuffer buff = ByteBuffer.wrap(pingMsg.getBytes("UTF-8"));
-            mSession.getRemote().sendPing(buff);
-        } else if (message.equals(ASSERT_REQUEST)) {
-            System.out.println("JettyWebSocketServlet: assertRequested");
-            WebSocketClientTest.callbackAssert();
-        } else {
-            mSession.getRemote().sendStringByFuture(message);
+        switch (message) {
+            case CLOSE_REQUEST:
+                System.out.println("JettyWebSocketServlet: close request received");
+                mSession.close(1000, "Normal closure");
+                break;
+            case SLEEP_REQUEST:
+                System.out.println("JettyWebSocketServlet: sleep request received. Start sleep for 2 sec");
+                Thread.sleep(2000);
+                break;
+            case PING_REQUEST:
+                String pingMsg = "hello";
+                ByteBuffer buff = ByteBuffer.wrap(pingMsg.getBytes("UTF-8"));
+                mSession.getRemote().sendPing(buff);
+                break;
+            case ASSERT_REQUEST:
+                System.out.println("JettyWebSocketServlet: assertRequested");
+                WebSocketClientTest.callbackAssert();
+                break;
+            default:
+                mSession.getRemote().sendStringByFuture(message);
+                break;
         }
     }
 

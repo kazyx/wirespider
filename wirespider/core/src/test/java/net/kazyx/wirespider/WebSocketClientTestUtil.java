@@ -26,22 +26,20 @@ class WebSocketClientTestUtil {
     static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
-                    closeLatch.countDown();
-                } else {
-                    closeLatch.unlockByFailure();
-                }
-            }
-
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                System.out.println("onBinaryMessage" + message.length);
-                messageLatch.countDown();
-            }
-        }).setMaxResponsePayloadSizeInBytes(size).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setCloseHandler((code, reason) -> {
+                    if (code == CloseStatusCode.MESSAGE_TOO_BIG.asNumber()) {
+                        closeLatch.countDown();
+                    } else {
+                        closeLatch.unlockByFailure();
+                    }
+                })
+                .setBinaryHandler(message -> {
+                            System.out.println("onBinaryMessage" + message.length);
+                            messageLatch.countDown();
+                        }
+                ).setMaxResponsePayloadSizeInBytes(size)
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -62,22 +60,18 @@ class WebSocketClientTestUtil {
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = TestUtil.fixedLengthRandomByteArray(size);
         final byte[] copy = Arrays.copyOf(data, data.length);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                latch.unlockByFailure();
-            }
-
-            @Override
-            public void onBinaryMessage(byte[] message) {
-                if (Arrays.equals(message, copy)) {
-                    latch.countDown();
-                } else {
-                    System.out.println("Binary message not matched");
-                    latch.unlockByFailure();
-                }
-            }
-        }).setMaxResponsePayloadSizeInBytes(size).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                .setBinaryHandler(message -> {
+                            if (Arrays.equals(message, copy)) {
+                                latch.countDown();
+                            } else {
+                                System.out.println("Binary message not matched");
+                                latch.unlockByFailure();
+                            }
+                        }
+                ).setMaxResponsePayloadSizeInBytes(size)
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -93,22 +87,18 @@ class WebSocketClientTestUtil {
     static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         final String data = TestUtil.fixedLengthFixedString(size);
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler() {
-            @Override
-            public void onClosed(int code, String reason) {
-                latch.unlockByFailure();
-            }
-
-            @Override
-            public void onTextMessage(String message) {
-                if (data.equals(message)) {
-                    latch.countDown();
-                } else {
-                    System.out.println("Text message not matched");
-                    latch.unlockByFailure();
-                }
-            }
-        }).setMaxResponsePayloadSizeInBytes(size).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
+                .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                .setTextHandler(message -> {
+                            if (data.equals(message)) {
+                                latch.countDown();
+                            } else {
+                                System.out.println("Text message not matched");
+                                latch.unlockByFailure();
+                            }
+                        }
+                ).setMaxResponsePayloadSizeInBytes(size)
+                .build();
 
         WebSocketFactory factory = new WebSocketFactory();
 

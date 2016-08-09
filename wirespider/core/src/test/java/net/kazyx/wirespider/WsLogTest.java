@@ -107,14 +107,11 @@ public class WsLogTest {
         }
 
         private void callAllLogLevelsOnNewThread() {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    WsLog.v(TAG, "verbose");
-                    WsLog.d(TAG, "debug");
-                    WsLog.e(TAG, "error");
-                    WsLog.printStackTrace(TAG, new Exception("exception"));
-                }
+            new Thread(() -> {
+                WsLog.v(TAG, "verbose");
+                WsLog.d(TAG, "debug");
+                WsLog.e(TAG, "error");
+                WsLog.printStackTrace(TAG, new Exception("exception"));
             }).start();
         }
 

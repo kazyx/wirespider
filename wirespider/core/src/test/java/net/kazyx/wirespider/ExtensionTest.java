@@ -145,22 +145,17 @@ public class ExtensionTest {
                     .setCompressionThreshold(100)
                     .setMaxServerWindowBits(windowSize)
                     .build();
-            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onTextMessage(String message) {
-                    if (data.equals(message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                    .setTextHandler(message -> {
+                        if (data.equals(message)) {
+                            latch.countDown();
+                        } else {
+                            System.out.println("Text message not matched");
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
                     .setMaxResponsePayloadSizeInBytes(msgSize * 5)
                     .build();
 
@@ -194,22 +189,17 @@ public class ExtensionTest {
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(size)
                     .build();
-            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onTextMessage(String message) {
-                    if (data.equals(message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                    .setTextHandler(message -> {
+                        if (data.equals(message)) {
+                            latch.countDown();
+                        } else {
+                            System.out.println("Text message not matched");
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
                     .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 
@@ -249,22 +239,17 @@ public class ExtensionTest {
                     .setCompressionThreshold(100)
                     .setMaxServerWindowBits(serverWindowSize)
                     .build();
-            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(copy, message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                    .setBinaryHandler(message -> {
+                        if (Arrays.equals(copy, message)) {
+                            latch.countDown();
+                        } else {
+                            System.out.println("Text message not matched");
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
                     .setMaxResponsePayloadSizeInBytes(msgSize * 5)
                     .build();
 
@@ -299,22 +284,17 @@ public class ExtensionTest {
             DeflateRequest extReq = new DeflateRequest.Builder()
                     .setMaxServerWindowBits(size)
                     .build();
-            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler() {
-                @Override
-                public void onClosed(int code, String reason) {
-                    latch.unlockByFailure();
-                }
-
-                @Override
-                public void onBinaryMessage(byte[] message) {
-                    if (Arrays.equals(copy, message)) {
-                        latch.countDown();
-                    } else {
-                        System.out.println("Text message not matched");
-                        latch.unlockByFailure();
-                    }
-                }
-            }).setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
+            SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                    .setCloseHandler((code, reason) -> latch.unlockByFailure())
+                    .setBinaryHandler(message -> {
+                        if (Arrays.equals(copy, message)) {
+                            latch.countDown();
+                        } else {
+                            System.out.println("Text message not matched");
+                            latch.unlockByFailure();
+                        }
+                    })
+                    .setExtensions(Collections.<ExtensionRequest>singletonList(extReq))
                     .setMaxResponsePayloadSizeInBytes(MESSAGE_SIZE * 5)
                     .build();
 

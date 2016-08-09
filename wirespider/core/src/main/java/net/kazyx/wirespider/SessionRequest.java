@@ -12,6 +12,10 @@ package net.kazyx.wirespider;
 import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
 import net.kazyx.wirespider.delegate.SocketBinder;
 import net.kazyx.wirespider.extension.ExtensionRequest;
+import net.kazyx.wirespider.handler.BinaryMessageHandler;
+import net.kazyx.wirespider.handler.CloseHandler;
+import net.kazyx.wirespider.handler.PongHandler;
+import net.kazyx.wirespider.handler.TextMessageHandler;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.util.ArgumentCheck;
 
@@ -24,7 +28,10 @@ public final class SessionRequest {
 
     private SessionRequest(Builder builder) {
         this.mUri = builder.uri;
-        this.mHandler = builder.handler;
+        this.mTextHandler = builder.textHandler;
+        this.mBinaryHandler = builder.binaryHandler;
+        this.mCloseHandler = builder.closeHandler;
+        this.mPongHandler = builder.pongHandler;
         this.mMaxResponsePayloadSize = builder.maxResponsePayloadSize;
         this.mSocketBinder = builder.socketBinder;
         if (builder.headers != null) {
@@ -45,11 +52,10 @@ public final class SessionRequest {
         return mUri;
     }
 
-    private WebSocketHandler mHandler;
-
-    public WebSocketHandler handler() {
-        return mHandler;
-    }
+    TextMessageHandler mTextHandler;
+    BinaryMessageHandler mBinaryHandler;
+    CloseHandler mCloseHandler;
+    PongHandler mPongHandler;
 
     private int mMaxResponsePayloadSize;
 
@@ -101,16 +107,41 @@ public final class SessionRequest {
 
     public static class Builder {
         private final URI uri;
-        private final WebSocketHandler handler;
 
         /**
          * @param uri URI of the remote server.
-         * @param handler WebSocket connection event handler.
          */
-        public Builder(URI uri, WebSocketHandler handler) {
-            ArgumentCheck.rejectNullArgs(uri, handler);
+        public Builder(URI uri) {
+            ArgumentCheck.rejectNull(uri);
             this.uri = uri;
-            this.handler = handler;
+        }
+
+        private TextMessageHandler textHandler;
+
+        public Builder setTextHandler(TextMessageHandler handler) {
+            textHandler = handler;
+            return this;
+        }
+
+        private BinaryMessageHandler binaryHandler;
+
+        public Builder setBinaryHandler(BinaryMessageHandler handler) {
+            binaryHandler = handler;
+            return this;
+        }
+
+        private PongHandler pongHandler;
+
+        public Builder setPongHandler(PongHandler handler) {
+            pongHandler = handler;
+            return this;
+        }
+
+        private CloseHandler closeHandler;
+
+        public Builder setCloseHandler(CloseHandler handler) {
+            closeHandler = handler;
+            return this;
         }
 
         private int maxResponsePayloadSize = 65536;

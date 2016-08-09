@@ -47,7 +47,7 @@ public class SubProtocolTest {
 
     @Test
     public void accepted() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setProtocols(Collections.singletonList(SUBPROTOCOL))
                 .build();
 
@@ -63,7 +63,7 @@ public class SubProtocolTest {
 
     @Test(expected = IOException.class)
     public void rejected() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .build();
 
@@ -83,7 +83,7 @@ public class SubProtocolTest {
 
     @Test
     public void multiple() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setProtocols(Arrays.asList(SUBPROTOCOL, INVALID_SUBPROTOCOL))
                 .build();
 
@@ -98,7 +98,7 @@ public class SubProtocolTest {
 
     @Test
     public void customHandlerAccept() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .setHandshakeHandler(response -> {
                     if (!INVALID_SUBPROTOCOL.equals(response.protocol())) {
@@ -120,7 +120,7 @@ public class SubProtocolTest {
 
     @Test(expected = IOException.class)
     public void customHandlerReject() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setProtocols(Collections.singletonList(SUBPROTOCOL))
                 .setHandshakeHandler(response -> false)
                 .build();

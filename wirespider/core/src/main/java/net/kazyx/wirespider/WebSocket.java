@@ -39,10 +39,10 @@ public abstract class WebSocket implements Closeable {
         return mLoop;
     }
 
-    private final URI mURI;
+    private final SessionRequest mReq;
 
     public final URI remoteUri() {
-        return mURI;
+        return mReq.uri();
     }
 
     private final SocketChannel mSocketChannel;
@@ -60,8 +60,6 @@ public abstract class WebSocket implements Closeable {
     public int maxResponsePayloadSizeInBytes() {
         return mMaxResponsePayloadSize;
     }
-
-    private final WebSocketHandler mCallbackHandler;
 
     private final Object mCloseCallbackLock = new Object();
 
@@ -91,8 +89,7 @@ public abstract class WebSocket implements Closeable {
     }
 
     WebSocket(SessionRequest req, SelectorLoop loop, SocketChannel ch) {
-        mURI = req.uri();
-        mCallbackHandler = req.handler();
+        mReq = req;
         mMaxResponsePayloadSize = req.maxResponsePayloadSizeInBytes();
         mLoop = loop;
         mSocketChannel = ch;
@@ -265,7 +262,9 @@ public abstract class WebSocket implements Closeable {
             if (isConnected()) {
                 WsLog.d(TAG, "Invoke onClosed", code);
                 mIsConnected = false;
-                mCallbackHandler.onClosed(code, reason);
+                if (mReq.mCloseHandler != null) {
+                    mReq.mCloseHandler.onClosed(code, reason);
+                }
             }
         }
     }
@@ -329,19 +328,19 @@ public abstract class WebSocket implements Closeable {
 
         @Override
         public void onPongFrame(String message) {
-            if (!isConnected()) {
+            WsLog.d(TAG, "onPongFrame", message);
+            if (!isConnected() || mReq.mPongHandler == null) {
                 return;
             }
-            WsLog.d(TAG, "onPongFrame", message);
-            mCallbackHandler.onPong(message);
+            mReq.mPongHandler.onPong(message);
         }
 
         @Override
         public void onCloseFrame(int code, String reason) {
+            WsLog.d(TAG, "onCloseFrame", code + " " + reason);
             if (!isConnected()) {
                 return;
             }
-            WsLog.d(TAG, "onCloseFrame", code + " " + reason);
             if (code != CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
                 sendCloseFrame(CloseStatusCode.NORMAL_CLOSURE, "Close frame response", false);
             }
@@ -363,18 +362,18 @@ public abstract class WebSocket implements Closeable {
 
         @Override
         public void onBinaryMessage(ByteBuffer message) {
-            if (!isConnected()) {
+            if (!isConnected() || mReq.mBinaryHandler == null) {
                 return;
             }
-            mCallbackHandler.onBinaryMessage(message.array());
+            mReq.mBinaryHandler.onBinaryMessage(message.array());
         }
 
         @Override
         public void onTextMessage(String message) {
-            if (!isConnected()) {
+            if (!isConnected() || mReq.mTextHandler == null) {
                 return;
             }
-            mCallbackHandler.onTextMessage(message);
+            mReq.mTextHandler.onTextMessage(message);
         }
 
         @Override

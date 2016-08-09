@@ -12,7 +12,6 @@ package net.kazyx.wirespider.rfc6455;
 import net.kazyx.wirespider.Base64Encoder;
 import net.kazyx.wirespider.Handshake;
 import net.kazyx.wirespider.SessionRequest;
-import net.kazyx.wirespider.SilentEventHandler;
 import net.kazyx.wirespider.SocketChannelWriter;
 import net.kazyx.wirespider.TestUtil;
 import net.kazyx.wirespider.exception.HandshakeFailureException;
@@ -299,7 +298,7 @@ public class HandshakeTest {
         List<ExtensionRequest> exReq = new ArrayList<>();
         exReq.add(new DeflateRequest.Builder().build());
         try {
-            mHandshake.tryUpgrade(DUMMY_URI, new SessionRequest.Builder(DUMMY_URI, new SilentEventHandler()).setExtensions(exReq).build());
+            mHandshake.tryUpgrade(DUMMY_URI, new SessionRequest.Builder(DUMMY_URI).setExtensions(exReq).build());
         } catch (NullPointerException e) {
             // Ignore
         }
