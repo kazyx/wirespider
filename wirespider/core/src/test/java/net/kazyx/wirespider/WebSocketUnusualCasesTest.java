@@ -46,15 +46,12 @@ public class WebSocketUnusualCasesTest {
             WebSocketServlet servlet = new WebSocketServlet() {
                 @Override
                 public void configure(WebSocketServletFactory factory) {
-                    factory.setCreator(new WebSocketCreator() {
-                        @Override
-                        public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
-                            if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
-                                System.out.println("JettyWebSocket: Reject upgrade");
-                                return null;
-                            } else {
-                                return new JettyWebSocketServlet();
-                            }
+                    factory.setCreator((req, resp) -> {
+                        if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
+                            System.out.println("JettyWebSocket: Reject upgrade");
+                            return null;
+                        } else {
+                            return new JettyWebSocketServlet();
                         }
                     });
                 }
@@ -69,20 +66,17 @@ public class WebSocketUnusualCasesTest {
             mStartLatch = new CountDownLatch(1);
             mEndLatch = new CountDownLatch(1);
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        server.start();
-                        System.out.println("Server started");
-                        mStartLatch.countDown();
-                        server.join();
-                        System.out.println("Server finished");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        mEndLatch.countDown();
-                    }
+            new Thread(() -> {
+                try {
+                    server.start();
+                    System.out.println("Server started");
+                    mStartLatch.countDown();
+                    server.join();
+                    System.out.println("Server finished");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    mEndLatch.countDown();
                 }
             }).start();
 

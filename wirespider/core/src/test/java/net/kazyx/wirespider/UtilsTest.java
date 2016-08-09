@@ -44,11 +44,8 @@ public class UtilsTest {
 
         @Test
         public void ignoreIOException() {
-            Closeable closeable = new Closeable() {
-                @Override
-                public void close() throws IOException {
-                    throw new IOException();
-                }
+            Closeable closeable = () -> {
+                throw new IOException();
             };
             IOUtil.close(closeable);
         }

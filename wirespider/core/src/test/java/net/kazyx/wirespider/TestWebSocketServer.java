@@ -61,26 +61,23 @@ public class TestWebSocketServer {
         WebSocketServlet servlet = new WebSocketServlet() {
             @Override
             public void configure(WebSocketServletFactory factory) {
-                factory.setCreator(new WebSocketCreator() {
-                    @Override
-                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
-                        if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
-                            System.out.println("JettyWebSocket: Reject upgrade");
-                            return null;
+                factory.setCreator((req, resp) -> {
+                    if (req.getHeader(JettyWebSocketServlet.REJECT_KEY) != null) {
+                        System.out.println("JettyWebSocket: Reject upgrade");
+                        return null;
+                    } else {
+                        List<String> reqProtocols = req.getSubProtocols();
+                        if (reqProtocols.size() == 0) {
+                            return new JettyWebSocketServlet();
                         } else {
-                            List<String> reqProtocols = req.getSubProtocols();
-                            if (reqProtocols.size() == 0) {
-                                return new JettyWebSocketServlet();
-                            } else {
-                                System.out.println("JettyWebSocket: subprotocol request: " + reqProtocols);
-                                for (String protocol : reqProtocols) {
-                                    if (mProtocols.contains(protocol)) {
-                                        resp.setAcceptedSubProtocol(protocol);
-                                        return new JettyWebSocketServlet();
-                                    }
+                            System.out.println("JettyWebSocket: subprotocol request: " + reqProtocols);
+                            for (String protocol : reqProtocols) {
+                                if (mProtocols.contains(protocol)) {
+                                    resp.setAcceptedSubProtocol(protocol);
+                                    return new JettyWebSocketServlet();
                                 }
-                                return new JettyWebSocketServlet();
                             }
+                            return new JettyWebSocketServlet();
                         }
                     }
                 });
@@ -97,20 +94,17 @@ public class TestWebSocketServer {
         mStartLatch = new CountDownLatch(1);
         mEndLatch = new CountDownLatch(1);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server.start();
-                    System.out.println("Server started");
-                    mStartLatch.countDown();
-                    server.join();
-                    System.out.println("Server finished");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    mEndLatch.countDown();
-                }
+        new Thread(() -> {
+            try {
+                server.start();
+                System.out.println("Server started");
+                mStartLatch.countDown();
+                server.join();
+                System.out.println("Server finished");
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                mEndLatch.countDown();
             }
         }).start();
 

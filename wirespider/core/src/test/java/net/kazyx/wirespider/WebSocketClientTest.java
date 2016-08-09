@@ -426,18 +426,15 @@ public class WebSocketClientTest {
         final CountDownLatch latch = new CountDownLatch(NUM_CONNECTIONS);
         try {
             for (int i = 0; i < NUM_CONNECTIONS; i++) {
-                es.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
-                            WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
-                            set.add(ws);
-                        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                            throw new RuntimeException(e);
-                        }
-                        latch.countDown();
+                es.submit(() -> {
+                    try {
+                        SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler()).build();
+                        WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS);
+                        set.add(ws);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        throw new RuntimeException(e);
                     }
+                    latch.countDown();
                 });
             }
 
@@ -608,12 +605,7 @@ public class WebSocketClientTest {
     public void socketBinderTest() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"), new SilentEventHandler())
-                .setSocketBinder(new SocketBinder() {
-                    @Override
-                    public void bind(Socket socket) throws IOException {
-                        latch.countDown();
-                    }
-                }).build();
+                .setSocketBinder(socket -> latch.countDown()).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
@@ -643,32 +635,29 @@ public class WebSocketClientTest {
     public void connectToRawSocket() throws InterruptedException, ExecutionException, TimeoutException, IOException {
         final CustomLatch latch = new CustomLatch(1);
 
-        Thread th = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ServerSocket sock = null;
-                Socket socket = null;
+        Thread th = new Thread(() -> {
+            ServerSocket sock = null;
+            Socket socket = null;
+            try {
+                sock = new ServerSocket(10001);
+                socket = sock.accept();
+                socket.close();
+            } catch (IOException e) {
+                latch.unlockByFailure();
+            } finally {
                 try {
-                    sock = new ServerSocket(10001);
-                    socket = sock.accept();
-                    socket.close();
+                    if (sock != null) {
+                        sock.close();
+                    }
                 } catch (IOException e) {
-                    latch.unlockByFailure();
-                } finally {
-                    try {
-                        if (sock != null) {
-                            sock.close();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    e.printStackTrace();
+                }
+                try {
+                    if (socket != null) {
+                        socket.close();
                     }
-                    try {
-                        if (socket != null) {
-                            socket.close();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });

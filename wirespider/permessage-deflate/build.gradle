@@ -7,12 +7,16 @@ dependencies {
         transitive = false
     }
     testCompile 'org.hamcrest:hamcrest-all:1.3'
-    testCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.13.v20150730'
-    testCompile 'commons-codec:commons-codec:1.10'
+    testCompile 'org.eclipse.jetty.websocket:websocket-server:9.3.11.v20160721'
     testCompile 'org.apache.commons:commons-lang3:3.4'
     testCompile project(':wirespider').sourceSets.test.output
 }
 
 bintray {
     pkg.name = 'net.kazyx:wirespider-pmdeflate'
+}
+
+compileTestJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }

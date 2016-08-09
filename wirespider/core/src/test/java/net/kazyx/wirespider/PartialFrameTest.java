@@ -197,18 +197,15 @@ public class PartialFrameTest {
     public void getDuplicateWriterOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
         mWriter = mWs.newPartialMessageWriter();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                PartialMessageWriter writer = null;
-                try {
-                    writer = copy.newPartialMessageWriter();
-                    mLatch.unlockByFailure();
-                } catch (IllegalStateException e) {
-                    mLatch.countDown();
-                } finally {
-                    IOUtil.close(writer);
-                }
+        new Thread(() -> {
+            PartialMessageWriter writer = null;
+            try {
+                writer = copy.newPartialMessageWriter();
+                mLatch.unlockByFailure();
+            } catch (IllegalStateException e) {
+                mLatch.countDown();
+            } finally {
+                IOUtil.close(writer);
             }
         }).start();
         assertThat(mLatch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -229,15 +226,12 @@ public class PartialFrameTest {
     public void writerLocksOtherTextFramesOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
         mWriter = mWs.newPartialMessageWriter();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    copy.sendTextMessageAsync("error");
-                    mLatch.unlockByFailure();
-                } catch (IllegalStateException e) {
-                    mLatch.countDown();
-                }
+        new Thread(() -> {
+            try {
+                copy.sendTextMessageAsync("error");
+                mLatch.unlockByFailure();
+            } catch (IllegalStateException e) {
+                mLatch.countDown();
             }
         }).start();
         assertThat(mLatch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -253,15 +247,12 @@ public class PartialFrameTest {
     public void writerLocksOtherBinaryFramesOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
         mWriter = mWs.newPartialMessageWriter();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    copy.sendBinaryMessageAsync(new byte[0x00]);
-                    mLatch.unlockByFailure();
-                } catch (IllegalStateException e) {
-                    mLatch.countDown();
-                }
+        new Thread(() -> {
+            try {
+                copy.sendBinaryMessageAsync(new byte[0x00]);
+                mLatch.unlockByFailure();
+            } catch (IllegalStateException e) {
+                mLatch.countDown();
             }
         }).start();
         assertThat(mLatch.await(500, TimeUnit.MILLISECONDS), is(true));
@@ -277,12 +268,9 @@ public class PartialFrameTest {
     public void controlFrameIsNotLockedOnOtherThread() throws InterruptedException {
         final WebSocket copy = mWs;
         mWriter = mWs.newPartialMessageWriter();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                copy.sendPingAsync("ping");
-                mLatch.countDown();
-            }
+        new Thread(() -> {
+            copy.sendPingAsync("ping");
+            mLatch.countDown();
         }).start();
         assertThat(mLatch.await(500, TimeUnit.MILLISECONDS), is(true));
     }
@@ -383,15 +371,12 @@ public class PartialFrameTest {
     @Test
     public void closeOnOtherThread() throws InterruptedException {
         mWriter = mWs.newPartialMessageWriter();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    mWriter.close();
-                    mLatch.unlockByFailure();
-                } catch (IOException e) {
-                    mLatch.countDown();
-                }
+        new Thread(() -> {
+            try {
+                mWriter.close();
+                mLatch.unlockByFailure();
+            } catch (IOException e) {
+                mLatch.countDown();
             }
         }).start();
         assertThat(mLatch.await(500, TimeUnit.MILLISECONDS), is(true));

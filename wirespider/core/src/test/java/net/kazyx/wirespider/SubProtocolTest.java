@@ -9,8 +9,6 @@
 
 package net.kazyx.wirespider;
 
-import net.kazyx.wirespider.delegate.HandshakeResponseHandler;
-import net.kazyx.wirespider.exception.HandshakeFailureException;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.IOUtil;
 import org.junit.AfterClass;
@@ -64,7 +62,7 @@ public class SubProtocolTest {
     }
 
     @Test(expected = IOException.class)
-    public void rejected() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
+    public void rejected() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
                 .build();
@@ -102,14 +100,11 @@ public class SubProtocolTest {
     public void customHandlerAccept() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .setProtocols(Collections.singletonList(INVALID_SUBPROTOCOL))
-                .setHandshakeHandler(new HandshakeResponseHandler() {
-                    @Override
-                    public boolean onReceived(HandshakeResponse response) {
-                        if (!INVALID_SUBPROTOCOL.equals(response.protocol())) {
-                            System.out.println("Response does not contain " + INVALID_SUBPROTOCOL);
-                        }
-                        return true;
+                .setHandshakeHandler(response -> {
+                    if (!INVALID_SUBPROTOCOL.equals(response.protocol())) {
+                        System.out.println("Response does not contain " + INVALID_SUBPROTOCOL);
                     }
+                    return true;
                 })
                 .build();
 
@@ -124,15 +119,10 @@ public class SubProtocolTest {
     }
 
     @Test(expected = IOException.class)
-    public void customHandlerReject() throws IOException, InterruptedException, ExecutionException, TimeoutException, HandshakeFailureException {
+    public void customHandlerReject() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"), new SilentEventHandler())
                 .setProtocols(Collections.singletonList(SUBPROTOCOL))
-                .setHandshakeHandler(new HandshakeResponseHandler() {
-                    @Override
-                    public boolean onReceived(HandshakeResponse response) {
-                        return false;
-                    }
-                })
+                .setHandshakeHandler(response -> false)
                 .build();
 
         WebSocketFactory factory = new WebSocketFactory();

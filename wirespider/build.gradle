@@ -26,8 +26,8 @@ subprojects {
     def utf8 = 'UTF-8'
     [compileJava, compileTestJava]*.options*.encoding = utf8
 
-    sourceCompatibility = 7
-    targetCompatibility = 7
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
 
     findbugs {
         ignoreFailures = true
