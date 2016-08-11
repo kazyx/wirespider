@@ -7,17 +7,17 @@
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider.rfc6455;
+package net.kazyx.wirespider.test.rfc6455;
 
-import net.kazyx.wirespider.Base64Encoder;
 import net.kazyx.wirespider.Handshake;
 import net.kazyx.wirespider.SessionRequest;
 import net.kazyx.wirespider.SocketChannelWriter;
-import net.kazyx.wirespider.TestUtil;
 import net.kazyx.wirespider.exception.HandshakeFailureException;
 import net.kazyx.wirespider.exception.PayloadUnderflowException;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
+import net.kazyx.wirespider.test.Base64Encoder;
+import net.kazyx.wirespider.test.TestUtil;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.HandshakeSecretUtil;
 import org.junit.Before;
@@ -31,12 +31,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.kazyx.wirespider.test.rfc6455.PackageBreaker.newRfc6455Handshake;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class HandshakeTest {
     private static final URI DUMMY_URI = URI.create("ws://127.0.0.1:10000/");
-    private Rfc6455Handshake mHandshake;
+    private Handshake mHandshake;
 
     @BeforeClass
     public static void setupClass() {
@@ -44,8 +45,8 @@ public class HandshakeTest {
     }
 
     @Before
-    public void setup() throws IOException {
-        mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
+    public void setup() {
+        mHandshake = newRfc6455Handshake(new SocketChannelWriter() {
             @Override
             public void writeAsync(ByteBuffer data) {
             }
@@ -267,7 +268,7 @@ public class HandshakeTest {
     @Test(expected = UnsupportedOperationException.class)
     public void upgradeRequestByServer() throws IOException {
         // mHandshake = new Rfc6455Handshake(new SocketChannelProxy(new SocketEngine(SelectorProvider.provider()), new SilentListener()), false);
-        mHandshake = new Rfc6455Handshake(new SocketChannelWriter() {
+        mHandshake = newRfc6455Handshake(new SocketChannelWriter() {
             @Override
             public void writeAsync(ByteBuffer data) {
             }
@@ -312,12 +313,12 @@ public class HandshakeTest {
         mHandshake.onHandshakeResponse(TestUtil.asByteBuffer(header));
     }
 
-    private static String getSecret(Rfc6455Handshake handshake) {
+    private static String getSecret(Handshake handshake) {
         try {
-            Field f = Rfc6455Handshake.class.getDeclaredField("mSecret");
+            Field f = Class.forName("net.kazyx.wirespider.rfc6455.Rfc6455Handshake").getDeclaredField("mSecret");
             f.setAccessible(true);
             return (String) f.get(handshake);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
     }

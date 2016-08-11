@@ -65,7 +65,7 @@ public final class SessionRequest {
 
     private SocketBinder mSocketBinder;
 
-    public SocketBinder socketBinder() {
+    SocketBinder socketBinder() {
         return mSocketBinder;
     }
 
@@ -89,19 +89,19 @@ public final class SessionRequest {
 
     private HandshakeResponseHandler mHsHandler;
 
-    public HandshakeResponseHandler handshakeHandler() {
+    HandshakeResponseHandler handshakeHandler() {
         return mHsHandler;
     }
 
     private int mConnectionTimeout;
 
-    public int connectionTimeout() {
+    int connectionTimeout() {
         return mConnectionTimeout;
     }
 
     private TimeUnit mConnTimeoutUnit;
 
-    public TimeUnit connectionTimeoutUnit() {
+    TimeUnit connectionTimeoutUnit() {
         return mConnTimeoutUnit;
     }
 

@@ -7,8 +7,9 @@
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test;
 
+import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.rfc6455.Rfc6455;
 import org.junit.After;
 import org.junit.Before;

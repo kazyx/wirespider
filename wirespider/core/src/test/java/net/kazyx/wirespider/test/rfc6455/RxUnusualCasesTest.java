@@ -7,18 +7,20 @@
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider.rfc6455;
+package net.kazyx.wirespider.test.rfc6455;
 
 import net.kazyx.wirespider.CloseStatusCode;
-import net.kazyx.wirespider.CustomLatch;
-import net.kazyx.wirespider.FailOnCallbackRxListener;
-import net.kazyx.wirespider.TestUtil;
+import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.test.CustomLatch;
+import net.kazyx.wirespider.test.FailOnCallbackRxListener;
+import net.kazyx.wirespider.test.TestUtil;
 import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static net.kazyx.wirespider.test.rfc6455.PackageBreaker.newRfc6455Rx;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -26,7 +28,7 @@ public class RxUnusualCasesTest {
     public static class ProtocolViolationTest {
         private void serverViolationTest(byte[] data) {
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onProtocolViolation() {
                     latch.countDown();
@@ -38,7 +40,7 @@ public class RxUnusualCasesTest {
 
         private void clientViolationTest(byte[] data) {
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onProtocolViolation() {
                     latch.countDown();
@@ -159,7 +161,7 @@ public class RxUnusualCasesTest {
 
         private void payloadOverflowTest(byte[] data, byte[] overflowData, final int limit) {
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onBinaryMessage(ByteBuffer message) {
                     assertThat(message.array().length, is(limit));
@@ -317,7 +319,7 @@ public class RxUnusualCasesTest {
             System.arraycopy(payload, 0, overflowData, 10, payloadSize);
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onPayloadOverflow() {
                     // Just checks long int range in extended payload length is treated as payload overflow.
@@ -338,7 +340,7 @@ public class RxUnusualCasesTest {
             System.arraycopy(payload, 0, data, 2, payloadSize);
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onPingFrame(String message) {
                     latch.countDown();
@@ -371,7 +373,7 @@ public class RxUnusualCasesTest {
             data[1] = 0;
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onCloseFrame(int code, String reason) {
                     if (code == CloseStatusCode.NO_STATUS_RECEIVED.asNumber() && "".equals(reason)) {
@@ -395,7 +397,7 @@ public class RxUnusualCasesTest {
             data[3] = (byte) status.asNumber();
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onCloseFrame(int code, String reason) {
                     if (code == status.asNumber() && "".equals(reason)) {
@@ -434,7 +436,7 @@ public class RxUnusualCasesTest {
             System.arraycopy(payload, 0, data, 14, length);
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onBinaryMessage(ByteBuffer message) {
                     if (Arrays.equals(payload, message.array())) {
@@ -463,7 +465,7 @@ public class RxUnusualCasesTest {
             final byte[] payload = TestUtil.fixedLengthRandomByteArray(payloadSize);
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onBinaryMessage(ByteBuffer message) {
                     if (Arrays.equals(payload, message.array())) {
@@ -501,7 +503,7 @@ public class RxUnusualCasesTest {
             byte[] payload = source.getBytes("UTF-8");
 
             final CustomLatch latch = new CustomLatch(1);
-            Rfc6455Rx rx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            FrameRx rx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onTextMessage(String message) {
                     if (source.equals(message)) {

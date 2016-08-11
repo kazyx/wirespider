@@ -1,14 +1,20 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test.secure;
 
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.WebSocketFactory;
+import net.kazyx.wirespider.test.Base64Encoder;
+import net.kazyx.wirespider.test.CustomLatch;
+import net.kazyx.wirespider.test.TestUtil;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.WsLog;
 import org.junit.After;

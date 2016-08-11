@@ -1,14 +1,19 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test;
 
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.http.HttpHeader;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.IOUtil;
@@ -74,12 +79,15 @@ public class WebSocketClientTest {
 
     @Test
     public void connectJetty9() throws ExecutionException, InterruptedException, TimeoutException, IOException {
-        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000")).build();
+        SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
+                .setMaxResponsePayloadSizeInBytes(100).build();
 
         WebSocketFactory factory = new WebSocketFactory();
 
         try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
             assertThat(ws.isConnected(), is(true));
+            assertThat(ws.remoteUri(), is(req.uri()));
+            assertThat(ws.maxResponsePayloadSizeInBytes(), is(req.maxResponsePayloadSizeInBytes()));
         } finally {
             factory.destroy();
         }
@@ -152,7 +160,7 @@ public class WebSocketClientTest {
         final CustomLatch latch = new CustomLatch(1);
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                 .setCloseHandler((code, reason) -> {
-                            if (code == CloseStatusCode.ABNORMAL_CLOSURE.statusCode) {
+                            if (code == CloseStatusCode.ABNORMAL_CLOSURE.asNumber()) {
                                 latch.countDown();
                             } else {
                                 latch.unlockByFailure();

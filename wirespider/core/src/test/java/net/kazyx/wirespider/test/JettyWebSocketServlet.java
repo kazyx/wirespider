@@ -1,16 +1,16 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test;
 
+import net.kazyx.wirespider.OpCode;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -27,9 +27,9 @@ import java.util.List;
 public class JettyWebSocketServlet {
     private Session mSession;
 
-    public static final int MAX_SIZE_1MB = 1000000;
+    static final int MAX_SIZE_1MB = 1000000;
 
-    public static final String REJECT_KEY = "reject_upgrade";
+    static final String REJECT_KEY = "reject_upgrade";
 
     @OnWebSocketFrame
     public void onFrame(Frame frame) throws IOException {
@@ -61,13 +61,13 @@ public class JettyWebSocketServlet {
         mSession = session;
     }
 
-    public static final String CLOSE_REQUEST = "close";
+    static final String CLOSE_REQUEST = "close";
 
-    public static final String SLEEP_REQUEST = "sleep";
+    static final String SLEEP_REQUEST = "sleep";
 
-    public static final String PING_REQUEST = "ping";
+    static final String PING_REQUEST = "ping";
 
-    public static final String ASSERT_REQUEST = "assert";
+    static final String ASSERT_REQUEST = "assert";
 
     @OnWebSocketMessage
     public void onTextMessage(String message) throws InterruptedException, IOException {
@@ -105,9 +105,5 @@ public class JettyWebSocketServlet {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @OnWebSocketClose
-    public void onClosed(int statusCode, String reason) {
     }
 }

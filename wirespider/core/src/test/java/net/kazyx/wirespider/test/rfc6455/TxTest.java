@@ -7,18 +7,22 @@
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider.rfc6455;
+package net.kazyx.wirespider.test.rfc6455;
 
 import net.kazyx.wirespider.CloseStatusCode;
-import net.kazyx.wirespider.FailOnCallbackRxListener;
+import net.kazyx.wirespider.FrameRx;
+import net.kazyx.wirespider.FrameTx;
 import net.kazyx.wirespider.SocketChannelWriter;
-import net.kazyx.wirespider.TestUtil;
+import net.kazyx.wirespider.test.FailOnCallbackRxListener;
+import net.kazyx.wirespider.test.TestUtil;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static net.kazyx.wirespider.test.rfc6455.PackageBreaker.newRfc6455Rx;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -52,18 +56,18 @@ public class TxTest {
             }
         }
 
-        Rfc6455Tx mTx;
-        Rfc6455Rx mRx;
+        FrameTx mTx;
+        FrameRx mRx;
 
         @Before
         public void setup() {
-            mTx = new Rfc6455Tx(new DummyWriter(), !fromServer());
+            mTx = PackageBreaker.newRfc6455Tx(new DummyWriter(), !fromServer());
         }
 
         @Test
-        public void ping() {
+        public void ping() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
             final String msg = "ping";
-            mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            mRx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onPingFrame(String message) {
                     assertThat(message, is(msg));
@@ -73,9 +77,9 @@ public class TxTest {
         }
 
         @Test
-        public void pong() {
+        public void pong() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
             final String pong = "pong_message";
-            mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            mRx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onPongFrame(String message) {
                     assertThat(message, is(pong));
@@ -85,9 +89,9 @@ public class TxTest {
         }
 
         @Test
-        public void close() {
+        public void close() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
             final CloseStatusCode code = CloseStatusCode.RESERVED;
-            mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            mRx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onCloseFrame(int status, String reason) {
                     assertThat(status, is(code.asNumber()));
@@ -129,7 +133,7 @@ public class TxTest {
 
         private void text(int length) {
             final String msg = TestUtil.fixedLengthFixedString(length);
-            mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            mRx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onTextMessage(String text) {
                     assertThat(text, is(msg));
@@ -140,7 +144,7 @@ public class TxTest {
 
         private void binary(int length) {
             final byte[] msg = TestUtil.fixedLengthRandomByteArray(length);
-            mRx = new Rfc6455Rx(new FailOnCallbackRxListener() {
+            mRx = newRfc6455Rx(new FailOnCallbackRxListener() {
                 @Override
                 public void onBinaryMessage(ByteBuffer data) {
                     assertThat(Arrays.equals(msg, data.array()), is(true));

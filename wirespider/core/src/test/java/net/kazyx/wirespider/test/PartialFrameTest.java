@@ -7,8 +7,12 @@
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test;
 
+import net.kazyx.wirespider.PartialMessageWriter;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.util.Base64;
 import net.kazyx.wirespider.util.BinaryUtil;
 import net.kazyx.wirespider.util.IOUtil;
@@ -44,10 +48,10 @@ public class PartialFrameTest {
         server.shutdown();
     }
 
-    CustomLatch mLatch;
-    WebSocketFactory mFactory;
-    WebSocket mWs;
-    PartialMessageWriter mWriter;
+    private CustomLatch mLatch;
+    private WebSocketFactory mFactory;
+    private WebSocket mWs;
+    private PartialMessageWriter mWriter;
 
     @Before
     public void setup() throws IOException, InterruptedException, ExecutionException, TimeoutException {

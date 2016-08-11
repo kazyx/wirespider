@@ -1,18 +1,24 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.extension.compression.test;
 
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.WebSocketFactory;
 import net.kazyx.wirespider.extension.ExtensionRequest;
 import net.kazyx.wirespider.extension.compression.DeflateRequest;
 import net.kazyx.wirespider.extension.compression.PerMessageDeflate;
-import net.kazyx.wirespider.extension.compression.PerMessageDeflateCreator;
+import net.kazyx.wirespider.test.Base64Encoder;
+import net.kazyx.wirespider.test.CustomLatch;
+import net.kazyx.wirespider.test.TestUtil;
+import net.kazyx.wirespider.test.TestWebSocketServer;
 import net.kazyx.wirespider.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -32,14 +38,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
-public class ExtensionTest {
-
+public class ExtensionDeflateTest {
     public static class CompressorTest {
         private PerMessageDeflate mCompression;
 
         @Before
         public void setup() {
-            mCompression = PerMessageDeflateCreator.create(0);
+            mCompression = PackageBreaker.newPerMessageDeflate(0);
         }
 
         @Test
@@ -142,8 +147,8 @@ public class ExtensionTest {
             final CustomLatch latch = new CustomLatch(1);
             final String data = TestUtil.fixedLengthFixedString(msgSize);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setCompressionThreshold(100)
                     .setMaxServerWindowBits(windowSize)
+                    .setCompressionThreshold(100)
                     .build();
             SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                     .setCloseHandler((code, reason) -> latch.unlockByFailure())
@@ -236,8 +241,8 @@ public class ExtensionTest {
             final byte[] data = TestUtil.fixedLengthFixedByteArray(msgSize);
             final byte[] copy = Arrays.copyOf(data, data.length);
             DeflateRequest extReq = new DeflateRequest.Builder()
-                    .setCompressionThreshold(100)
                     .setMaxServerWindowBits(serverWindowSize)
+                    .setCompressionThreshold(100)
                     .build();
             SessionRequest req = new SessionRequest.Builder(URI.create("ws://127.0.0.1:10000"))
                     .setCloseHandler((code, reason) -> latch.unlockByFailure())
@@ -256,8 +261,8 @@ public class ExtensionTest {
             WebSocketFactory factory = new WebSocketFactory();
 
             try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
-                assertThat(ws.handshake().extensions().size(), is(1));
-                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                assertThat(ws.extensions().size(), is(1));
+                assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendBinaryMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
@@ -301,8 +306,8 @@ public class ExtensionTest {
             WebSocketFactory factory = new WebSocketFactory();
 
             try (WebSocket ws = factory.openAsync(req).get(1000, TimeUnit.MILLISECONDS)) {
-                assertThat(ws.handshake().extensions().size(), is(1));
-                assertThat(ws.handshake().extensions().get(0), instanceOf(PerMessageDeflate.class));
+                assertThat(ws.extensions().size(), is(1));
+                assertThat(ws.extensions().get(0), instanceOf(PerMessageDeflate.class));
                 ws.sendBinaryMessageAsync(data);
                 assertThat(latch.await(10000, TimeUnit.MILLISECONDS), is(true));
                 assertThat(latch.isUnlockedByFailure(), is(false));
@@ -319,29 +324,40 @@ public class ExtensionTest {
 
         @Before
         public void setup() {
-            mCompression = PerMessageDeflateCreator.create(SIZE_BASE);
+            mCompression = PackageBreaker.newPerMessageDeflate(SIZE_BASE);
         }
 
         @Test(expected = IOException.class)
         public void dataSizeSmallerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE - 1);
-            mCompression.compress(ByteBuffer.wrap(original));
+            mCompression.compress(ByteBuffer.wrap(original)).array();
         }
 
         @Test
         public void dataSizeEqualsCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE);
             final byte[] copy = Arrays.copyOf(original, original.length);
-            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
-            assertThat(Arrays.equals(copy, compressed.array()), is(false));
+            byte[] compressed = mCompression.compress(ByteBuffer.wrap(original)).array();
+            assertThat(Arrays.equals(copy, compressed), is(false));
         }
 
         @Test
         public void dataSizeLargerThanCompressionMinRange() throws IOException {
             final byte[] original = TestUtil.fixedLengthFixedByteArray(SIZE_BASE + 1);
             final byte[] copy = Arrays.copyOf(original, original.length);
-            ByteBuffer compressed = mCompression.compress(ByteBuffer.wrap(original));
-            assertThat(Arrays.equals(copy, compressed.array()), is(false));
+            byte[] compressed = mCompression.compress(ByteBuffer.wrap(original)).array();
+            assertThat(Arrays.equals(copy, compressed), is(false));
+        }
+
+        @Test(expected = IOException.class)
+        public void requestBuilder() throws IOException {
+            DeflateRequest req = new DeflateRequest.Builder()
+                    .setCompressionThreshold(2)
+                    .build();
+            PerMessageDeflate deflate = ((PerMessageDeflate) req.extension());
+
+            byte[] one = {(byte) 0x11};
+            assertThat(Arrays.equals(deflate.compress(ByteBuffer.wrap(one)).array(), one), is(true));
         }
     }
 }

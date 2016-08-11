@@ -29,9 +29,9 @@ import java.util.List;
 public abstract class WebSocket implements Closeable {
     private static final String TAG = WebSocket.class.getSimpleName();
 
-    public static final String WSS_SCHEME = "wss";
-    public static final int DEFAULT_WS_PORT = 80;
-    public static final int DEFAULT_WSS_PORT = 443;
+    static final String WSS_SCHEME = "wss";
+    static final int DEFAULT_WS_PORT = 80;
+    static final int DEFAULT_WSS_PORT = 443;
 
     private final SelectorLoop mLoop;
 

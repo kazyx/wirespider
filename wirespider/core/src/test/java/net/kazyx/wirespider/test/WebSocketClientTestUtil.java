@@ -1,13 +1,18 @@
 /*
  * WireSpider
  *
- * Copyright (c) 2015 kazyx
+ * Copyright (c) 2016 kazyx
  *
  * This software is released under the MIT License.
  * http://opensource.org/licenses/mit-license.php
  */
 
-package net.kazyx.wirespider;
+package net.kazyx.wirespider.test;
+
+import net.kazyx.wirespider.CloseStatusCode;
+import net.kazyx.wirespider.SessionRequest;
+import net.kazyx.wirespider.WebSocket;
+import net.kazyx.wirespider.WebSocketFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,11 +24,11 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-class WebSocketClientTestUtil {
+public class WebSocketClientTestUtil {
     private WebSocketClientTestUtil() {
     }
 
-    static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public static void payloadLimit(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch messageLatch = new CustomLatch(2);
         final CustomLatch closeLatch = new CustomLatch(1);
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
@@ -56,7 +61,7 @@ class WebSocketClientTestUtil {
         }
     }
 
-    static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public static void echoBinary(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         byte[] data = TestUtil.fixedLengthRandomByteArray(size);
         final byte[] copy = Arrays.copyOf(data, data.length);
@@ -84,7 +89,7 @@ class WebSocketClientTestUtil {
         }
     }
 
-    static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    public static void echoText(int size) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final CustomLatch latch = new CustomLatch(1);
         final String data = TestUtil.fixedLengthFixedString(size);
         SessionRequest req = new SessionRequest.Builder(URI.create("ws://localhost:10000"))
