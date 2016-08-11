@@ -57,27 +57,14 @@ WebSocketFactory factory = new WebSocketFactory();
 // It is recommended to use this WebSocketFactory while your process is alive.
 
 URI uri = URI.create("ws://host:port/path"); // ws scheme
-WebSocketHandler handler = new WebSocketHandler() {
-    @Override
-    public void onTextMessage(String message) {
-        // Received text message.
-    }
-
-    @Override
-    public void onBinaryMessage(byte[] message) {
-        // Received binary message.
-    }
-
-    @Override
-    public void onClosed(int code, String reason) {
-        // Connection is closed.
-    }
-};
 ```
 
 **Blocking style**
 ```
-SessionRequest req = new SessionRequest.Builder(uri, handler)
+SessionRequest req = new SessionRequest.Builder(uri)
+        .setTextHandler(message -> // Received text message)
+        .setBinaryHandler(message -> // Received binary message)
+        .setCloseHandler((code, reason) -> // Connection is closed)
         .setConnectionTimeout(5, TimeUnit.SECONDS)
         .build();
 
@@ -86,7 +73,10 @@ WebSocket websocket = factory.open(req);
 
 **Async style**
 ```
-SessionRequest req = new SessionRequest.Builder(uri, handler)
+SessionRequest req = new SessionRequest.Builder(uri)
+        .setTextHandler(message -> // Received text message)
+        .setBinaryHandler(message -> // Received binary message)
+        .setCloseHandler((code, reason) -> // Connection is closed)
         .build();
 
 Future<WebSocket> futureWebSocket = factory.openAsync(req);
